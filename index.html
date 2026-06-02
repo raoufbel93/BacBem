@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارتي+ - نظام إدارة المؤسسة التعليمية</title>
+    <script>
+        (function () {
+            var theme = 'light';
+            var themePreset = 'default';
+            try {
+                theme = localStorage.getItem('theme') || 'light';
+                themePreset = localStorage.getItem('themePreset') || 'default';
+            } catch (e) { }
+            document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme-preset', themePreset || 'default');
+        })();
+    </script>
+
+    <!-- Shell Styles -->
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            /* Prevent shell from scrolling */
+            background-color: #f8fafc;
+            font-family: sans-serif;
+        }
+
+        #shell-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #navbar-container {
+            flex: 0 0 auto;
+            position: relative;
+            z-index: 1000;
+        }
+
+        #content-wrapper {
+            flex: 1 1 auto;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #content-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: transparent;
+        }
+
+        /* Loading overlay for iframe navigation */
+        #frame-loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #frame-loader.active {
+            opacity: 0.7;
+            pointer-events: all;
+        }
+
+        html[data-theme="dark"] body,
+        html[data-theme="dark"] html {
+            background-color: #020617;
+        }
+
+        html[data-theme="dark"] #content-wrapper,
+        html[data-theme="dark"] #frame-loader {
+            background-color: #020617;
+        }
+
+        html[data-theme="light"] #content-wrapper {
+            background-color: #f8fafc;
+        }
+
+        html[data-theme="light"] #frame-loader {
+            background-color: #ffffff;
+        }
+
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--secondary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        #title-bar {
+            background-color: #000000 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        #title-bar > div {
+            color: rgba(255, 255, 255, 0.78) !important;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <!-- Dependencies -->
+    <link rel="stylesheet" href="A-data/style.css">
+    <script src="A-data/auth.js"></script>
+    <style>
+        /* Shell Overrides */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            padding-top: 0 !important;
+            background-color: #f8fafc !important;
+            overflow: hidden;
+        }
+
+        html[data-theme="dark"] body {
+            background-color: #020617 !important;
+        }
+
+        #shell-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Force shell navbar to be part of the layout, not floating */
+        #navbar-container .navbar {
+            position: relative !important;
+            box-shadow: none !important;
+            border-bottom: 1px solid var(--navbar-hover-border) !important;
+            flex: 0 0 auto;
+            background: var(--navbar-bg-gradient) !important;
+        }
+
+        #content-wrapper {
+            flex: 1;
+            background-color: #f8fafc;
+            position: relative;
+            overflow: hidden;
+        }
+
+        html[data-theme="dark"] #content-wrapper {
+            background-color: #020617 !important;
+        }
+
+        #content-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        #content-frame.loaded {
+            opacity: 1;
+        }
+    </style>
+
+
+    <script>
+        // Check Auth before loading shell
+        Auth.checkAuth();
+    </script>
+</head>
+
+<body>
+    <div id="shell-container">
+        <!-- Dedicated Title Bar for Window Controls -->
+        <div id="title-bar" style="height: 32px; -webkit-app-region: drag; display: flex; align-items: center; padding-right: 15px;">
+            <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <img src="Design.ico" style="width: 16px; height: 16px; opacity: 0.8;">
+                <span>إدارتي+ - نظام إدارة المؤسسة التعليمية</span>
+            </div>
+        </div>
+
+        <!-- Navbar remains persistent here -->
+        <div id="navbar-container"></div>
+
+        <!-- Content Area -->
+        <div id="content-wrapper">
+            <div id="frame-loader">
+                <div class="loader-spinner"></div>
+            </div>
+            <iframe id="content-frame" name="content-frame"></iframe>
+        </div>
+    </div>
+
+    <!-- Shell Logic (ES5 for Windows 7) -->
+    <script>
+        window.IS_ROOT_PAGE = true;
+        window.IS_SHELL = true;
+
+        var contentFrame = document.getElementById('content-frame');
+        var frameLoader = document.getElementById('frame-loader');
+        window.__SHELL_ACTIVE_PATH = 'A-data/dashboard.html';
+
+        // Function to navigate inside the shell
+        window.shellNavigate = function (path) {
+            if (!path) return;
+
+            // Show loader and prepare frame for fade-in
+            frameLoader.className = 'active';
+            contentFrame.className = '';
+
+            // Normalize path
+            var targetPath = path;
+            if (path === 'index.html' || path === '/') {
+                targetPath = 'A-data/dashboard.html';
+            }
+
+            window.__SHELL_ACTIVE_PATH = targetPath;
+            try {
+                sessionStorage.setItem('shellActivePath', targetPath);
+            } catch (e) { }
+
+            if (window.NavbarManager && typeof window.NavbarManager.render === 'function') {
+                window.NavbarManager.render();
+            }
+
+            contentFrame.src = targetPath;
+        };
+
+        // Handle iframe load
+        contentFrame.onload = function () {
+            frameLoader.className = '';
+            contentFrame.className = 'loaded'; // Fade in effect
+
+            // Sync Title
+            try {
+                if (contentFrame.contentDocument && contentFrame.contentDocument.title) {
+                    document.title = contentFrame.contentDocument.title + ' - إدارتي+';
+                }
+            } catch (e) {
+                // Ignore cross-origin errors if any
+            }
+        };
+
+        // Initial Load
+        document.addEventListener('DOMContentLoaded', function () {
+            // Default to dashboard or requested page if hash exists
+            var startPath = 'A-data/dashboard.html';
+
+            // Optional: Support deep linking via hash
+            if (window.location.hash) {
+                var hashPath = window.location.hash.substring(1);
+                if (hashPath) startPath = hashPath;
+            }
+
+            try {
+                var savedShellPath = sessionStorage.getItem('shellActivePath');
+                // Force reset if stuck on supervision_lists from previous session
+                if (savedShellPath && savedShellPath.indexOf('supervision_lists.html') !== -1) {
+                    sessionStorage.removeItem('shellActivePath');
+                    savedShellPath = null;
+                }
+                if (savedShellPath) startPath = savedShellPath;
+            } catch (e) { }
+
+            window.shellNavigate(startPath);
+        });
+
+        // Listen for internal navigation messages from sub-pages
+        window.addEventListener('message', function (event) {
+            if (event.data && event.data.type === 'navigate') {
+                window.shellNavigate(event.data.path);
+            }
+        });
+    </script>
+
+    <!-- React & Navbar Dependencies -->
+    <script src="A-data/assets/js/react-polyfills.js"></script>
+    <script src="A-data/assets/js/react.production.min.js"></script>
+    <script src="A-data/assets/js/react-dom.production.min.js"></script>
+    <script src="A-data/assets/js/navbar_manager.js"></script>
+    <script src="A-data/assets/js/navbar_fix.js"></script>
+</body>
+
+</html>

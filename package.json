@@ -1,0 +1,22 @@
+{
+  "name": "idara-plus",
+  "version": "2.2.10",
+  "description": "Idara+ Application",
+  "main": "main.js",
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
+    "@tanstack/table-core": "^8.21.3",
+    "googleapis": "^171.4.0",
+    "jsbarcode": "^3.12.1",
+    "jsdom": "^29.1.1",
+    "nodemailer": "^8.0.3",
+    "pdf-parse": "^1.1.1",
+    "puppeteer-core": "^24.40.0",
+    "qrcode": "^1.5.4",
+    "sqlite3": "^5.1.7",
+    "sweetalert2": "^11.26.19",
+    "xlsx": "^0.18.5"
+  }
+}
