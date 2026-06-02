@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إحصائيات الغياب</title>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+    <style>
+        .stats-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .stats-title {
+            font-size: 1.2em;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* Grid for Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-item {
+            background: var(--card-bg);
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .summary-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin: 10px 0;
+        }
+
+        .summary-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        /* Table Styles */
+        .modern-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+
+        .modern-table th,
+        .modern-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .modern-table th {
+            background-color: #34495e;
+            color: white;
+            font-weight: 500;
+        }
+
+        .modern-table tr:hover {
+            background-color: #f5f6fa;
+        }
+
+        .search-box {
+            padding: 8px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 300px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-box:focus {
+            border-color: var(--secondary-color);
+        }
+
+        /* Level Stats Specific */
+        .level-row {
+            font-weight: bold;
+            background-color: #ecf0f1;
+        }
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+
+    <!-- Navigation Buttons -->
+    <div class="stats-container" style="padding-bottom: 0;">
+        <div class="stats-card"
+            style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; padding: 15px; background: var(--card-bg);">
+            <a href="#classStatsSection" class="btn-analyze"
+                style="text-decoration: none; font-size: 0.95em; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-chart-pie"></i> إحصائيات الأقسام
+            </a>
+            <a href="#streamStatsCard" id="navStreamStats" class="btn-analyze"
+                style="text-decoration: none; font-size: 0.95em; display: none; align-items: center; gap: 8px;">
+                <i class="fas fa-layer-group"></i> إحصائيات الشعب
+            </a>
+            <a href="#studentStatsSection" class="btn-analyze"
+                style="text-decoration: none; font-size: 0.95em; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-users"></i> تفاصيل التلاميذ
+            </a>
+        </div>
+    </div>
+
+    <div class="stats-container">
+        <!-- Date Filter Control Bar -->
+        <div class="stats-card" id="filterControls">
+            <div class="stats-header" style="border-bottom: none; padding-bottom: 0; margin-bottom: 0;">
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; width: 100%;">
+                    <div class="stats-title">📅 تخصيص الفترة:</div>
+
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label>من:</label>
+                        <input type="date" id="startDate" class="search-box" style="width: auto; padding: 5px 10px;">
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label>إلى:</label>
+                        <input type="date" id="endDate" class="search-box" style="width: auto; padding: 5px 10px;">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="applyDateFilter()"
+                        style="margin-right: auto; padding: 8px 15px; background: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        تحديث الإحصائيات
+                    </button>
+
+                    <button class="btn btn-success" onclick="printStatsReport()"
+                        style="padding: 8px 15px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        🖨️ طباعة التقرير
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-label">إجمالي الغيابات (تلميذ)</div>
+                <div class="summary-value" id="totalAbsences">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">إجمالي الساعات الضائعة</div>
+                <div class="summary-value" id="totalHours">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">أكثر مستوى غياباً</div>
+                <div class="summary-value" id="mostAbsentLevel">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">أكثر قسم غياباً</div>
+                <div class="summary-value" id="mostAbsentClass">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">عدد التلاميذ الغائبين</div>
+                <div class="summary-value" id="uniqueAbsentStudents">-</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">متوسط الغياب لكل تلميذ غائب</div>
+                <div class="summary-value" id="avgAbsencesPerAbsentStudent">-</div>
+            </div>
+        </div>
+
+        <!-- Section 1: Stats by Level/Class -->
+        <div class="stats-card" id="classStatsSection">
+            <div class="stats-header">
+                <div class="stats-title">📊 إحصائيات الغيابات حسب المستوى والقسم</div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="modern-table" id="classStatsTable">
+                    <thead>
+                        <tr>
+                            <th>المستوى</th>
+                            <th id="classStreamHeader" style="display:none;">الشعبة</th>
+                            <th>القسم</th>
+                            <th>عدد التلاميذ</th>
+                            <th>عدد الغيابات (مرات)</th>
+                            <th>معدل الغياب (تلميذ/مرة)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 1.5: Stream Stats (Secondary Only) -->
+        <div class="stats-card" id="streamStatsCard" style="display: none;">
+            <div class="stats-header">
+                <div class="stats-title">📚 إحصائيات الغيابات حسب الشعبة</div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="modern-table" id="streamStatsTable">
+                    <thead>
+                        <tr>
+                            <th>المستوى</th>
+                            <th>الشعبة</th>
+                            <th>عدد التلاميذ</th>
+                            <th>عدد الغيابات (مرات)</th>
+                            <th>معدل الغياب (تلميذ/مرة)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 2: Student Details -->
+        <div class="stats-card" id="studentStatsSection">
+            <div class="stats-header">
+                <div class="stats-title">👨‍🎓 تفاصيل غيابات التلاميذ (أيام وساعات)</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="statsStatusSelect" class="search-box" style="width: 140px; padding: 5px;" onchange="applyDateFilter()">
+                        <option value="active">النشطين فقط</option>
+                        <option value="struck_off">المشطوبين فقط</option>
+                        <option value="all">كل التلاميذ</option>
+                    </select>
+                    <select id="statsLevelSelect" class="search-box" style="width: 120px; padding: 5px;"
+                        onchange="loadClassesForStats('level')">
+                        <option value="">-- المستوى --</option>
+                        <option value="أولى متوسط">أولى متوسط</option>
+                        <option value="ثانية متوسط">ثانية متوسط</option>
+                        <option value="ثالثة متوسط">ثالثة متوسط</option>
+                        <option value="رابعة متوسط">رابعة متوسط</option>
+                    </select>
+                    <select id="statsStreamSelect" class="search-box" style="width: 150px; padding: 5px; display: none;"
+                        onchange="loadClassesForStats('stream')">
+                        <option value="">-- الشعبة --</option>
+                    </select>
+                    <select id="statsClassSelect" class="search-box" style="width: 120px; padding: 5px;"
+                        onchange="filterStudentStatsByClass()">
+                        <option value="">-- القسم --</option>
+                    </select>
+                    <input type="text" class="search-box" id="studentSearch" placeholder="🔍 بحث عن تلميذ..."
+                        style="width: 200px;">
+                    <button class="btn btn-success" onclick="printStudentDetailsReport()"
+                        style="padding: 5px 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer;">🖨️
+                        طباعة القائمة</button>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto; max-height: 500px; overflow-y: auto;">
+                <table class="modern-table">
+                    <thead style="position: sticky; top: 0;">
+                        <tr>
+                            <th>الرتبة</th>
+                            <th>اللقب والاسم</th>
+                            <th>المستوى</th>
+                            <th id="studentStreamHeader" style="display:none;">الشعبة</th>
+                            <th>القسم</th>
+                            <th style="cursor: pointer;" onclick="sortStudentStats('absenceCount')">عدد الغيابات <span
+                                    id="sortIcon_absenceCount" style="font-size: 0.8em; opacity: 0.5;">↕</span></th>
+                            <th>مجموع الساعات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentStatsBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="../../assets/js/sweetalert2.all.min.js"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+    <script src="absence_stats.js"></script>
+</body>
+
+</html>

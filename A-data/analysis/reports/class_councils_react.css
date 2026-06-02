@@ -1,0 +1,697 @@
+.student-detail-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.76);
+    z-index: 10020;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0 8px 8px;
+    backdrop-filter: blur(8px);
+}
+
+#classCouncilsStudentModalMount,
+#classCouncilsStudentModalMount #studentModal {
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    pointer-events: none;
+}
+
+#classCouncilsStudentModalMount #studentModal {
+    pointer-events: auto;
+}
+
+#studentModalReactRoot {
+    width: 100%;
+    height: 100%;
+}
+
+.student-detail-modal-content {
+    width: calc(100vw - 20px) !important;
+    max-width: 1560px !important;
+    min-height: calc(100vh - 8px);
+    max-height: calc(100vh - 8px);
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 28px;
+    background:
+        radial-gradient(circle at top right, rgba(52, 152, 219, 0.12), transparent 26%),
+        linear-gradient(180deg, #fdfefe 0%, #f5f8fc 100%);
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    box-shadow: 0 34px 80px rgba(15, 23, 42, 0.28);
+    display: flex;
+    flex-direction: column;
+}
+
+.student-detail-modal-header {
+    background: linear-gradient(135deg, #162033 0%, #1f4f82 52%, #3f9de3 100%);
+    color: #fff;
+    padding: 10px 20px 9px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.student-detail-eyebrow {
+    font-size: 0.8rem;
+    opacity: 0.86;
+    margin-bottom: 2px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.student-detail-title {
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 900;
+}
+
+.student-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.student-detail-title-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    min-width: 0;
+    gap: 2px;
+}
+
+.student-detail-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.student-detail-chip.muted {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.student-detail-chip.gender {
+    background: rgba(59, 130, 246, 0.14);
+    color: #1d4ed8;
+}
+
+.student-detail-chip.decision {
+    background: rgba(22, 163, 74, 0.16);
+    color: #166534;
+}
+
+.student-detail-chip.trend {
+    color: #fff;
+}
+
+.student-detail-chip.trend.up {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.student-detail-chip.trend.down {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+.student-detail-chip.trend.steady {
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+}
+
+.student-detail-close {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-size: 1.45rem;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.student-detail-close:hover {
+    transform: scale(1.04);
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.student-detail-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px 22px 22px;
+    overflow-y: auto;
+}
+
+.student-detail-overview {
+    display: grid;
+    gap: 22px;
+    align-items: start;
+}
+
+.student-detail-overview.has-photo {
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+}
+
+.student-detail-overview.no-photo {
+    grid-template-columns: 1fr;
+}
+
+.student-detail-photo-column,
+.student-detail-stats-column {
+    min-width: 0;
+}
+
+.student-photo-card,
+.student-average-card,
+.student-identity-card,
+.student-summary-card,
+.student-photo-compact-card,
+.student-subjects-table {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.student-photo-card {
+    position: relative;
+    min-height: 360px;
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 34%),
+        linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.student-photo-image {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    object-fit: cover;
+    display: block;
+}
+
+.student-photo-fallback {
+    width: 132px;
+    height: 132px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1f4f82, #4da3e5);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.6rem;
+    font-weight: 900;
+    box-shadow: 0 18px 34px rgba(37, 99, 235, 0.24);
+}
+
+.student-photo-fallback.compact {
+    width: 88px;
+    height: 88px;
+    font-size: 2rem;
+}
+
+.student-photo-loading-badge {
+    position: absolute;
+    inset-inline: 14px;
+    bottom: 14px;
+    border-radius: 14px;
+    padding: 10px 12px;
+    text-align: center;
+    font-size: 0.92rem;
+    font-weight: 700;
+    background: rgba(15, 23, 42, 0.78);
+    color: #fff;
+}
+
+.student-photo-compact-card {
+    border-radius: 22px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.student-inline-photo-status {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: rgba(37, 99, 235, 0.05);
+    border: 1px dashed rgba(96, 165, 250, 0.5);
+}
+
+.student-inline-photo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.student-inline-photo-title {
+    color: #1e3a8a;
+    font-size: 0.98rem;
+    font-weight: 900;
+}
+
+.student-inline-photo-caption {
+    color: #475569;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.student-photo-compact-text {
+    color: #475569;
+    font-size: 0.96rem;
+    font-weight: 700;
+}
+
+.student-detail-stats-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.student-status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.student-identity-card {
+    border-radius: 22px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.student-identity-name {
+    color: #0f172a;
+    font-size: 1.3rem;
+    font-weight: 900;
+    margin-bottom: 2px;
+}
+
+.student-identity-subtitle {
+    color: #475569;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.student-identity-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.student-identity-meta-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.08);
+    color: #1e3a8a;
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.student-average-card {
+    border-radius: 22px;
+    padding: 18px;
+    border-width: 2px;
+}
+
+.student-average-label {
+    color: #64748b;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.student-average-value {
+    font-size: 3.4rem;
+    line-height: 1;
+    font-weight: 900;
+    margin: 10px 0 12px;
+}
+
+.student-average-appreciation {
+    display: inline-flex;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.96rem;
+}
+
+.student-average-trend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #475569;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.student-average-delta.up {
+    color: #15803d;
+}
+
+.student-average-delta.down {
+    color: #b91c1c;
+}
+
+.student-average-delta.steady {
+    color: #475569;
+}
+
+.student-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.student-summary-card {
+    border-radius: 18px;
+    padding: 14px;
+}
+
+.student-summary-label {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.student-summary-value {
+    color: #0f172a;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.student-detail-subjects-section {
+    min-width: 0;
+}
+
+.student-subjects-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.student-subjects-header h4 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.14rem;
+    font-weight: 900;
+}
+
+.student-subjects-hint {
+    color: #64748b;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.student-subjects-table-wrap {
+    overflow-x: auto;
+}
+
+.student-subjects-table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 22px;
+}
+
+.student-subject-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.student-subjects-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: linear-gradient(135deg, #16304f, #2563eb);
+    color: #fff;
+    padding: 14px 12px;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.student-subjects-table tbody td {
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+    text-align: center;
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.student-subjects-table tbody tr:nth-child(even) td {
+    background: rgba(248, 250, 252, 0.88);
+}
+
+.student-subjects-table tbody tr:hover td {
+    background: rgba(219, 234, 254, 0.34);
+}
+
+.subject-table-subject-cell {
+    text-align: right !important;
+    font-weight: 900 !important;
+    min-width: 180px;
+}
+
+.subject-table-previous-cell,
+.subject-table-delta-cell,
+.subject-table-hint-cell {
+    white-space: nowrap;
+}
+
+.student-subjects-empty {
+    border-radius: 20px;
+    border: 1px dashed rgba(148, 163, 184, 0.8);
+    background: rgba(248, 250, 252, 0.9);
+    padding: 28px 20px;
+    text-align: center;
+    color: #64748b;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .student-detail-modal-content {
+    background:
+        radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 28%),
+        linear-gradient(180deg, #0f1724 0%, #111c2b 100%);
+    border-color: rgba(71, 85, 105, 0.82);
+}
+
+[data-theme="dark"] .student-photo-card,
+[data-theme="dark"] .student-average-card,
+[data-theme="dark"] .student-identity-card,
+[data-theme="dark"] .student-summary-card,
+[data-theme="dark"] .student-photo-compact-card,
+[data-theme="dark"] .student-subjects-table {
+    background: rgba(11, 18, 29, 0.9);
+    border-color: rgba(71, 85, 105, 0.88);
+    box-shadow: 0 16px 34px rgba(2, 6, 23, 0.38);
+}
+
+/* === Dark Mode: Chips & Badges === */
+[data-theme="dark"] .student-detail-chip {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .student-detail-chip.gender {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.25);
+}
+
+[data-theme="dark"] .student-detail-chip.decision {
+    color: #86efac;
+    background: rgba(34, 197, 94, 0.22);
+}
+
+[data-theme="dark"] .student-detail-chip.muted {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.15);
+}
+
+/* === Dark Mode: Identity Card === */
+[data-theme="dark"] .student-identity-name {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .student-identity-subtitle {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .student-identity-meta-item {
+    background: rgba(96, 165, 250, 0.15);
+    color: #93c5fd;
+}
+
+/* === Dark Mode: Photo States === */
+[data-theme="dark"] .student-photo-compact-text {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .student-inline-photo-status {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(96, 165, 250, 0.35);
+}
+
+[data-theme="dark"] .student-inline-photo-title {
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .student-inline-photo-caption {
+    color: #94a3b8;
+}
+
+/* === Dark Mode: Average Card === */
+[data-theme="dark"] .student-average-label {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .student-average-trend {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .student-average-delta.up {
+    color: #4ade80;
+}
+
+[data-theme="dark"] .student-average-delta.down {
+    color: #f87171;
+}
+
+[data-theme="dark"] .student-average-delta.steady {
+    color: #94a3b8;
+}
+
+/* === Dark Mode: Summary Cards === */
+[data-theme="dark"] .student-summary-label {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .student-summary-value {
+    color: #f1f5f9;
+}
+
+/* === Dark Mode: Section Headers === */
+[data-theme="dark"] .student-subjects-header h4 {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .student-subjects-hint {
+    color: #94a3b8;
+}
+
+/* === Dark Mode: Subject Table === */
+[data-theme="dark"] .student-subjects-table thead th {
+    background: linear-gradient(135deg, #0c1929, #1e40af);
+}
+
+[data-theme="dark"] .student-subjects-table tbody td {
+    color: #e2e8f0;
+    border-bottom-color: rgba(51, 65, 85, 0.7);
+}
+
+[data-theme="dark"] .student-subjects-table tbody tr:nth-child(even) td {
+    background: rgba(15, 23, 42, 0.6);
+}
+
+[data-theme="dark"] .student-subjects-table tbody tr:hover td {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="dark"] .subject-table-subject-cell {
+    color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .subject-table-previous-cell,
+[data-theme="dark"] .subject-table-delta-cell,
+[data-theme="dark"] .subject-table-hint-cell {
+    color: #cbd5e1;
+}
+
+/* === Dark Mode: Score Badge === */
+[data-theme="dark"] .student-subject-score {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* === Dark Mode: Empty State === */
+[data-theme="dark"] .student-subjects-empty {
+    color: #94a3b8;
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(71, 85, 105, 0.6);
+}
+
+/* === Dark Mode: Photo Card Background === */
+[data-theme="dark"] .student-photo-card {
+    background:
+        radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 34%),
+        linear-gradient(180deg, #0f1724 0%, #111c2b 100%);
+}
+
+@media (max-width: 1080px) {
+    .student-detail-overview.has-photo {
+        grid-template-columns: 1fr;
+    }
+
+    .student-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .student-detail-modal-overlay {
+        padding: 4px;
+    }
+
+    .student-detail-modal-content {
+        width: calc(100vw - 8px) !important;
+        min-height: calc(100vh - 8px);
+        max-height: calc(100vh - 8px);
+        border-radius: 20px;
+    }
+
+    .student-detail-modal-header {
+        padding: 10px 12px 8px;
+    }
+
+    .student-detail-modal-body {
+        padding: 14px;
+    }
+
+    .student-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}

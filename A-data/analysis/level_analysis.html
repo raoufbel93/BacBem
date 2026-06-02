@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحليل المستويات</title>
+    <script src="../assets/js/chart.js"></script>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../core/academic-utils.js"></script>
+    <script src="../core/storage.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => Auth.checkAuth());
+    </script>
+    <style>
+        .level-dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .top-students-container {
+            margin-top: 20px;
+        }
+
+        .classes-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media print {
+            .classes-grid {
+                display: block;
+            }
+
+            .class-card {
+                page-break-inside: avoid;
+                margin-bottom: 20px;
+            }
+        }
+
+        /* --- Premium UI Enhancements (Screen Only) --- */
+        @media screen {
+            .dashboard-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            .dashboard.level-dashboard .card,
+            .dashboard.level-dashboard .class-card {
+                padding: 24px;
+                border-radius: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.6);
+                background: var(--card-bg);
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+
+            .dashboard.level-dashboard .card:hover,
+            .dashboard.level-dashboard .class-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+            }
+
+            .dashboard.level-dashboard .card h3 {
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 10px;
+                margin-bottom: 18px;
+                color: var(--primary-color);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 800;
+                font-size: 1.15rem;
+            }
+
+            .dashboard.level-dashboard .card h3::before {
+                content: '';
+                display: inline-block;
+                width: 6px;
+                height: 22px;
+                background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+                border-radius: 4px;
+            }
+
+            .dashboard.level-dashboard .data-table {
+                border-collapse: separate;
+                border-spacing: 0;
+                width: 100%;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+                border: 1px solid var(--border-color);
+            }
+
+            .dashboard.level-dashboard .data-table thead th {
+                background: var(--bg-color) !important;
+                color: var(--primary-color) !important;
+                font-weight: 700;
+                padding: 12px 14px;
+                border: none;
+                border-bottom: 1px solid var(--border-color);
+                font-size: 0.85rem;
+            }
+
+            .dashboard.level-dashboard .data-table tbody td {
+                padding: 10px 14px;
+                border: none;
+                border-bottom: 1px solid var(--border-color);
+                color: var(--primary-color);
+                transition: background 0.2s ease;
+                font-size: 0.85rem;
+            }
+
+            .dashboard.level-dashboard .data-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+            .dashboard.level-dashboard .data-table tbody tr:hover td {
+                background: var(--bg-color);
+            }
+
+            /* Override hardcoded inline backgrounds that look harsh on screen */
+            .dashboard.level-dashboard .data-table tbody td[style*="background:#eaf2f8"],
+            .dashboard.level-dashboard .data-table tbody td[style*="background:#f2f4f4"],
+            .dashboard.level-dashboard .data-table tbody td[style*="background:#ecf0f1"] {
+                background: transparent !important;
+            }
+
+            .dashboard.level-dashboard .data-table tbody tr td:nth-child(even) {
+                background: rgba(248, 250, 252, 0.4);
+            }
+
+            .chart-container {
+                background: var(--card-bg);
+                border-radius: 20px;
+                padding: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+                border: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text"></div>
+    </div>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div style="text-align: right;">
+                <h1><span data-icon="chart"></span> تحليل نتائج المستويات</h1>
+                <p>لوحة تحكم شاملة لنتائج المستوى الدراسي</p>
+            </div>
+        </header>
+
+        <!-- Filter Card -->
+        <section class="filter-card"
+            style="background: var(--bg-color); padding: 6px 8px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; direction: rtl;">
+            <div class="controls-container" style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+
+                <!-- Year Filter Group -->
+                <div class="filter-group"
+                    style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📅
+                        السنة:</label>
+                    <select id="yearSelect"
+                        style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;"></select>
+                </div>
+
+                <!-- Trimester Filter Group -->
+                <div class="filter-group"
+                    style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🗓️
+                        الفصل:</label>
+                    <select id="trimesterSelect"
+                        style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;">
+                        <option value="" selected disabled>--</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="annual">📊 سنوي</option>
+                    </select>
+                </div>
+
+                <!-- Level Filter Group -->
+                <div class="filter-group"
+                    style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🎓
+                        المستوى:</label>
+                    <select id="levelSelect"
+                        style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;"></select>
+                </div>
+
+                <!-- Stream Filter Group -->
+                <div class="filter-group" id="streamGroup"
+                    style="display: none; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;"><span
+                            data-icon="branch"></span> الشعبة:</label>
+                    <select id="streamSelect"
+                        style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;">
+                        <option value="">-- كل الشعب --</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="printLevelReportToNewTab()" class="btn-analyze"
+                style="background-color: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.75rem; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.15); margin-right: auto;">
+                <span>طباعة التقرير</span>
+                <span data-icon="print">🖨️</span>
+            </button>
+        </section>
+
+        <section class="dashboard level-dashboard">
+
+            <!-- 1. General Stats & Chart -->
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>التعداد العام</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>الفئة</th>
+                                <th>عدد التلاميذ</th>
+                                <th>ناجحون</th>
+                                <th>راسبون</th>
+                                <th>نسبة النجاح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="generalStatsBody">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="levelChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 2. Subject Stats -->
+            <div class="card">
+                <h3>عدد التلاميذ المتحصلين على معدل فصلي >= 10 حسب المواد</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th>المادة</th>
+                            <th>ناجحون</th>
+                            <th>راسبون</th>
+                            <th>المعدل</th>
+                            <th>نسبة النجاح</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subjectStatsBody">
+                        <!-- JS will populate -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 3. Top Students -->
+            <div class="card top-students-container">
+                <h3>التلاميذ الأوائل (أعلى المعدلات في المستوى)</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th>اللقب والاسم</th>
+                            <th>تاريخ الميلاد</th>
+                            <th>المستوى</th>
+                            <th id="topStudentsStreamHeader" style="display:none;">الشعبة</th>
+                            <th>معدل الفصل</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topStudentsBody">
+                        <!-- JS will populate -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 4. Per Class Breakdown -->
+            <div id="classesBreakdown" class="classes-grid">
+                <!-- JS will generate a card/table for each class -->
+            </div>
+
+        </section>
+
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script src="../assets/js/subject_manager.js"></script>
+    <script src="../assets/js/exempt_subjects_helper.js"></script>
+    <script src="level_analysis.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script src="../assets/js/fullscreen_toggle.js"></script>
+</body>
+
+</html>

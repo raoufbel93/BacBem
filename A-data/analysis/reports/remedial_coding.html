@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ترميز المستدركين</title>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => Auth.checkAuth());
+    </script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #2563eb;
+            --accent: #16a34a;
+            --warning: #f59e0b;
+            --danger: #dc2626;
+            --card-bg: rgba(255, 255, 255, 0.97);
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --soft-border: rgba(148, 163, 184, 0.22);
+        }
+
+        body {
+            background: var(--bg-color);
+            min-height: 100vh;
+            font-family: 'Cairo', sans-serif;
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 16px 20px 28px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 20px;
+            padding: 18px 24px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+            border: 1px solid var(--soft-border);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .header-info h1 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .header-info h1 span[data-icon] {
+            color: var(--secondary);
+            background: rgba(37, 99, 235, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .header-info p {
+            margin: 6px 0 0 0;
+            color: var(--text-light);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(165px, 1fr));
+            gap: 10px;
+            align-items: stretch;
+            min-width: min(100%, 640px);
+            background: rgba(241, 245, 249, 0.82);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 16px;
+            padding: 12px;
+        }
+
+        .header-actions::before {
+            content: "إجراءات الصفحة";
+            grid-column: 1 / -1;
+            color: var(--primary);
+            font-size: 0.86rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .action-cluster {
+            background: rgba(241, 245, 249, 0.82);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 16px;
+            padding: 12px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .action-cluster-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .action-cluster-title {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .action-cluster-note {
+            color: var(--text-light);
+            font-size: 0.72rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .action-buttons-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .action-buttons-grid.primary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-buttons-grid.print-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .btn-action {
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 0.86rem;
+            cursor: pointer;
+            min-height: 42px;
+            padding: 0 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            color: white;
+            text-align: center;
+            width: 100%;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
+        }
+
+        .btn-regenerate {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 8px 18px rgba(245, 158, 11, 0.22);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+        }
+
+        .btn-action:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .note-card,
+        .filter-card,
+        .summary-grid,
+        .preview-card,
+        .table-card,
+        .empty-state,
+        .wait-message {
+            border: 1px solid var(--soft-border);
+            box-shadow: 0 8px 26px rgba(15, 23, 42, 0.04);
+        }
+
+        .note-card {
+            background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+            border-right: 5px solid #f97316;
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            color: #9a3412;
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .filter-card {
+            background: var(--bg-color);
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 22px;
+        }
+
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            direction: rtl;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            padding: 7px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--soft-border);
+            min-height: 42px;
+            box-sizing: border-box;
+        }
+
+        .filter-group label {
+            margin: 0;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            border: none;
+            background: transparent;
+            font-size: 0.84rem;
+            color: var(--primary-color) !important;
+            padding: 0 6px !important;
+            font-weight: 700;
+            outline: none;
+            min-width: 78px;
+            height: 30px !important;
+            line-height: 30px !important;
+            box-sizing: border-box;
+        }
+
+        .filter-group input {
+            background: rgba(37, 99, 235, 0.05);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 1px solid var(--soft-border);
+        }
+
+        .summary-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            flex: 0 0 auto;
+        }
+
+        .summary-card strong {
+            display: block;
+            font-size: 1.45rem;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .summary-card span {
+            color: var(--text-light);
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .results-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .preview-card,
+        .table-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 18px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        }
+
+        .section-header h3 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1rem;
+            font-weight: 900;
+        }
+
+        .section-header p {
+            margin: 4px 0 0 0;
+            color: var(--text-light);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .prefix-list,
+        .security-list {
+            padding: 16px 18px 18px;
+        }
+
+        .prefix-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .prefix-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.08);
+            color: #1d4ed8;
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .security-list ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 10px;
+        }
+
+        .security-list li {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            color: var(--text-dark);
+            font-size: 0.86rem;
+            font-weight: 700;
+            line-height: 1.6;
+        }
+
+        .security-list li span[data-icon] {
+            color: var(--secondary);
+            margin-top: 2px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .coding-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .coding-table th,
+        .coding-table td {
+            padding: 10px 9px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .coding-table th {
+            background: rgba(15, 23, 42, 0.03);
+            color: var(--primary);
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .coding-table td.name-cell {
+            text-align: right;
+            font-weight: 800;
+            min-width: 180px;
+        }
+
+        .secret-code {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 126px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            direction: ltr;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        .subject-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fdba74;
+            font-size: 0.76rem;
+            font-weight: 800;
+        }
+
+        .copy-btn {
+            border: none;
+            background: rgba(37, 99, 235, 0.1);
+            color: #1d4ed8;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
+        .empty-state,
+        .wait-message {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 42px 22px;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        .empty-state h3,
+        .wait-message h3 {
+            margin: 0 0 8px 0;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .empty-state p,
+        .wait-message p {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 1100px) {
+            .results-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions {
+                width: 100%;
+                min-width: 0;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 880px) {
+            .header-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .header-actions .btn-action {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body data-remedial-page-mode="codes">
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <header class="page-header">
+            <div class="header-info">
+                <h1><span data-icon="shield"></span> ترميز المستدركين</h1>
+                <p>إنشاء أكواد سرية ثابتة للمستدركين، مع كشف سري داخلي وبطاقات طباعة مجهولة للتصحيح.</p>
+            </div>
+            <div class="header-actions">
+                <button id="generateCodesBtn" class="btn-action btn-generate">
+                    <span data-icon="wand-2"></span> توليد وتثبيت الأكواد
+                </button>
+                <button id="regenerateCodesBtn" class="btn-action btn-regenerate">
+                    <span data-icon="refresh-cw"></span> إعادة التوليد
+                </button>
+                <button id="printSecretListBtn" data-print-premium="true" class="btn-action btn-print" disabled>
+                    <span data-icon="list"></span> طباعة الكشف السري
+                </button>
+                <button id="printAnonymousCardsBtn" data-print-premium="true" class="btn-action btn-print" disabled>
+                    <span data-icon="badge"></span> طباعة بطاقات الأكواد
+                </button>
+                <button id="printScoreListsBtn" data-print-premium="true" class="btn-action btn-print" disabled>
+                    <span data-icon="clipboard-list"></span> قوائم الحجز للمصحح
+                </button>
+                <button id="printAdminScoreListsBtn" data-print-premium="true" class="btn-action btn-print" disabled>
+                    <span data-icon="files"></span> قوائم الحجز الإدارية
+                </button>
+            </div>
+        </header>
+
+        <div class="note-card">
+            <span data-icon="alert-triangle"></span>
+            هذه الصفحة تحفظ الأكواد محليًا داخل التطبيق حتى تبقى ثابتة لنفس السنة الدراسية. لا تشارك الكشف السري إلا مع الجهة المخولة.
+        </div>
+
+        <section class="filter-card">
+            <div class="controls-container">
+                <div class="filter-group">
+                    <label><span data-icon="calendar"></span> السنة:</label>
+                    <select id="codingYearSelect"></select>
+                </div>
+
+                <div class="filter-group">
+                    <label><span data-icon="graduation-cap"></span> المستوى:</label>
+                    <select id="codingLevelSelect">
+                        <option value="all">جميع المستويات</option>
+                    </select>
+                </div>
+
+                <div class="filter-group" id="codingStreamGroup" style="display:none;">
+                    <label><span data-icon="branch"></span> الشعبة:</label>
+                    <select id="codingStreamSelect">
+                        <option value="">جميع الشعب</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label><span data-icon="layout-grid"></span> القسم:</label>
+                    <select id="codingClassSelect">
+                        <option value="all">جميع الأقسام</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label><span data-icon="binary"></span> عدد الأرقام:</label>
+                    <input id="codingDigitsInput" type="number" min="3" max="6" value="4">
+                </div>
+
+                <div class="filter-group">
+                    <label><span data-icon="hash"></span> البادئة:</label>
+                    <select id="codingPrefixModeSelect">
+                        <option value="auto">ذكية تلقائية</option>
+                        <option value="custom">مخصصة</option>
+                    </select>
+                </div>
+
+                <div class="filter-group hidden" id="customPrefixGroup">
+                    <label><span data-icon="pencil"></span> البادئة المخصصة:</label>
+                    <input id="customPrefixInput" type="text" maxlength="8" value="R">
+                </div>
+            </div>
+        </section>
+
+        <section class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-icon" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);"><span data-icon="users"></span></div>
+                <div>
+                    <strong id="codingStudentsCount">0</strong>
+                    <span>تلميذ ضمن التحديد الحالي</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon" style="background:linear-gradient(135deg,#16a34a,#15803d);"><span data-icon="shield-check"></span></div>
+                <div>
+                    <strong id="codingGeneratedCount">0</strong>
+                    <span>رمز محفوظ ومتاح</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);"><span data-icon="badge"></span></div>
+                <div>
+                    <strong id="codingPrefixesCount">0</strong>
+                    <span>عدد البادئات النشطة</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);"><span data-icon="layers-3"></span></div>
+                <div>
+                    <strong id="codingSubjectsCount">0</strong>
+                    <span>مجموع مواد الاستدراك</span>
+                </div>
+            </div>
+        </section>
+
+        <div id="codingWaitArea" class="wait-message">
+            <h3>جاري تجهيز بيانات ترميز المستدركين...</h3>
+            <p>يتم الآن تحميل المستدركين وربط الأكواد المحفوظة للسنة الدراسية المختارة.</p>
+        </div>
+
+        <div id="codingResults" class="results-layout hidden">
+            <section class="table-card">
+                <div class="section-header">
+                    <div>
+                        <h3>الكشف السري</h3>
+                        <p>القائمة الداخلية التي تربط كل تلميذ برمزه السري والمواد المعنية بالاستدراك.</p>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="coding-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>الرمز السري</th>
+                                <th>الاسم واللقب</th>
+                                <th>المستوى</th>
+                                <th>الشعبة</th>
+                                <th>القسم</th>
+                                <th>المعدل</th>
+                                <th>مواد الاستدراك</th>
+                                <th>نسخ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="codingTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="../../assets/js/subject_manager.js"></script>
+    <script src="../../assets/js/exempt_subjects_helper.js"></script>
+    <script src="../../assets/js/sweetalert2.all.min.js"></script>
+    <script src="remedial_analysis.js?v=20260531-extracted-subjects"></script>
+    <script src="remedial_coding.js"></script>
+    <script src="../../assets/js/fullscreen_toggle.js"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+</body>
+
+</html>

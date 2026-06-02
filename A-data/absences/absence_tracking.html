@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متابعة الغيابات - تحليل النتائج</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+
+    <!-- Grid.js Styles -->
+    <link rel="stylesheet" href="../assets/css/mermaid.min.css">
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../assets/js/xlsx.full.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../core/academic-utils.js"></script>
+    <script src="../core/storage.js"></script>
+    <script>
+    </script>
+    <script src="../assets/js/subject_manager.js"></script>
+    <script src="absence_tracking_state.js"></script>
+    <script src="absence_tracking_canteen.js"></script>
+    <script src="absence_tracking_selection.js"></script>
+    <link rel="stylesheet" href="absence_tracking.css">
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+
+    <div class="container no-print">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>📝 متابعة الغيابات</h1>
+            <div class="header-actions">
+                <button class="btn btn-outline" onclick="openModal('helpModal')"
+                    style="background-color: #f1c40f; color: var(--primary-color); border-color: #f39c12; font-weight: bold;">❓
+                    دليل الاستخدام</button>
+                <button class="btn btn-outline" onclick="openReportSettingsModal()">⚙️ إعدادات التقرير</button>
+                <button class="btn btn-outline" onclick="viewSavedAbsences()">📋 الغيابات المحفوظة</button>
+            </div>
+        </div>
+
+        <!-- Report Controls Card -->
+        <div class="main-card" style="margin-bottom: 20px;">
+            <div class="top-bar">
+                <div class="top-bar-controls">
+                    <div>
+                        <label style="font-weight: 500; margin-left: 10px; color: #7f8c8d;">📅 التاريخ:</label>
+                        <span id="dayOfDay"
+                            style="font-weight: bold; color: var(--secondary-color); margin-left: 10px;"></span>
+                        <input type="date" id="absenceDate" class="date-input" onchange="updateDayName()"
+                            autocomplete="off">
+                    </div>
+                </div>
+                <div class="top-bar-buttons">
+                    <div class="report-number-group"
+                        style="display: flex; align-items: center; gap: 8px; background: var(--bg-color); padding: 8px 12px; border-radius: 8px; border: 1px solid #e0e0e0;">
+                        <label for="reportNumber"
+                            style="font-weight: 500; color: #7f8c8d; white-space: nowrap; font-size: 0.9rem;">رقم
+                            التقرير:</label>
+                        <input type="number" id="reportNumber" class="date-input"
+                            style="width: 80px; text-align: center; font-weight: bold;" min="1"
+                            onchange="saveReportNumber()">
+                    </div>
+                    <button id="btnActionReport" class="btn" onclick="saveSavedAbsenceData(true)"
+                        style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; min-width: 140px;">
+                        💾 إنشاء تقرير
+                    </button>
+                    <div id="saveStatusIndicator"
+                        style="display: inline-flex; align-items: center; gap: 8px; min-width: 170px; padding: 8px 12px; border-radius: 999px; border: 1px solid #d6eaf8; background: #eef7fd; color: #21618c; font-size: 0.9rem; font-weight: 600;">
+                        <span id="saveStatusDot"
+                            style="width: 10px; height: 10px; border-radius: 50%; background: #3498db; flex-shrink: 0;"></span>
+                        <span id="saveStatusText">جاهز</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateGeneralSupervisorReport()">📄 طباعة التقرير
+                        اليومي</button>
+                </div>
+            </div>
+
+            <!-- Report Log Section -->
+            <div class="report-log-section">
+                <div class="report-log-header"
+                    style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h4>📋 سجل التقارير</h4>
+                        <span id="reportLogCount" style="font-size: 0.8rem; color: #95a5a6;"></span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-outline" onclick="openHolidaysModal()"
+                            style="padding: 4px 10px; font-size: 0.85rem; border-color: var(--secondary-color); color: var(--secondary-color); background: transparent; border-radius: 4px; cursor: pointer;">
+                            📅 إدارة العطل
+                        </button>
+                        <button id="btnToggleLog" class="btn btn-outline" onclick="toggleReportLog()"
+                            style="padding: 4px 10px; font-size: 0.85rem; border-color: #7f8c8d; color: #7f8c8d; background: transparent; border-radius: 4px; cursor: pointer;">
+                            👁️ إخفاء السجل
+                        </button>
+                    </div>
+                </div>
+                <div id="reportLogList" class="report-log-list">
+                    <div class="report-log-empty">جاري تحميل سجل التقارير...</div>
+                </div>
+                <button id="btnShowAllReports" class="btn-show-all-reports" onclick="toggleShowAllReports()"
+                    style="display: none;">
+                    📂 عرض جميع التقارير
+                </button>
+            </div>
+        </div>
+
+        <!-- Attendance Tracking Tabs Card -->
+        <div class="main-card">
+            <div class="tabs-container">
+                <div class="tabs-header">
+                    <button class="tab-btn active" data-tab="students" onclick="switchTab('students')">
+                        👥 غيابات التلاميذ
+                    </button>
+                    <button class="tab-btn" data-tab="teachers" onclick="switchTab('teachers')">
+                        👨‍🏫 غيابات الأساتذة
+                    </button>
+                    <button class="tab-btn" data-tab="supervisors" onclick="switchTab('supervisors')">
+                        👔 غيابات مشرفين/إداريين
+                    </button>
+                    <button class="tab-btn" data-tab="canteen" onclick="switchTab('canteen')">
+                        🍴 المطعم
+                    </button>
+                    <button class="tab-btn" data-tab="notes" onclick="switchTab('notes')">
+                        📝 ملاحظات/المرافق
+                    </button>
+                </div>
+
+                <!-- Tab 1: Students -->
+                <div class="tab-content active" id="tab-students">
+                    <div class="filter-row">
+                        <select class="filter-select" id="levelSelect" onchange="loadClasses()">
+                            <option value="">-- اختر المستوى --</option>
+                        </select>
+                        <select class="filter-select" id="streamSelect" style="display:none;" onchange="loadClasses()">
+                            <option value="">-- اختر الشعبة --</option>
+                        </select>
+                        <select class="filter-select" id="classSelect" onchange="loadStudentsTable()">
+                            <option value="">-- اختر القسم --</option>
+                        </select>
+                        <select class="filter-select" id="consecutiveFilter" onchange="loadStudentsTable()">
+                            <option value="">-- فلترة الأيام المتتالية --</option>
+                            <option value="1">يوم واحد فأكثر</option>
+                            <option value="2">يومان متتاليان</option>
+                            <option value="3">3 أيام متتالية فأكثر</option>
+                            <option value="7">أسبوع (7 أيام) فأكثر</option>
+                        </select>
+                        <div class="search-box">
+                            <input type="text" id="studentSearch" placeholder="بحث بالاسم أو اللقب..."
+                                onkeyup="filterStudentsTable()">
+                        </div>
+                    </div>
+
+                    <!-- Import Button moved -->
+
+                    <div class="stats-bar">
+                        <!-- Buttons Group -->
+                        <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-info" onclick="openImportModal()"
+                                style="background-color: #00b894; color: white; border: 1px solid #00a8ff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                ⏪ استيراد غيابات سابقة
+                            </button>
+                            <button class="btn btn-outline" onclick="openScheduleSettingsModal()"
+                                style="background-color: #ecf0f1; border: 1px solid #ced4da; color: var(--primary-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                ⚙️ الإعدادات
+                            </button>
+                            <button class="btn btn-warning" onclick="showCurrentAbsencesList()"
+                                style="background-color: #f39c12; color: white; border: 1px solid #e67e22; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                📋 الغائبين الحاليين
+                            </button>
+                        </div>
+                        <div class="stat-badge primary-stat">
+                            <span>👥 إجمالي التلاميذ:</span>
+                            <span id="totalStudents">0</span>
+                        </div>
+                        <div class="stat-badge danger-stat">
+                            <span>❌ الغائبون:</span>
+                            <span id="absentStudents">0</span>
+                        </div>
+                        <div class="stat-badge success-stat">
+                            <span>✅ الحاضرون:</span>
+                            <span id="presentStudents">0</span>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <div id="students-grid-wrapper"></div>
+                    </div>
+                    <!-- Pagination Controls -->
+                    <div id="paginationControls" class="pagination-controls"></div>
+                </div>
+
+                <!-- Tab 2: Teachers -->
+                <div class="tab-content" id="tab-teachers">
+                    <div class="filter-row">
+                        <div class="search-box">
+                            <input type="text" id="teacherSearch" placeholder="بحث بالاسم..."
+                                onkeyup="filterTeachersTable()">
+                        </div>
+                        <button class="btn btn-warning btn-sm" onclick="selectAllTeachers()">☑️ تحديد الكل</button>
+                        <button class="btn btn-secondary btn-sm" onclick="deselectAllTeachers()">⬜ إلغاء الكل</button>
+                    </div>
+
+                    <div class="stats-bar">
+                        <div class="stat-badge primary-stat">
+                            <span>👨‍🏫 إجمالي الأساتذة:</span>
+                            <span id="totalTeachers">0</span>
+                        </div>
+                        <div class="stat-badge danger-stat">
+                            <span>❌ الغائبون:</span>
+                            <span id="absentTeachers">0</span>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <div id="teachers-grid-wrapper"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Supervisors -->
+                <div class="tab-content" id="tab-supervisors">
+                    <div class="filter-row">
+                        <div class="search-box">
+                            <input type="text" id="supervisorSearch" placeholder="بحث بالاسم..."
+                                onkeyup="filterSupervisorsTable()">
+                        </div>
+                        <input type="file" id="supervisorFileInput" accept=".xlsx,.xls" style="display: none;"
+                            onchange="handleSupervisorFileSelect(event)">
+                        <button class="btn btn-primary btn-sm"
+                            onclick="document.getElementById('supervisorFileInput').click()">
+                            📥 استيراد من Excel
+                        </button>
+                        <button class="btn btn-warning btn-sm" onclick="openSupervisorStatsModal()">📊 إحصائيات
+                            الغيابات</button>
+                        <button class="btn btn-success btn-sm" onclick="addSupervisor()">➕ إضافة جديد</button>
+                        <button class="btn btn-danger btn-sm" onclick="clearAllSupervisors()">🗑️ حذف الكل</button>
+                    </div>
+
+                    <div class="stats-bar">
+                        <div class="stat-badge primary-stat">
+                            <span>👔 إجمالي المشرفين:</span>
+                            <span id="totalSupervisors">0</span>
+                        </div>
+                        <div class="stat-badge danger-stat">
+                            <span>❌ الغائبون:</span>
+                            <span id="absentSupervisors">0</span>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <div id="supervisors-grid-wrapper"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Canteen -->
+                <div class="tab-content" id="tab-canteen">
+                    <div class="controls-bar" style="margin-bottom: 20px; display: flex; justify-content: center;">
+                        <div class="mode-switcher"
+                            style="display: flex; gap: 10px; background: var(--card-bg); padding: 5px; border-radius: 8px; border: 1px solid #dfe6e9;">
+                            <button id="btnCanteenBeneficiaries" class="btn btn-outline active"
+                                onclick="switchCanteenMode('beneficiaries')">
+                                🍽️ تحديد المستفيدين
+                            </button>
+                            <button id="btnCanteenTracking" class="btn btn-outline"
+                                onclick="switchCanteenMode('tracking')">
+                                📅 متابعة الغياب
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Setup Mode: Select Beneficiaries -->
+                    <div id="canteenBeneficiariesView">
+                        <div class="filter-row">
+                            <div class="search-box">
+                                <input type="text" id="canteenSearchInput" placeholder="بحث عن تلميذ..."
+                                    onkeyup="filterCanteenBeneficiaries()">
+                            </div>
+                            <div class="stat-badge primary-stat">
+                                <span>المستفيدون:</span>
+                                <span id="totalBeneficiariesCount">0</span>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="absence-table" id="canteenBeneficiariesTable">
+                                <thead>
+                                    <tr>
+                                        <th width="10%">#</th>
+                                        <th width="40%">الاسم الكامل</th>
+                                        <th width="30%">القسم</th>
+                                        <th width="20%">نصف داخلي</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="canteenBeneficiariesBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tracking Mode: Daily Absence -->
+                    <div id="canteenTrackingView" style="display: none;">
+
+                        <div class="stats-bar">
+                            <div class="stat-badge danger-stat">
+                                <span>الغائبون اليوم:</span>
+                                <span id="canteenAbsentCount">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Meal Info Inputs -->
+                        <div class="row"
+                            style="display: flex; gap: 10px; margin-bottom: 20px; background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid #dfe6e9;">
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: 500; font-size: 0.9rem;">الوجبة المقترحة:</label>
+                                <input type="text" id="canteenProposedMeal" class="form-input" placeholder="مثال: أرز"
+                                    onchange="saveCanteenDailyInfo()">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: 500; font-size: 0.9rem;">الوجبة المقدمة:</label>
+                                <input type="text" id="canteenOfferedMeal" class="form-input" placeholder="مثال: أرز"
+                                    onchange="saveCanteenDailyInfo()">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label style="font-weight: 500; font-size: 0.9rem;">ملاحظات:</label>
+                                <input type="text" id="canteenNotes" class="form-input" placeholder="..."
+                                    onchange="saveCanteenDailyInfo()">
+                            </div>
+                        </div>
+
+                        <!-- Filters (New Location) -->
+                        <div class="filter-row" style="margin-bottom: 15px; display: flex; gap: 10px;">
+                            <div class="search-box" style="flex: 2;">
+                                <input type="text" id="canteenTrackingSearch" class="form-input"
+                                    placeholder="بحث عن تلميذ (اللقب أو الاسم)..." onkeyup="renderCanteenTracking()">
+                            </div>
+                            <select id="canteenTrackingLevelFilter" class="period-select" style="flex: 1;"
+                                onchange="renderCanteenTracking()">
+                                <option value="">كل المستويات</option>
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="absence-table" id="canteenTrackingTable">
+                                <thead>
+                                    <tr>
+                                        <th width="10%">#</th>
+                                        <th width="40%">الاسم الكامل</th>
+                                        <th width="30%">القسم</th>
+                                        <th width="20%">غائب عن المطعم</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="canteenTrackingBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> <!-- End Canteen Tab -->
+
+                <!-- Tab 5: Notes & Escort -->
+                <div class="tab-content" id="tab-notes">
+                    <div class="main-card">
+                        <h3>🚗 جدول المرافق</h3>
+                        <div class="table-wrapper">
+                            <table class="report-table" id="escortTable">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th width="35%">المرافق</th>
+                                        <th width="30%">الملاحظة</th>
+                                        <th width="25%">الاستثناءات</th>
+                                        <th width="5%">حذف</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="escortTableBody">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                            <button class="btn btn-sm btn-primary" onclick="addEscortRow()">➕ إضافة صف</button>
+                        </div>
+
+                        <hr style="margin: 20px 0; border-top: 1px solid var(--border-color);">
+
+                        <h3>📝 جدول الملاحظات والتوصيات</h3>
+                        <div class="table-wrapper">
+                            <table class="report-table" id="notesTable">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th width="85%">الملاحظات / التوصيات</th>
+                                        <th width="10%">حذف</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="notesTableBody">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                            <button class="btn btn-sm btn-primary" onclick="addNoteRow()">➕ إضافة ملاحظة</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Report Container (for print) -->
+    <div class="report-container" id="reportContainer">
+        <div class="report-page" id="reportPage">
+            <!-- Report content will be generated by JS -->
+        </div>
+        <div class="no-print" style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة التقرير</button>
+            <button class="btn btn-danger" onclick="closeReport()">❌ إغلاق</button>
+        </div>
+    </div>
+
+    <!-- Add Supervisor Modal -->
+    <div id="supervisorModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-content animate-pop-in" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>➕ إضافة جديد</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>اسم المشرف:</label>
+                    <input type="text" id="supervisorName" class="form-input" placeholder="اكتب اسم المشرف"
+                        style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+            </div>
+            <div class="modal-buttons" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-success" onclick="saveSupervisor()">✅ حفظ</button>
+                <button class="btn btn-danger" onclick="closeModal('supervisorModal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Absences Modal -->
+    <div id="savedAbsencesModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-content animate-pop-in" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3>📋 الغيابات المحفوظة</h3>
+            </div>
+            <div class="modal-body" id="savedAbsencesList">
+                <!-- Will be populated by JS -->
+            </div>
+            <div class="modal-buttons" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-danger" onclick="closeModal('savedAbsencesModal')">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supervisor Stats Modal -->
+    <div id="supervisorStatsModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-content animate-pop-in" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>📊 إحصائيات غيابات المشرفين</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>من تاريخ:</label>
+                    <input type="date" id="supStatsStartDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>إلى تاريخ:</label>
+                    <input type="date" id="supStatsEndDate" class="form-input">
+                </div>
+            </div>
+            <div class="modal-buttons" style="margin-top: 25px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-primary" onclick="generateSupervisorStatsReport()">📄 عرض وتحميل</button>
+                <button class="btn btn-danger" onclick="closeModal('supervisorStatsModal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher Absence Modal (Redesigned V2) -->
+    <div id="teacherAbsenceModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-content animate-pop-in"
+            style="max-width: 550px; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: 85vh;">
+
+            <style>
+                /* Internal Styles for V2 */
+                .ta-header {
+                    background: var(--bg-color);
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #eef2f7;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-shrink: 0;
+                }
+
+                .ta-header h3 {
+                    margin: 0;
+                    font-size: 1.1rem;
+                    color: var(--primary-color);
+                }
+
+                .ta-body {
+                    padding: 20px;
+                    overflow-y: auto;
+                    flex: 1;
+                    /* Takes available space */
+                }
+
+                .ta-teacher-info {
+                    text-align: center;
+                    margin-bottom: 20px;
+                }
+
+                .ta-teacher-name {
+                    font-size: 1.4rem;
+                    font-weight: bold;
+                    color: var(--primary-color);
+                    margin-bottom: 5px;
+                }
+
+                .ta-date {
+                    color: #95a5a6;
+                    font-size: 0.9rem;
+                }
+
+                /* Radio Cards */
+                .absence-types {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 15px;
+                    margin-bottom: 20px;
+                }
+
+                .type-card {
+                    flex: 1;
+                    position: relative;
+                }
+
+                .type-card input {
+                    position: absolute;
+                    opacity: 0;
+                    cursor: pointer;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 2;
+                }
+
+                .type-content {
+                    border: 2px solid #eef2f7;
+                    border-radius: 10px;
+                    padding: 12px;
+                    text-align: center;
+                    transition: all 0.2s;
+                    cursor: pointer;
+                    color: #7f8c8d;
+                }
+
+                .type-card input:checked+.type-content {
+                    border-color: var(--secondary-color);
+                    background: #ebf5fb;
+                    color: #2980b9;
+                    font-weight: bold;
+                }
+
+                .type-icon {
+                    font-size: 1.4rem;
+                    display: block;
+                    margin-bottom: 5px;
+                }
+
+                .ta-assignment-hint {
+                    background: rgba(52, 152, 219, 0.08);
+                    border: 1px solid rgba(52, 152, 219, 0.22);
+                    border-radius: 10px;
+                    color: var(--primary-color);
+                    font-size: 0.9rem;
+                    line-height: 1.7;
+                    margin-bottom: 20px;
+                    padding: 12px 14px;
+                }
+
+                /* Periods Split */
+                .periods-container {
+                    background: var(--bg-color);
+                    border-radius: 10px;
+                    padding: 15px;
+                    margin-bottom: 20px;
+                    display: none;
+                    /* Hidden by default */
+                }
+
+                .period-section-title {
+                    font-size: 0.85rem;
+                    font-weight: bold;
+                    color: var(--primary-color);
+                    margin-bottom: 8px;
+                    border-bottom: 1px dashed #cbd5e0;
+                    padding-bottom: 4px;
+                }
+
+                .periods-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 8px;
+                    direction: rtl;
+                    /* Ensure 1->4 order */
+                    margin-bottom: 15px;
+                }
+
+                /* Custom Checkbox Button */
+                .period-btn-label {
+                    display: block;
+                    position: relative;
+                    cursor: pointer;
+                }
+
+                .period-btn-label input {
+                    position: absolute;
+                    opacity: 0;
+                }
+
+                .p-btn {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 5px;
+                    background: var(--card-bg);
+                    border: 1px solid #dee2e6;
+                    border-radius: 6px;
+                    transition: all 0.2s;
+                    height: 55px;
+                }
+
+                .period-btn-label input:checked+.p-btn {
+                    background: #e74c3c;
+                    color: white;
+                    border-color: #e74c3c;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
+                }
+
+                .p-num {
+                    font-size: 0.8rem;
+                    font-weight: bold;
+                }
+
+                .p-class {
+                    font-size: 0.7rem;
+                }
+
+                /* Footer */
+                .ta-footer {
+                    padding: 15px 20px;
+                    background: var(--card-bg);
+                    border-top: 1px solid #eef2f7;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 10px;
+                    flex-shrink: 0;
+                    /* fixed height */
+                }
+
+                .ta-btn {
+                    padding: 8px 20px;
+                    border-radius: 6px;
+                    border: none;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 0.9rem;
+                    transition: 0.2s;
+                }
+
+                .btn-cancel {
+                    background: #ecf0f1;
+                    color: #7f8c8d;
+                }
+
+                .btn-save {
+                    background: var(--secondary-color);
+                    color: white;
+                }
+
+                .modern-select {
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #dfe6e9;
+                    border-radius: 8px;
+                }
+            </style>
+
+            <div class="ta-header">
+                <h3>تسجيل غياب الأستاذ</h3>
+                <span class="close-btn" onclick="closeTeacherAbsenceModal()"
+                    style="font-size:1.5rem; cursor:pointer;">&times;</span>
+            </div>
+
+            <div class="ta-body">
+                <div class="ta-teacher-info">
+                    <div id="modalTeacherName" class="ta-teacher-name">اسم الأستاذ</div>
+                    <div id="modalAbsenceDate" class="ta-date">التاريخ</div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display:block; margin-bottom:8px; font-weight:bold; color:#7f8c8d;">نوع الغياب</label>
+                    <div class="absence-types">
+                        <div class="type-card">
+                            <input type="radio" name="absenceType" value="full" onchange="toggleAbsenceType()" checked>
+                            <div class="type-content">
+                                <span class="type-icon">👤</span>
+                                <div>غياب الأستاذ</div>
+                            </div>
+                        </div>
+                        <div class="type-card">
+                            <input type="radio" name="absenceType" value="late" onchange="toggleAbsenceType()">
+                            <div class="type-content">
+                                <span class="type-icon">⏱️</span>
+                                <div>تأخر</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="teacherAssignmentHint" class="ta-assignment-hint"></div>
+
+                <div id="teacherAbsenceScopeContainer" class="form-group" style="margin-bottom: 20px;">
+                    <label style="display:block; margin-bottom:8px; font-weight:bold; color:#7f8c8d;">تصنيف الغياب</label>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid var(--border-color); border-radius:8px; background:var(--card-bg); cursor:pointer;">
+                            <input type="radio" name="teacherAbsenceScope" value="full" onchange="updateTeacherAbsenceScope()" checked>
+                            <span>غياب كامل</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid var(--border-color); border-radius:8px; background:var(--card-bg); cursor:pointer;">
+                            <input type="radio" name="teacherAbsenceScope" value="partial" onchange="updateTeacherAbsenceScope()">
+                            <span>غياب جزئي</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="lateDurationContainer" class="form-group" style="display:none; margin-bottom: 20px;">
+                    <label style="font-weight:bold; color:#7f8c8d; display:block; margin-bottom:5px;">مدة التأخر
+                        (بالدقائق)</label>
+                    <input type="number" id="teacherLateDuration" class="modern-select" placeholder="مثلاً: 15" min="1"
+                        style="margin-bottom: 10px;">
+                    <label style="font-weight:bold; color:#7f8c8d; display:block; margin-bottom:5px;">سبب التأخر</label>
+                    <input type="text" id="teacherLateReason" class="modern-select" placeholder="أدخل سبب التأخر...">
+                </div>
+
+                <div id="periodsContainer" class="periods-container">
+                    <div id="teacherSelectionSummary"
+                        style="background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; padding: 8px 12px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: bold; color: var(--primary-color);">عدد الحصص المحددة:</span>
+                        <span id="teacherSelectedCount"
+                            style="background: #e74c3c; color: white; padding: 2px 10px; border-radius: 12px; font-weight: bold;">0</span>
+                    </div>
+                    <div id="teacherPeriodsHelper"
+                        style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 15px; line-height: 1.7;"></div>
+                    <!-- Morning -->
+                    <div id="periodsTitleAM" class="period-section-title">الحصة الصباحية</div>
+                    <div id="periodsListAM" class="periods-grid">
+                        <!-- Periods 1-4 -->
+                    </div>
+
+                    <!-- Evening -->
+                    <div id="periodsTitlePM" class="period-section-title">الحصة المسائية</div>
+                    <div id="periodsListPM" class="periods-grid" style="margin-bottom:0;">
+                        <!-- Periods 5-8 -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight:bold; color:#7f8c8d; display:block; margin-bottom:5px;">السبب</label>
+                    <select id="teacherAbsenceReason" class="modern-select" onchange="handleTeacherReasonChange()">
+                        <option value="">-- اختر السبب --</option>
+                        <option value="مرض">مرض</option>
+                        <option value="إجازة مبررة">إجازة مبررة</option>
+                        <option value="إجازة غير مبررة">إجازة غير مبررة</option>
+                        <option value="عطلة أمومة">عطلة أمومة</option>
+                        <option value="تكوين">تكوين</option>
+                        <option value="مهمة">مهمة</option>
+                        <option value="مبرر بإشعار">مبرر بإشعار</option>
+                        <option value="غير مبرر وبدون إشعار">غير مبرر وبدون إشعار</option>
+                        <option value="other">آخر...</option>
+                    </select>
+                    <textarea id="teacherReasonOther" class="modern-input" placeholder="اكتب السبب هنا بالتفصيل..."
+                        style="display: none; margin-top: 10px; width: 100%; height: 80px; padding: 12px; box-sizing: border-box; border-radius: 10px; border: 2px solid var(--secondary-color); font-family: inherit; font-size: 0.95rem; resize: none;"></textarea>
+                </div>
+            </div>
+
+            <div class="ta-footer">
+                <button class="ta-btn btn-cancel" onclick="closeTeacherAbsenceModal()">إلغاء</button>
+                <button class="ta-btn btn-save" onclick="saveTeacherAbsence()">حفظ الغياب</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Settings Modal -->
+    <div id="reportSettingsModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-content animate-pop-in"
+            style="max-width: 800px; padding: 0; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+            <div class="modal-header"
+                style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 20px; flex-shrink: 0;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: white;">
+                    <span style="color: white;">⚙️ إعدادات التقرير اليومي</span>
+                </h3>
+                <span class="modal-close" onclick="closeReportSettingsModal()"
+                    style="cursor: pointer; font-size: 1.5rem; color: white;">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 25px; background: var(--bg-color); overflow-y: auto; flex: 1;">
+
+                <!-- Section: Report Title -->
+                <div
+                    style="background: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 25px;">
+                    <h4
+                        style="margin: 0 0 15px 0; color: var(--primary-color); border-right: 4px solid var(--secondary-color); padding-right: 10px;">
+                        📋 عنوان التقرير</h4>
+                    <div class="form-group">
+                        <label style="font-weight: 600; color: #555;">العنوان المخصص (اختياري):</label>
+                        <input type="text" id="settingReportTitle" class="form-input"
+                            style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;"
+                            placeholder="مثال: التقرير اليومي للمشرف العام">
+                    </div>
+                </div>
+
+                <!-- Section: Signatures -->
+                <div
+                    style="background: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 25px;">
+                    <h4
+                        style="margin: 0 0 15px 0; color: var(--primary-color); border-right: 4px solid var(--secondary-color); padding-right: 10px;">
+                        ✍️ التوقيعات (الترتيب والظهور)</h4>
+                    <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 15px;">قم بتحديد الصفة والاسم لكل موقع.
+                        سيظهر مستشار التربية في البداية إذا تم تفعيله.</p>
+
+                    <!-- Counselor Row -->
+                    <div class="row"
+                        style="display:flex; gap:15px; margin-bottom: 15px; padding: 10px; background: #fcfcfc; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div class="form-group" style="flex:1;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                                <label style="font-weight: 600;">مستشار التربية:</label>
+                                <label class="switch-small"
+                                    style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                                    <input type="checkbox" id="settingShowCounselor" style="width:auto;">
+                                    <span style="font-size:0.8rem; color:#27ae60;">تفعيل</span>
+                                </label>
+                            </div>
+                            <input type="text" id="settingCounselorTitle" class="form-input"
+                                placeholder="مستشار التربية"
+                                style="width: 100%; padding: 8px; border-radius: 6px; border:1px solid #ccc;">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label style="font-weight: 600; display:block; margin-bottom: 8px;">الاسم:</label>
+                            <input type="text" id="settingCounselorName" class="form-input" placeholder="الاسم الكامل"
+                                style="width: 100%; padding: 8px; border-radius: 6px; border:1px solid #ccc;">
+                        </div>
+                    </div>
+
+                    <!-- Supervisor Row -->
+                    <div class="row"
+                        style="display:flex; gap:15px; margin-bottom: 15px; padding: 10px; background: #fcfcfc; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div class="form-group" style="flex:1;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                                <label style="font-weight: 600;">المشرف العام:</label>
+                                <label class="switch-small"
+                                    style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                                    <input type="checkbox" id="settingShowSup" checked style="width:auto;">
+                                    <span style="font-size:0.8rem; color:#27ae60;">تفعيل</span>
+                                </label>
+                            </div>
+                            <input type="text" id="settingSupTitle" class="form-input" placeholder="المشرف العام"
+                                style="width: 100%; padding: 8px; border-radius: 6px; border:1px solid #ccc;">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label style="font-weight: 600; display:block; margin-bottom: 8px;">الاسم:</label>
+                            <input type="text" id="settingSupName" class="form-input" placeholder="الاسم الكامل"
+                                style="width: 100%; padding: 8px; border-radius: 6px; border:1px solid #ccc;">
+                        </div>
+                    </div>
+
+                    <!-- Censor Row -->
+                    <div class="row"
+                        style="display:flex; gap:15px; margin-bottom: 15px; padding: 10px; background: #fcfcfc; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div class="form-group" style="flex:1;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                                <label style="font-weight: 600;">الناظر:</label>
+                                <label class="switch-small"
+                                    style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                                    <input type="checkbox" id="settingShowCensor" checked style="width:auto;">
+                                    <span style="font-size:0.8rem; color:#27ae60;">تفعيل</span>
+                                </label>
+                            </div>
+                            <input type="text" id="settingCensorTitle" class="form-input" placeholder="الناظر"
+                                style="width: 100%; padding: 8px; border-radius: 6px; border:1px solid #ccc;">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label style="font-weight: 600; display:block; margin-bottom: 8px;">الاسم:</label>
+                            <input type="text" id="settingCensorName" class="form-input" placeholder="الاسم الكامل"
+                                style="width: 100%; padding: 8px; border-radius: 6px; border:1px solid #ccc;">
+                        </div>
+                    </div>
+
+                    <!-- Principal Row -->
+                    <div class="row"
+                        style="display:flex; gap:15px; padding: 10px; background: #fcfcfc; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div class="form-group" style="flex:1;">
+                            <label style="font-weight: 600; display:block; margin-bottom: 8px;">المدير:</label>
+                            <input type="text" id="settingDirTitle" class="form-input" placeholder="المدير"
+                                style="width: 100%; padding: 8px; border-radius: 6px; border:1px solid #ccc;">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label style="font-weight: 600; display:block; margin-bottom: 8px;">الاسم:</label>
+                            <input type="text" id="settingDirName" class="form-input" placeholder="الاسم الكامل"
+                                style="width: 100%; padding: 8px; border-radius: 6px; border:1px solid #ccc;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Options -->
+                <div
+                    style="background: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <h4
+                        style="margin: 0 0 15px 0; color: var(--primary-color); border-right: 4px solid var(--secondary-color); padding-right: 10px;">
+                        ⚙️ خيارات إضافية</h4>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <label class="checkbox-container"
+                            style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <input type="checkbox" id="settingShowHalfBoard" style="width:18px; height:18px;">
+                            <span style="font-size: 0.9rem;">عرض جدول نصف داخلي</span>
+                        </label>
+
+                        <label class="checkbox-container"
+                            style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <input type="checkbox" id="settingShowObservations" style="width:18px; height:18px;">
+                            <span style="font-size: 0.9rem;">إظهار الملاحظات والتوصيات</span>
+                        </label>
+
+                        <label class="checkbox-container"
+                            style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <input type="checkbox" id="settingShowCanteenTable" style="width:18px; height:18px;">
+                            <span style="font-size: 0.9rem;">إظهار جدول المطعم</span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-actions"
+                style="padding: 20px; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; gap: 15px; justify-content: center;">
+                <button class="btn btn-primary" onclick="saveReportSettings()"
+                    style="padding: 10px 30px; font-weight: bold;">💾 حفظ الإعدادات</button>
+                <button class="btn btn-outline" onclick="closeReportSettingsModal()"
+                    style="padding: 10px 30px;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script src="../assets/js/gridjs.production.min.js"></script>
+    <script src="absence_tracking.js"></script>
+    <script src="../assets/js/fullscreen_toggle.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Trial Mode Restriction
+            var authObj = window.Auth || (typeof Auth !== 'undefined' ? Auth : null);
+            var user = authObj && authObj.getUser ? authObj.getUser() : null;
+
+            if (authObj && authObj.isTrialRestricted && authObj.isTrialRestricted()) {
+                // 1. Override window.print
+                window.print = function () {
+                    alert('ميزة الطباعة غير متاحة في النسخة التجريبية. يرجى تفعيل الترخيص.');
+                };
+
+                // Observer
+                var observer = new MutationObserver(function (mutations) {
+                    document.querySelectorAll('button').forEach(function (btn) {
+                        var text = (btn.textContent || '').trim();
+                        var onclickAttr = btn.getAttribute('onclick') || '';
+
+                        if (text.includes('طباعة') || text.includes('print') || onclickAttr.includes('print') || text.includes('التقرير اليومي')) {
+                            // Visually disable
+                            btn.style.opacity = '0.5';
+                            btn.style.cursor = 'not-allowed';
+                            btn.title = 'غير متاح في النسخة التجريبية';
+
+                            // Remove inline onclick
+                            if (btn.hasAttribute('onclick')) {
+                                btn.removeAttribute('onclick');
+                            }
+
+                            // Override property
+                            btn.onclick = function (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                alert('هذه الميزة غير متاحة في النسخة التجريبية. يرجى تفعيل الترخيص.');
+                            };
+
+                            // Capture phase blocker
+                            if (!btn.getAttribute('data-trial-blocked')) {
+                                btn.setAttribute('data-trial-blocked', 'true');
+                                btn.addEventListener('click', function (e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    alert('هذه الميزة غير متاحة في النسخة التجريبية. يرجى تفعيل الترخيص.');
+                                }, true);
+                            }
+                        }
+                    });
+
+                    // Banner
+                    var header = document.querySelector('.page-header');
+                    if (header && !document.querySelector('.trial-warning-box')) {
+                        var w = document.createElement('div');
+                        w.className = 'trial-warning-box no-print';
+                        w.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px;border-radius:8px;margin-bottom:15px;text-align:center;font-weight:bold;';
+                        w.innerHTML = '⚠️ النسخة التجريبية: ميزة الطباعة غير متاحة. <a href="subscription.html" style="color:#856404;text-decoration:underline;">تفعيل الترخيص</a>';
+                        header.after(w);
+                    }
+                });
+
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+        });
+    </script>
+    <!-- Observations Input Modal (New) -->
+    <div id="observationsInputModal" class="modal">
+        <div class="modal-content animate-pop-in" style="max-width: 600px;">
+            <h3>تعديل الملاحظات والتوصيات</h3>
+            <p style="margin-bottom: 15px; color: #666;">يمكنك تعديل الملاحظات قبل طباعة أو التقرير، أو عند الضغط على
+                متابعة.</p>
+
+            <div class="form-group">
+                <label>ملاحظات وتوصيات المشرف العام:</label>
+                <textarea id="obsInputSup" class="form-input" rows="2" placeholder="..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>ملاحظات وتوصيات الناظر:</label>
+                <textarea id="obsInputCensor" class="form-input" rows="2" placeholder="..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>ملاحظات وتوصيات مدير المؤسسة:</label>
+                <textarea id="obsInputDir" class="form-input" rows="2" placeholder="..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-modal btn-confirm" onclick="proceedToPrintReportWithObs()">متابعة الطباعة</button>
+                <button class="btn-modal btn-cancel" onclick="closeModal('observationsInputModal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Previous Absences Modal -->
+    <div id="previousAbsencesModal" class="modal previous-absences-modal">
+        <div class="modal-content animate-pop-in previous-absences-modal-content">
+            <div class="modal-header previous-absences-modal-header">
+                <div class="previous-absences-title-block">
+                    <span class="previous-absences-badge">آخر <span id="prevAbsDayCount">40</span> يوم</span>
+                    <h3 id="prevAbsStudentName">سجل غيابات التلميذ</h3>
+                </div>
+                <button class="btn btn-sm btn-outline previous-absences-close" onclick="closeModal('previousAbsencesModal')">✕</button>
+            </div>
+
+            <input type="hidden" id="prevAbsStudentId">
+
+            <div class="previous-absences-summary">
+                <p id="prevAbsHelperText">يمكنك تسجيل أو تعديل الغيابات للأيام الـ 40 السابقة، بدءًا من الأحدث حتى الأقدم.</p>
+                <div class="previous-absences-meta">
+                    <span class="previous-absences-meta-item">الترتيب: من الأحدث إلى الأقدم</span>
+                    <span class="previous-absences-meta-item" id="prevAbsRangeText">جارٍ تحديد الفترة...</span>
+                </div>
+            </div>
+
+            <div class="table-wrapper previous-absences-table-wrapper">
+                <table class="absence-table previous-absences-table">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>اليوم</th>
+                            <th>غائب</th>
+                            <th>السبب</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previousAbsencesBody">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-actions previous-absences-actions">
+                <button class="btn-modal btn-confirm" onclick="savePreviousAbsences()">حفظ التغييرات</button>
+                <button class="btn-modal btn-cancel" onclick="closeModal('previousAbsencesModal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    </div> <!-- Close container div -->
+    <!-- Schedule Settings Modal -->
+    <div id="scheduleSettingsModal" class="modal">
+        <div class="modal-content animate-pop-in" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h3>⚙️ ضبط التوقيت الأسبوعي</h3>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: #555; line-height: 1.6;">
+                    قم بتحديد توقيت الفترات الصباحية والمسائية لكل يوم.
+                </p>
+
+                <div class="schedule-grid-header">
+                    <div>اليوم</div>
+                    <div>☀️ الفترة الصباحية (AM)</div>
+                    <div>🌙 الفترة المسائية (PM)</div>
+                </div>
+
+                <div id="scheduleSettingsBody" class="schedule-grid-container">
+                    <!-- Rows generated by JS -->
+                </div>
+
+                <hr style="margin: 25px 0; border-top: 1px solid var(--border-color);">
+
+                <h4 style="color: var(--primary-color); margin-bottom: 15px;">📊 إعدادات حساب الغياب المتتالي</h4>
+                <div class="form-group"
+                    style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label for="countGapDaysCheck"
+                        style="font-weight: 600; color: #34495e; cursor: pointer; flex: 1; margin: 0;">
+                        احتساب العطل وأيام الفراغ ضمن أيام الغياب المتتالية
+                        <div style="font-size: 0.8rem; color: #7f8c8d; font-weight: normal; margin-top: 5px;">
+                            (مثال: غياب يوم الخميس والأحد يُحسب كـ 4 أيام متتالية إذا تم التفعيل)
+                        </div>
+                    </label>
+                    <label class="switch" style="margin-right: 15px;">
+                        <input type="checkbox" id="countGapDaysCheck" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-confirm" onclick="saveScheduleSettings()">💾 حفظ الإعدادات</button>
+                <button class="btn btn-cancel" onclick="closeScheduleSettingsModal()">إلغاء</button>
+            </div>
+        </div>
+    </div> <!-- Close scheduleSettingsModal -->
+
+    <!-- Help Guide Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content animate-pop-in" style="max-width: 650px;">
+            <div class="modal-header"
+                style="background: linear-gradient(135deg, #f1c40f, #f39c12); color: var(--primary-color);">
+                <h3>📖 دليل استخدام نظام الغيابات</h3>
+                <button class="close-btn" onclick="closeModal('helpModal')"
+                    style="color: var(--primary-color);">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="help-section">
+                    <div class="help-step">
+                        <div class="help-step-number">1</div>
+                        <div class="help-step-content">
+                            <h4>تحديد التاريخ</h4>
+                            <p>ابدأ باختيار التاريخ المطلوب من أعلى الصفحة. النظام يعرض تاريخ اليوم تلقائياً عند الدخول.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="help-step">
+                        <div class="help-step-number">2</div>
+                        <div class="help-step-content">
+                            <h4>رقم التقرير والحفظ</h4>
+                            <p>يجب إدخال <b>رقم التقرير</b> يدوياً في الخانة المخصصة بأعلى الصفحة. لن يتم حفظ التقرير في
+                                السجل إلا بعد الضغط على زر <b>"💾 إنشاء تقرير"</b>.</p>
+                        </div>
+                    </div>
+
+                    <div class="help-step">
+                        <div class="help-step-number">3</div>
+                        <div class="help-step-content">
+                            <h4>تسجيل غيابات التلاميذ</h4>
+                            <p>استخدم القوائم المنسدلة (المستوى، القسم) للفلترة أو محرك البحث. اضغط على المربع بجانب اسم
+                                التلميذ لتسجيل غيابه. يمكنك تحديد توقيت الغياب (صباحاً/مساءً) وكتابة مبرر أو ملاحظة.</p>
+                        </div>
+                    </div>
+
+                    <div class="help-step">
+                        <div class="help-step-number">4</div>
+                        <div class="help-step-content">
+                            <h4>إدارة السجلات والأرشيف</h4>
+                            <p>أسفل الصفحة ستجد <b>"سجل التقارير"</b>. تظهر فيه فقط أيام العمل الفعلية (يتم إخفاء العطل
+                                والجمعة والسبت تلقائياً). يمكنك الضغط على <b>"تعديل"</b> لتحميل تقرير سابق أو
+                                <b>"حذف"</b> لإزالته.</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 10px; color: var(--primary-color);">💡 ميزات
+                            إضافية:</h4>
+                        <div class="help-feature-grid">
+                            <div class="help-feature-item">
+                                <strong>الأيام المتتالية</strong>
+                                <span>الرقم الأحمر يوضح عدد أيام الغياب دون انقطاع. النظام ذكي؛ فهو يعتبر أيام <b>الجمعة
+                                        والسبت والعطل الرسمية</b> (التي لا يتم فيها تسجيل غياب) أيام "فجوة" لا تقطع
+                                    السلسلة، مما يضمن استمرار العد بشكل صحيح.</span>
+                            </div>
+                            <div class="help-feature-item">
+                                <strong>زر العودة 🔄</strong>
+                                <span>يستخدم لإلغاء غياب تلميذ بالكامل في حال حضوره المتأخر أو الخطأ في التسجيل.</span>
+                            </div>
+                            <div class="help-feature-item">
+                                <strong>استيراد الغيابات ⏪</strong>
+                                <span>لجلب قائمة الغائبين من تاريخ سابق بسرعة دون الحاجة لإعادة الإدخال.</span>
+                            </div>
+                            <div class="help-feature-item">
+                                <strong>تأكيد الحفظ 💾</strong>
+                                <span>لحفظ التقرير نهائياً وظهوره في السجل، تأكد من الضغط على زر <b>حفظ</b>. النظام يحفظ
+                                    المسودات داخلياً، لكن التوثيق الرسمي يعتمد على "رقم التقرير".</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions" style="border-top: none; padding-top: 0;">
+                <button class="btn btn-confirm" onclick="closeModal('helpModal')"
+                    style="width: 100%; font-family: 'Cairo', sans-serif;">حسناً</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Holidays Modal -->
+    <div id="holidaysModal" class="modal">
+        <div class="modal-content animate-pop-in" style="max-width: 600px;">
+            <div class="modal-header" style="background-color: var(--primary-color);">
+                <h3 style="color: white; margin: 0;">📅 إدارة العطل والأيام غير الدراسية</h3>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.85rem; color: #7f8c8d; display: block; margin-bottom: 4px;">من
+                                تاريخ:</label>
+                            <input type="date" id="holidayDateInput" class="date-input"
+                                style="width: 100%; box-sizing: border-box;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.85rem; color: #7f8c8d; display: block; margin-bottom: 4px;">إلى
+                                تاريخ <span style="color:#bbb;">(اختياري)</span>:</label>
+                            <input type="date" id="holidayDateEndInput" class="date-input"
+                                style="width: 100%; box-sizing: border-box;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: end;">
+                        <div style="flex: 1;">
+                            <label
+                                style="font-size: 0.85rem; color: #7f8c8d; display: block; margin-bottom: 4px;">النوع:</label>
+                            <select id="holidayTypeInput" class="modern-select"
+                                style="width: 100%; padding: 8px; box-sizing: border-box;">
+                                <option value="وطنية">عطلة وطنية</option>
+                                <option value="دينية">عطلة دينية</option>
+                                <option value="رسمية">عطلة رسمية (فصلية)</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="addHoliday()"
+                            style="padding: 8px 25px; white-space: nowrap;">إضافة</button>
+                    </div>
+                </div>
+
+                <div style="max-height: 300px; overflow-y: auto;">
+                    <table class="students-table" style="width: 100%; border-collapse: collapse; text-align: center;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 8px; border: 1px solid #ddd;">التاريخ</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">اليوم</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">النوع</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holidaysListBody">
+                            <!-- Holidays injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-confirm" onclick="closeHolidaysModal()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Absences Modal -->
+    <div id="importAbsencesModal" class="modal">
+        <div class="modal-content animate-pop-in" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>⏪ استيراد غيابات سابقة</h3>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: #555;">اختر تاريخ اليوم الذي ترغب في استيراد غياباته:</p>
+
+                <div class="form-group">
+                    <label for="importDateInput">التاريخ:</label>
+                    <input type="date" id="importDateInput" class="form-input" style="width: 100%;">
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
+                    <button class="btn btn-sm btn-outline" onclick="setQuickImportDate(1)"
+                        style="font-family: 'Cairo', sans-serif;">الأمس (D-1)</button>
+                    <button class="btn btn-sm btn-outline" onclick="setQuickImportDate(2)"
+                        style="font-family: 'Cairo', sans-serif;">منذ يومين (D-2)</button>
+                    <button class="btn btn-sm btn-outline" onclick="setQuickImportDate(3)"
+                        style="font-family: 'Cairo', sans-serif;">منذ 3 أيام (D-3)</button>
+                </div>
+
+                <div id="importValidationMsg"
+                    style="margin-top: 15px; padding: 10px; border-radius: 6px; display: none;"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-confirm" onclick="confirmAbsenceImport()">✅ استيراد الآن</button>
+                <button class="btn-modal btn-cancel" onclick="closeModal('importAbsencesModal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

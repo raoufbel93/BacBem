@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قوائم قاعات الاستدراك</title>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => Auth.checkAuth());
+    </script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #2563eb;
+            --accent: #10b981;
+            --card-bg: rgba(255, 255, 255, 0.96);
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --soft-border: rgba(148, 163, 184, 0.22);
+        }
+
+        body {
+            background: var(--bg-color);
+            min-height: 100vh;
+            font-family: 'Cairo', sans-serif;
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 16px 20px 28px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 14px;
+            padding: 18px 24px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+            border: 1px solid var(--soft-border);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .header-info h1 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .header-info h1 span[data-icon] {
+            color: var(--secondary);
+            background: rgba(37, 99, 235, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .header-info p {
+            margin: 6px 0 0 0;
+            color: var(--text-light);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .actions-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 14px 18px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.96) 100%);
+            border: 1px solid var(--soft-border);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .actions-card-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .actions-card-title span[data-icon] {
+            color: var(--secondary);
+        }
+
+        .actions-card .header-actions {
+            justify-content: flex-end;
+        }
+
+        .filter-card,
+        .note-card,
+        .summary-grid,
+        .actions-card,
+        .group-card,
+        .empty-state {
+            border: 1px solid var(--soft-border);
+            box-shadow: 0 8px 26px rgba(15, 23, 42, 0.04);
+        }
+
+        .filter-card {
+            background: var(--bg-color);
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 22px;
+        }
+
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-start;
+            direction: rtl;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--card-bg);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+            height: 40px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .filter-group label {
+            margin: 0;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex: 0 0 auto;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            border: none;
+            background: transparent;
+            font-size: 0.82rem;
+            color: var(--primary-color) !important;
+            padding: 0 5px !important;
+            font-weight: 700;
+            cursor: pointer;
+            outline: none;
+            min-width: 75px;
+            height: 32px !important;
+            line-height: 32px !important;
+            display: block;
+            min-inline-size: 0;
+            max-width: 100%;
+            flex: 1 1 auto;
+            box-sizing: border-box;
+            text-overflow: ellipsis;
+        }
+
+        .filter-group input {
+            background: rgba(37, 99, 235, 0.05);
+            border-radius: 8px;
+            min-width: 72px;
+            text-align: center;
+            cursor: text;
+        }
+
+        #roomsStreamGroup {
+            min-width: 0;
+        }
+
+        #roomsStreamSelect {
+            min-width: 0 !important;
+        }
+
+        .btn-action {
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 0.86rem;
+            cursor: pointer;
+            min-height: 42px;
+            padding: 0 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            color: white;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+        }
+
+        .btn-schedule {
+            background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+            box-shadow: 0 8px 18px rgba(124, 58, 237, 0.22);
+        }
+
+        .btn-print:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .note-card {
+            background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+            border-right: 5px solid #f97316;
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            color: #9a3412;
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .schedule-card {
+            background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%);
+            border-right: 5px solid #7c3aed;
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            color: #312e81;
+            font-size: 0.9rem;
+        }
+
+        .schedule-card h3 {
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            font-weight: 900;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.72);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid rgba(124, 58, 237, 0.16);
+            padding: 8px 10px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .schedule-table th {
+            background: rgba(124, 58, 237, 0.12);
+            color: #4c1d95;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .summary-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            flex: 0 0 auto;
+        }
+
+        .summary-card strong {
+            display: block;
+            font-size: 1.45rem;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .summary-card span {
+            color: var(--text-light);
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .results-wrapper {
+            display: grid;
+            gap: 18px;
+        }
+
+        .group-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 20px;
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .group-title h3 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1.08rem;
+            font-weight: 900;
+        }
+
+        .group-title p {
+            margin: 4px 0 0 0;
+            color: var(--text-light);
+            font-size: 0.83rem;
+            font-weight: 700;
+        }
+
+        .group-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .info-pill {
+            background: rgba(37, 99, 235, 0.08);
+            color: #1d4ed8;
+            border: 1px solid rgba(37, 99, 235, 0.18);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 16px;
+        }
+
+        .room-card {
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 16px;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+        }
+
+        .room-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: rgba(37, 99, 235, 0.06);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+        }
+
+        .room-card-header h4 {
+            margin: 0;
+            font-size: 0.98rem;
+            color: var(--primary);
+            font-weight: 900;
+        }
+
+        .room-card-header p {
+            margin: 4px 0 0 0;
+            color: var(--text-light);
+            font-size: 0.77rem;
+            font-weight: 700;
+        }
+
+        .room-meta {
+            font-size: 0.78rem;
+            color: #1d4ed8;
+            font-weight: 800;
+            background: white;
+            border: 1px solid rgba(37, 99, 235, 0.18);
+            border-radius: 999px;
+            padding: 6px 10px;
+        }
+
+        .room-table-wrap {
+            overflow-x: auto;
+        }
+
+        .room-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 0.76rem;
+        }
+
+        .room-table th,
+        .room-table td {
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            padding: 6px 5px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .room-table th {
+            background: rgba(15, 23, 42, 0.04);
+            color: var(--primary);
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .room-table td.name-cell {
+            text-align: right;
+            font-weight: 800;
+            min-width: 0;
+            width: 23%;
+            font-size: 0.8rem;
+            line-height: 1.45;
+        }
+
+        .room-table th:nth-child(1),
+        .room-table td:nth-child(1) {
+            width: 6%;
+        }
+
+        .room-table th:nth-child(2),
+        .room-table td:nth-child(2) {
+            width: 23%;
+        }
+
+        .room-table th:nth-child(3),
+        .room-table td:nth-child(3) {
+            width: 10%;
+        }
+
+        .room-table th:nth-child(4),
+        .room-table td:nth-child(4) {
+            width: 13%;
+        }
+
+        .room-table th:nth-child(5),
+        .room-table td:nth-child(5) {
+            width: 11%;
+        }
+
+        .room-table th:nth-child(6),
+        .room-table td:nth-child(6) {
+            width: 8%;
+        }
+
+        .room-table th:nth-child(7),
+        .room-table td:nth-child(7) {
+            width: 10%;
+        }
+
+        .room-table th:nth-child(8),
+        .room-table td:nth-child(8) {
+            width: 19%;
+        }
+
+        .subject-chip {
+            display: inline-block;
+            margin: 1px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fdba74;
+            font-size: 0.66rem;
+            font-weight: 800;
+        }
+
+        .empty-state {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 42px 22px;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px 0;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .wait-message {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 36px 24px;
+            text-align: center;
+            color: var(--text-light);
+            border: 1px solid var(--soft-border);
+        }
+
+        @media (max-width: 880px) {
+            .page-header,
+            .actions-card,
+            .group-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .header-actions .btn-action {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .rooms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body data-remedial-page-mode="rooms">
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <header class="page-header">
+            <div class="header-info">
+                <h1><span data-icon="building-2"></span> قوائم قاعات الاستدراك</h1>
+                <p>توزيع التلاميذ المعنيين بالاستدراك على قاعات أو أفواج حسب المستوى أو الشعبة، مع التحكم في العدد داخل كل فوج.</p>
+            </div>
+        </header>
+
+        <section class="actions-card">
+            <div class="actions-card-title">
+                <span data-icon="settings-2"></span>
+                إجراءات القاعات والرزنامة
+            </div>
+            <div class="header-actions">
+                <button id="generateRoomsBtn" class="btn-action btn-generate">
+                    <span data-icon="wand-2"></span> إنشاء القوائم
+                </button>
+                <button id="scheduleRoomsBtn" class="btn-action btn-schedule">
+                    <span data-icon="calendar-clock"></span> رزنامة التوقيت
+                </button>
+                <button id="printScheduleBtn" data-print-premium="true" class="btn-action btn-print">
+                    <span data-icon="calendar-check"></span> طباعة الرزنامة
+                </button>
+                <button id="printSummonsBtn" data-print-premium="true" class="btn-action btn-print">
+                    <span data-icon="file-text"></span> طباعة الاستدعاءات
+                </button>
+                <button id="printRoomsBtn" data-print-premium="true" class="btn-action btn-print" disabled>
+                    <span data-icon="print"></span> طباعة القوائم
+                </button>
+            </div>
+        </section>
+
+        <div class="note-card">
+            <span data-icon="alert-triangle"></span>
+            تعتمد هذه الصفحة على نفس قائمة المستدركين المحسوبة في صفحة الاستدراك. بعد إنشاء القوائم، يُرجى مراجعتها قبل اعتمادها النهائي.
+        </div>
+
+        <section class="filter-card">
+            <div class="controls-container">
+                <div class="filter-group">
+                    <label>📅 السنة:</label>
+                    <select id="roomsYearSelect"></select>
+                </div>
+
+                <div class="filter-group">
+                    <label>🎓 المستوى:</label>
+                    <select id="roomsLevelSelect">
+                        <option value="all">جميع المستويات</option>
+                    </select>
+                </div>
+
+                <div class="filter-group" id="roomsStreamGroup" style="display:none;">
+                    <label><span data-icon="branch"></span> الشعبة:</label>
+                    <select id="roomsStreamSelect">
+                        <option value="">جميع الشعب</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label><span data-icon="split-square-vertical"></span> طريقة التقسيم:</label>
+                    <select id="groupBySelect">
+                        <option value="level">حسب المستوى</option>
+                        <option value="stream">حسب الشعبة</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label><span data-icon="users"></span> عدد التلاميذ:</label>
+                    <input id="studentsPerRoomInput" type="number" min="1" max="60" value="20">
+                </div>
+
+                <div class="filter-group">
+                    <label><span data-icon="hash"></span> بداية الترقيم:</label>
+                    <input id="startRoomNumberInput" type="number" min="1" max="999" value="1">
+                </div>
+            </div>
+        </section>
+
+        <section id="roomsSchedulePreview" class="schedule-card" style="display:none;"></section>
+
+        <section class="summary-grid" id="summaryGrid">
+            <div class="summary-card">
+                <div class="summary-icon" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);"><span data-icon="users"></span></div>
+                <div>
+                    <strong id="summaryStudentsCount">0</strong>
+                    <span>عدد التلاميذ المشمولين</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon" style="background:linear-gradient(135deg,#16a34a,#15803d);"><span data-icon="building"></span></div>
+                <div>
+                    <strong id="summaryRoomsCount">0</strong>
+                    <span>عدد القاعات / الأفواج الناتجة</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);"><span data-icon="layers-3"></span></div>
+                <div>
+                    <strong id="summaryGroupsCount">0</strong>
+                    <span>عدد المجموعات الأساسية</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);"><span data-icon="list-ordered"></span></div>
+                <div>
+                    <strong id="summaryModeLabel">حسب المستوى</strong>
+                    <span>طريقة التقسيم الحالية</span>
+                </div>
+            </div>
+        </section>
+
+        <div id="roomsWaitArea" class="wait-message">جاري تحميل بيانات الاستدراك...</div>
+        <div id="roomsResults" class="results-wrapper" style="display:none;"></div>
+    </div>
+
+    <script src="../../assets/js/subject_manager.js"></script>
+    <script src="../../assets/js/exempt_subjects_helper.js"></script>
+    <script src="../../assets/js/sweetalert2.all.min.js"></script>
+    <script src="remedial_analysis.js?v=20260531-extracted-subjects"></script>
+    <script src="remedial_room_lists.js?v=20260531-extracted-subjects"></script>
+    <script src="../../assets/js/fullscreen_toggle.js"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+</body>
+
+</html>

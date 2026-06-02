@@ -1,0 +1,408 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطور مستوى التلاميذ</title>
+    <script src="../../assets/js/chart.js"></script>
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../../assets/js/xlsx.full.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => Auth.checkAuth());
+    </script>
+    <style>
+        .controls-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: inherit;
+            min-width: 150px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            border-top: 4px solid #bdc3c7;
+        }
+
+        .stat-card.improved {
+            border-top-color: #27ae60;
+        }
+
+        .stat-card.deteriorated {
+            border-top-color: #e74c3c;
+        }
+
+        .stat-card.stable {
+            border-top-color: #95a5a6;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .trend-icon {
+            font-size: 1.2rem;
+            margin-left: 5px;
+        }
+
+        .trend-up {
+            color: #27ae60;
+        }
+
+        .trend-down {
+            color: #e74c3c;
+        }
+
+        .trend-flat {
+            color: #95a5a6;
+        }
+
+        /* Table Conditional Formatting */
+        tr.row-improved {
+            background-color: rgba(39, 174, 96, 0.05);
+        }
+
+        tr.row-deteriorated {
+            background-color: rgba(231, 76, 60, 0.05);
+        }
+
+        .diff-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            display: inline-block;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .diff-pos {
+            background: #e8f8f5;
+            color: #27ae60;
+        }
+
+        .diff-neg {
+            background: #fdedec;
+            color: #e74c3c;
+        }
+
+        .diff-zero {
+            background: #f4f6f7;
+            color: #7f8c8d;
+        }
+
+        .btn-filter {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            text-align: right;
+            margin-bottom: 2px;
+        }
+
+        .btn-filter.active,
+        #filterAll.active {
+            background: var(--secondary-color) !important;
+            color: white !important;
+            border-color: var(--secondary-color) !important;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 10% auto;
+            padding: 25px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 12px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: left;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: #e74c3c;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <header style="margin-bottom: 30px;">
+            <h1>📈 تحليل تطور مستوى التلاميذ</h1>
+            <p>متابعة الفروقات في المعدلات عبر الفصول لكشف التحسن والتدهور</p>
+            <!-- Controls -->
+            <section class="filter-card"
+                style="background: var(--bg-color); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 12px; direction: rtl;">
+
+                <!-- Row 1: Filters -->
+                <div class="controls-container"
+                    style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-start; width: 100%; margin-bottom: 0; box-shadow: none; padding: 0; background: transparent;">
+
+                    <!-- Year Filter Group -->
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📅
+                            السنة:</label>
+                        <select id="yearSelect"
+                            style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;"></select>
+                    </div>
+
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">⚡
+                            المستوى:</label>
+                        <select id="levelSelect"
+                            style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;">
+                            <option value="all">كل المستويات</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group" id="streamFilterGroup"
+                        style="display:none; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📚
+                            الشعبة:</label>
+                        <select id="streamSelect"
+                            style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;">
+                            <option value="all">كل الشعب</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🏫
+                            القسم:</label>
+                        <select id="classSelect"
+                            style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;">
+                            <option value="all">الكل</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📅
+                            المقارنة:</label>
+                        <select id="compareSelect"
+                            style="border: none; background: transparent; font-size: 0.82rem; color: var(--primary-color) !important; padding: 0 5px !important; font-weight: 700; cursor: pointer; outline: none; min-width: 75px; height: 32px !important; line-height: 32px !important; display: inline-block; vertical-align: middle;">
+                            <option value="1-2" selected>الفصل 1 ← 2</option>
+                            <option value="2-3">الفصل 2 ← 3</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0; width: 100%;">
+
+                <!-- Row 2: Thresholds & Actions -->
+                <div
+                    style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; width: 100%;">
+
+                    <div class="thresholds-container" style="display: flex; gap: 8px; align-items: center;">
+                        <span style="font-size: 0.75rem; color: #718096; font-weight: 600;">عتبات التحليل:</span>
+                        <div class="filter-group"
+                            style="display: flex; align-items: center; gap: 3px; background: #e8f8f5; border: 1px solid #a3e4d7; padding: 3px 6px; border-radius: 8px;">
+                            <label
+                                style="font-weight: 700; color: #27ae60; font-size: 0.72rem; margin: 0; white-space: nowrap;">⬆️
+                                تحسن Δ≥</label>
+                            <input type="number" id="thImprove" value="0.5" step="0.5"
+                                style="border: none; background: transparent; font-size: 0.8rem; color: #27ae60; padding: 0; font-weight: 800; outline: none; width: 100px; text-align: center; direction: ltr; min-width: 100px; padding: 0 5px;">
+                        </div>
+
+                        <div class="filter-group"
+                            style="display: flex; align-items: center; gap: 3px; background: #fdedec; border: 1px solid #f5b7b1; padding: 3px 6px; border-radius: 8px;">
+                            <label
+                                style="font-weight: 700; color: #e74c3c; font-size: 0.72rem; margin: 0; white-space: nowrap;">⬇️
+                                تدهور Δ≤</label>
+                            <input type="number" id="thDeteriorate" value="-0.5" step="0.5" max="0"
+                                style="border: none; background: transparent; font-size: 0.8rem; color: #e74c3c; padding: 0; font-weight: 800; outline: none; width: 100px; text-align: center; direction: ltr; min-width: 100px; padding: 0 5px;">
+                        </div>
+                    </div>
+
+                    <div class="actions-container" style="display: flex; gap: 8px; align-items: center;">
+                        <button onclick="applyAnalysis()" class="btn-analyze"
+                            style="background-color: var(--secondary-color); color: white; border: none; padding: 6px 16px; border-radius: 8px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.8rem; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(52, 152, 219, 0.15);">
+                            <span>تحليل</span>
+                            <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+                        </button>
+                        <button onclick="printReport()" class="btn-analyze"
+                            style="background-color: #10b981; color: white; border: none; padding: 6px 16px; border-radius: 8px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.8rem; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.15);">
+                            <span>طباعة التقرير</span>
+                            <i data-lucide="printer" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stats Dashboard -->
+            <section class="stats-grid">
+                <div class="stat-card improved" onclick="filterTable('improved')" style="cursor: pointer;">
+                    <div class="stat-label">متحسن</div>
+                    <div class="stat-value" id="statImproved">0</div>
+                    <div class="stat-label" id="percImproved">0%</div>
+                </div>
+                <div class="stat-card deteriorated" onclick="filterTable('deteriorated')" style="cursor: pointer;">
+                    <div class="stat-label">متدهور</div>
+                    <div class="stat-value" id="statDeteriorated">0</div>
+                    <div class="stat-label" id="percDeteriorated">0%</div>
+                </div>
+                <div class="stat-card stable" onclick="filterTable('stable')" style="cursor: pointer;">
+                    <div class="stat-label">مستقر</div>
+                    <div class="stat-value" id="statStable">0</div>
+                    <div class="stat-label" id="percStable">0%</div>
+                </div>
+            </section>
+
+            <!-- Main Table -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <h3>📋 قائمة التلاميذ</h3>
+                    <div>
+                        <button class="btn-filter active" id="filterAll">الكل</button>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0)" style="cursor:pointer">اللقب والاسم ↕</th>
+                                <th onclick="sortTable(1)" style="cursor:pointer">المستوى ↕</th>
+                                <th onclick="sortTable(2)" style="cursor:pointer; display:none;" id="streamHeader">
+                                    الشعبة ↕</th>
+                                <th onclick="sortTable(3)" style="cursor:pointer">القسم ↕</th>
+                                <th onclick="sortTable(4)" style="cursor:pointer">المعدل السابق ↕</th>
+                                <th onclick="sortTable(5)" style="cursor:pointer">المعدل الحالي ↕</th>
+                                <th onclick="sortTable(6)" style="cursor:pointer">الفارق (Δ) ↕</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evolutionTableBody">
+                            <tr>
+                                <td colspan="8">جاري التحميل...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Student Detail Modal -->
+            <div id="studentModal" class="modal">
+                <div class="modal-content animate-pop-in">
+                    <span class="close-modal" onclick="closeModal()">&times;</span>
+                    <h2 id="modalStudentName" style="margin-bottom: 20px; color: var(--primary-color);"></h2>
+                    <div style="height: 300px;">
+                        <canvas id="evolutionChart"></canvas>
+                    </div>
+                    <div id="modalStats" style="margin-top: 20px; display: flex; justify-content: space-around;">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../assets/js/sweetalert2.all.min.js"></script>
+    <script src="evolution_analysis.js"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحليل نتائج التقويم المستمر / الفرض / الاختبار</title>
+
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../assets/js/xlsx.full.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../assets/css/modules/sweetalert_overrides.css">
+
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../core/academic-utils.js"></script>
+    <script src="../core/storage.js"></script>
+
+    <style>
+        :root {
+            --activity-primary: #6c5ce7;
+            --activity-secondary: #00b894;
+            --activity-danger: #d63031;
+            --activity-muted: #636e72;
+            --activity-border: rgba(45, 52, 54, 0.12);
+        }
+
+        body {
+            background: var(--body-bg, #f5f7fb);
+            color: var(--text-color, #2d3436);
+            font-family: "Tajawal", "Segoe UI", Tahoma, Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .activity-page {
+            width: min(1180px, calc(100% - 32px));
+            margin: 24px auto 48px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: center;
+            background: linear-gradient(135deg, var(--activity-primary), #8e44ad);
+            color: #fff;
+            border-radius: 18px;
+            padding: 22px 26px;
+            box-shadow: 0 12px 28px rgba(108, 92, 231, 0.2);
+        }
+
+        .page-header h1 {
+            margin: 0 0 6px;
+            font-size: 1.55rem;
+        }
+
+        .page-header p {
+            margin: 0;
+            opacity: 0.88;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0;
+        }
+
+        .tab-btn,
+        .btn {
+            border: 0;
+            border-radius: 12px;
+            padding: 11px 18px;
+            cursor: pointer;
+            font-weight: 700;
+            color: #fff;
+            background: var(--activity-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+        }
+
+        .tab-btn {
+            background: #fff;
+            color: var(--activity-primary);
+            border: 1px solid rgba(108, 92, 231, 0.16);
+        }
+
+        .tab-btn.active,
+        .tab-btn:hover {
+            color: #fff;
+            background: var(--activity-primary);
+            box-shadow: 0 10px 22px rgba(108, 92, 231, 0.22);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+        }
+
+        .btn.secondary {
+            background: var(--activity-secondary);
+        }
+
+        .btn.warning {
+            background: #e17055;
+        }
+
+        .btn.danger {
+            background: var(--activity-danger);
+        }
+
+        .btn.light {
+            background: #fff;
+            color: var(--activity-primary);
+            border: 1px solid rgba(108, 92, 231, 0.22);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--activity-border);
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 18px;
+            box-shadow: 0 8px 24px rgba(45, 52, 54, 0.06);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 0 16px;
+            font-size: 1.12rem;
+            color: var(--activity-primary);
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 12px;
+            align-items: end;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-weight: 700;
+            color: var(--activity-muted);
+        }
+
+        select,
+        input[type="file"] {
+            width: 100%;
+            min-height: 42px;
+            border: 1px solid var(--activity-border);
+            border-radius: 10px;
+            padding: 8px 10px;
+            background: #fff;
+            color: #2d3436;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+        }
+
+        .upload-box {
+            border: 1px dashed rgba(108, 92, 231, 0.35);
+            border-radius: 16px;
+            padding: 18px;
+            background: rgba(108, 92, 231, 0.04);
+            text-align: center;
+        }
+
+        .upload-box h3 {
+            margin: 0 0 8px;
+            color: var(--activity-primary);
+        }
+
+        .upload-box p {
+            margin: 0 0 14px;
+            color: var(--activity-muted);
+        }
+
+        .actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        #importActions {
+            display: none;
+        }
+
+        #progressBar {
+            display: none;
+            width: 100%;
+            height: 12px;
+            background: #eef0f4;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 14px;
+        }
+
+        #progressFill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--activity-primary), var(--activity-secondary));
+            transition: width 0.2s ease;
+        }
+
+        #statusBox {
+            display: none;
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            background: #eef6ff;
+            color: #0984e3;
+            font-weight: 700;
+        }
+
+        #logArea {
+            max-height: 210px;
+            overflow: auto;
+            background: #111827;
+            color: #e5e7eb;
+            border-radius: 12px;
+            padding: 12px;
+            line-height: 1.8;
+            font-family: Consolas, "Courier New", monospace;
+            direction: rtl;
+        }
+
+        #resultsOverview {
+            display: none;
+        }
+
+        #overviewCards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+        }
+
+        .overview-card,
+        .class-overview-card {
+            border: 1px solid var(--activity-border);
+            border-radius: 16px;
+            padding: 16px;
+            background: #fff;
+        }
+
+        .class-progress-container,
+        .class-progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #eef0f4;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .class-progress-fill {
+            height: 100%;
+            background: var(--activity-secondary);
+        }
+
+        .class-progress-fill.incomplete {
+            background: #fdcb6e;
+        }
+
+        .class-progress-fill.very-incomplete {
+            background: var(--activity-danger);
+        }
+
+        .analysis-output {
+            overflow-x: auto;
+        }
+
+        .analysis-output table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        .analysis-output th,
+        .analysis-output td {
+            border: 1px solid var(--activity-border);
+            padding: 8px 10px;
+            text-align: center;
+        }
+
+        .analysis-output th {
+            background: rgba(108, 92, 231, 0.08);
+            color: var(--activity-primary);
+        }
+
+        .no-data-msg {
+            text-align: center;
+            padding: 30px;
+            color: var(--activity-muted);
+            border: 1px dashed var(--activity-border);
+            border-radius: 14px;
+            background: rgba(99, 110, 114, 0.04);
+        }
+
+        .exemptions-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .exemption-level-group {
+            border: 1px solid var(--activity-border);
+            border-radius: 14px;
+            padding: 12px;
+            background: #fff;
+        }
+
+        .exemption-level-title {
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: var(--activity-primary);
+        }
+
+        .exemption-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .exemption-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            border: 1px solid var(--activity-border);
+            border-radius: 999px;
+            padding: 7px 11px;
+            cursor: pointer;
+            background: #f8f9fb;
+        }
+
+        .exemption-chip.active {
+            background: rgba(0, 184, 148, 0.12);
+            border-color: rgba(0, 184, 148, 0.35);
+            color: #00866d;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.45);
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            width: min(480px, 100%);
+            background: #fff;
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.22);
+        }
+
+        .modal-content h3 {
+            margin: 0 0 12px;
+            color: var(--activity-primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+            margin-top: 18px;
+        }
+    </style>
+    <style id="activity-modern-theme">
+        @font-face {
+            font-family: 'Cairo';
+            src: url('../assets/fonts/Cairo-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Cairo';
+            src: url('../assets/fonts/Cairo-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Cairo';
+            src: url('../assets/fonts/Cairo-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        :root {
+            --activity-primary: #2563eb;
+            --activity-primary-dark: #1e40af;
+            --activity-secondary: #0f766e;
+            --activity-accent: #f59e0b;
+            --activity-danger: #dc2626;
+            --activity-text: #0f172a;
+            --activity-muted: #64748b;
+            --activity-soft: #eff6ff;
+            --activity-border: rgba(148, 163, 184, 0.28);
+            --activity-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Arial, sans-serif !important;
+            color: var(--activity-text);
+            background:
+                radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 34rem),
+                radial-gradient(circle at top left, rgba(15, 118, 110, 0.13), transparent 32rem),
+                linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        }
+
+        .activity-page {
+            width: min(1220px, calc(100% - 40px));
+            margin: 22px auto 56px;
+        }
+
+        .page-header {
+            position: relative;
+            overflow: hidden;
+            min-height: 178px;
+            align-items: stretch;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 28px;
+            padding: 28px;
+            background:
+                linear-gradient(135deg, rgba(30, 64, 175, 0.96), rgba(37, 99, 235, 0.92) 52%, rgba(15, 118, 110, 0.92)),
+                url("data:image/svg+xml,%3Csvg width='160' height='160' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(255,255,255,.18)' stroke-width='1'%3E%3Cpath d='M0 80h160M80 0v160'/%3E%3Ccircle cx='80' cy='80' r='48'/%3E%3C/g%3E%3C/svg%3E");
+            box-shadow: 0 22px 60px rgba(30, 64, 175, 0.24);
+        }
+
+        .page-header::before {
+            content: "";
+            position: absolute;
+            inset: auto -70px -100px auto;
+            width: 280px;
+            height: 280px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+            filter: blur(2px);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 760px;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            margin-bottom: 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+            color: #dbeafe;
+            font-size: 0.86rem;
+            font-weight: 700;
+        }
+
+        .page-header h1 {
+            margin: 0 0 10px;
+            font-size: clamp(1.55rem, 3vw, 2.35rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.35;
+        }
+
+        .page-header p {
+            max-width: 680px;
+            margin: 0;
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 1rem;
+            line-height: 1.9;
+        }
+
+        .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .hero-badges span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            font-size: 0.88rem;
+            font-weight: 700;
+            backdrop-filter: blur(8px);
+        }
+
+        .page-header .btn.light {
+            position: relative;
+            z-index: 1;
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.94);
+            color: var(--activity-primary-dark);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
+        }
+
+        .tabs {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            gap: 8px;
+            margin: 18px 0 20px;
+            padding: 8px;
+            border: 1px solid var(--activity-border);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.86);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+            backdrop-filter: blur(14px);
+        }
+
+        .tab-btn,
+        .btn {
+            min-height: 44px;
+            border-radius: 13px;
+            padding: 10px 17px;
+            font-family: inherit;
+            font-weight: 800;
+        }
+
+        .tab-btn {
+            flex: 1 1 210px;
+            color: #334155;
+            background: transparent;
+            border: 1px solid transparent;
+        }
+
+        .tab-btn.active,
+        .tab-btn:hover {
+            background: linear-gradient(135deg, var(--activity-primary), var(--activity-primary-dark));
+            color: #fff;
+            box-shadow: 0 12px 26px rgba(37, 99, 235, 0.24);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--activity-primary), var(--activity-primary-dark));
+            box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            box-shadow: 0 10px 22px rgba(15, 118, 110, 0.16);
+        }
+
+        .btn.warning {
+            background: linear-gradient(135deg, #f97316, #f59e0b);
+            box-shadow: 0 10px 22px rgba(249, 115, 22, 0.16);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            box-shadow: 0 10px 22px rgba(220, 38, 38, 0.16);
+        }
+
+        .card {
+            border-radius: 22px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: var(--activity-shadow);
+            padding: 22px;
+        }
+
+        .card-title {
+            position: relative;
+            margin-bottom: 18px;
+            color: var(--activity-text);
+            font-size: 1.16rem;
+            font-weight: 800;
+        }
+
+        .card-title::before {
+            content: "";
+            width: 5px;
+            height: 26px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, var(--activity-primary), var(--activity-secondary));
+        }
+
+        .filters {
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
+        }
+
+        .field label {
+            color: #334155;
+            font-size: 0.92rem;
+            font-weight: 800;
+        }
+
+        select,
+        input[type="file"] {
+            min-height: 46px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.36);
+            background: #fff;
+            color: var(--activity-text);
+            box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        select:focus,
+        input[type="file"]:focus {
+            border-color: rgba(37, 99, 235, 0.62);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .upload-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .upload-box {
+            position: relative;
+            overflow: hidden;
+            min-height: 178px;
+            padding: 24px;
+            border: 1px solid rgba(37, 99, 235, 0.18);
+            border-radius: 22px;
+            background: linear-gradient(180deg, #ffffff, #f8fafc);
+            text-align: right;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+        }
+
+        .upload-box::after {
+            content: "";
+            position: absolute;
+            inset: -40px auto auto -40px;
+            width: 150px;
+            height: 150px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.08);
+        }
+
+        .upload-box h3 {
+            color: var(--activity-text);
+            font-size: 1.12rem;
+            font-weight: 800;
+        }
+
+        .upload-box p {
+            color: var(--activity-muted);
+            line-height: 1.8;
+        }
+
+        .actions-row {
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        #progressBar {
+            height: 14px;
+            background: #e2e8f0;
+            box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
+        }
+
+        #progressFill {
+            background: linear-gradient(90deg, #22c55e, #2563eb);
+            border-radius: inherit;
+        }
+
+        #statusBox {
+            border: 1px solid rgba(37, 99, 235, 0.18);
+            border-radius: 14px;
+            background: #eff6ff;
+            color: var(--activity-primary-dark);
+        }
+
+        #logArea {
+            min-height: 128px;
+            border: 1px solid rgba(15, 23, 42, 0.16);
+            border-radius: 18px;
+            background:
+                linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98));
+            font-family: 'Cairo', Consolas, "Courier New", monospace;
+        }
+
+        #overviewCards {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .level-card {
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            border-radius: 22px;
+            background: #fff;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .level-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 16px 18px;
+            color: #fff;
+            background: linear-gradient(135deg, #0f172a, #1e40af);
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .level-header > div,
+        .level-header > span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .level-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 14px;
+            padding: 16px;
+            background: #f8fafc;
+        }
+
+        .class-item {
+            border: 1px solid rgba(148, 163, 184, 0.26);
+            border-radius: 18px;
+            padding: 15px;
+            background: #fff;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .class-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .class-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            color: var(--activity-text);
+            font-weight: 800;
+        }
+
+        .badge-status {
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .badge-status.complete {
+            background: rgba(34, 197, 94, 0.12);
+            color: #15803d;
+        }
+
+        .badge-status.incomplete {
+            background: rgba(245, 158, 11, 0.14);
+            color: #b45309;
+        }
+
+        .class-progress-container {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            height: auto;
+            margin: 0 0 10px;
+            background: transparent;
+        }
+
+        .class-progress-bar {
+            height: 11px;
+            margin: 0;
+            background: #e2e8f0;
+        }
+
+        .class-progress-fill {
+            border-radius: inherit;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+        }
+
+        .class-progress-fill.incomplete {
+            background: linear-gradient(90deg, #f59e0b, #f97316);
+        }
+
+        .class-progress-fill.very-incomplete {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+
+        .subject-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 10px;
+        }
+
+        .subject-tag {
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .analysis-output table {
+            overflow: hidden;
+            border-radius: 16px;
+            border-collapse: separate;
+            border-spacing: 0;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+        }
+
+        .analysis-output th {
+            background: #1e40af;
+            color: #fff;
+            font-weight: 800;
+        }
+
+        .analysis-output td {
+            background: #fff;
+        }
+
+        .analysis-output tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        .no-data-msg {
+            border-color: rgba(37, 99, 235, 0.2);
+            background: linear-gradient(180deg, #eff6ff, #ffffff);
+            color: #475569;
+            font-weight: 700;
+        }
+
+        .exemption-level-group {
+            border-radius: 18px;
+            border-color: rgba(148, 163, 184, 0.24);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+        }
+
+        .exemption-level-title {
+            color: var(--activity-text);
+        }
+
+        .exemption-chip {
+            background: #f8fafc;
+            border-color: rgba(148, 163, 184, 0.32);
+            font-weight: 700;
+        }
+
+        .exemption-chip.active {
+            background: rgba(20, 184, 166, 0.12);
+            color: #0f766e;
+        }
+
+        .modal {
+            backdrop-filter: blur(6px);
+        }
+
+        .modal-content {
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            border-radius: 24px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+        }
+
+        @media (max-width: 720px) {
+            .activity-page {
+                width: min(100% - 22px, 1220px);
+                margin-top: 12px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                min-height: auto;
+                padding: 22px;
+            }
+
+            .tabs {
+                position: static;
+            }
+
+            .tab-btn,
+            .btn {
+                width: 100%;
+            }
+
+            .level-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+
+    <main class="activity-page">
+        <section class="page-header">
+            <div class="hero-content">
+                <div class="hero-kicker">
+                    <span data-icon="sparkles"></span>
+                    لوحة متابعة الاستيراد والتحليل
+                </div>
+                <h1>تحليل نتائج التقويم المستمر / الفرض / الاختبار</h1>
+                <p>استيراد النتائج، متابعة نسبة الاكتمال لكل قسم، وتحليل النتائج حسب المادة والقسم.</p>
+                <div class="hero-badges">
+                    <span><span data-icon="percent"></span>نسبة الاستيراد لكل قسم</span>
+                    <span><span data-icon="book-open"></span>المواد المستوردة</span>
+                    <span><span data-icon="calendar-check"></span>السنة الحالية فقط</span>
+                </div>
+            </div>
+            <button class="btn light" type="button" onclick="window.history.back()">
+                <span data-icon="arrow-right"></span>
+                رجوع
+            </button>
+        </section>
+
+        <nav class="tabs" aria-label="تبويبات تحليل التقويم">
+            <button class="tab-btn active" type="button" onclick="switchTab('import')">
+                <span data-icon="file-import"></span>
+                الاستيراد والمتابعة
+            </button>
+            <button class="tab-btn" type="button" onclick="switchTab('analysis')">
+                <span data-icon="chart-column"></span>
+                تحليل النتائج
+            </button>
+            <button class="tab-btn" type="button" onclick="switchTab('examavg')">
+                <span data-icon="calculator"></span>
+                معدل الفرض والاختبار
+            </button>
+        </nav>
+
+        <section id="tab-import" class="tab-content active">
+            <div class="card">
+                <h2 class="card-title"><span data-icon="sliders"></span>إعدادات الاستيراد</h2>
+                <div class="filters">
+                    <div class="field">
+                        <label for="importYearSelect">السنة الدراسية</label>
+                        <select id="importYearSelect"></select>
+                    </div>
+                    <div class="field">
+                        <label for="importTrimesterSelect">الفصل</label>
+                        <select id="importTrimesterSelect">
+                            <option value="الأول">الأول</option>
+                            <option value="الثاني" selected>الثاني</option>
+                            <option value="الثالث">الثالث</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><span data-icon="upload"></span>استيراد الملفات</h2>
+                <div class="upload-grid">
+                    <div class="upload-box">
+                        <h3>ملفات Excel</h3>
+                        <p>اختر ملفات النقاط بصيغة Excel.</p>
+                        <input id="fileInput" type="file" accept=".xlsx,.xls" multiple onchange="handleFileSelect(event)" hidden>
+                        <button id="btnImportExcel" class="btn" type="button" onclick="document.getElementById('fileInput').click()">
+                            <span data-icon="file-excel"></span>
+                            اختيار ملفات Excel
+                        </button>
+                    </div>
+                    <div class="upload-box">
+                        <h3>ملفات HTML / HTM</h3>
+                        <p>اختر الملفات المستخرجة من النظام عند الحاجة.</p>
+                        <input id="htmFileInput" type="file" accept=".html,.htm" multiple onchange="handleHtmFileSelect(event)" hidden>
+                        <button id="btnImportHtml" class="btn secondary" type="button" onclick="document.getElementById('htmFileInput').click()">
+                            <span data-icon="file-code"></span>
+                            اختيار ملفات HTM
+                        </button>
+                    </div>
+                </div>
+
+                <div id="importActions" class="actions-row">
+                    <button id="btnUpdate" class="btn secondary" type="button" onclick="processFiles('update')">
+                        <span data-icon="rotate"></span>
+                        تحديث البيانات
+                    </button>
+                    <button id="btnReplace" class="btn warning" type="button" onclick="processFiles('replace')">
+                        <span data-icon="arrows-rotate"></span>
+                        حذف واستبدال الفصل
+                    </button>
+                </div>
+
+                <div id="progressBar"><div id="progressFill"></div></div>
+                <div id="statusBox"></div>
+            </div>
+
+            <div id="resultsOverview" class="card">
+                <h2 class="card-title"><span data-icon="layer-group"></span>نسبة الاستيراد حسب الأقسام والمواد</h2>
+                <div id="overviewCards"></div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><span data-icon="ban"></span>مواد لا تدخل في حساب المعدل</h2>
+                <div id="exemptionsList" class="exemptions-list"></div>
+                <div class="actions-row">
+                    <button class="btn secondary" type="button" onclick="closeExemptionsAndRecalculate()">
+                        <span data-icon="calculator"></span>
+                        إعادة حساب المعدلات
+                    </button>
+                    <button class="btn warning" type="button" onclick="clearTrimesterData()">
+                        <span data-icon="trash"></span>
+                        حذف نتائج الفصل الحالي
+                    </button>
+                    <button class="btn danger" type="button" onclick="clearAllData()">
+                        <span data-icon="trash-can"></span>
+                        حذف جميع النتائج
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><span data-icon="terminal"></span>سجل الاستيراد</h2>
+                <div id="logArea"></div>
+            </div>
+        </section>
+
+        <section id="tab-analysis" class="tab-content">
+            <div class="card">
+                <h2 class="card-title"><span data-icon="filter"></span>معايير التحليل</h2>
+                <div class="filters">
+                    <div class="field">
+                        <label for="analysisYearSelect">السنة الدراسية</label>
+                        <select id="analysisYearSelect"></select>
+                    </div>
+                    <div class="field">
+                        <label for="analysisTrimesterSelect">الفصل</label>
+                        <select id="analysisTrimesterSelect">
+                            <option value="الأول">الأول</option>
+                            <option value="الثاني" selected>الثاني</option>
+                            <option value="الثالث">الثالث</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="analysisLevelSelect">المستوى</label>
+                        <select id="analysisLevelSelect">
+                            <option value="all">كل المستويات</option>
+                            <option value="1">الأولى متوسط</option>
+                            <option value="2">الثانية متوسط</option>
+                            <option value="3">الثالثة متوسط</option>
+                            <option value="4">الرابعة متوسط</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="analysisClassSelect">القسم</label>
+                        <select id="analysisClassSelect">
+                            <option value="all">كل الأقسام</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="actions-row">
+                    <button class="btn" type="button" onclick="renderAnalysis()">
+                        <span data-icon="chart-line"></span>
+                        عرض التحليل
+                    </button>
+                    <button class="btn secondary" type="button" onclick="printAnalysis()">
+                        <span data-icon="print"></span>
+                        طباعة التحليل
+                    </button>
+                </div>
+            </div>
+            <div class="card analysis-output" id="analysisContent">
+                <div class="no-data-msg"><span data-icon="info-circle"></span> يرجى اختيار السنة الدراسية ثم عرض التحليل.</div>
+            </div>
+        </section>
+
+        <section id="tab-examavg" class="tab-content">
+            <div class="card">
+                <h2 class="card-title"><span data-icon="filter"></span>معايير معدل الفرض والاختبار</h2>
+                <div class="filters">
+                    <div class="field">
+                        <label for="examavgYearSelect">السنة الدراسية</label>
+                        <select id="examavgYearSelect"></select>
+                    </div>
+                    <div class="field">
+                        <label for="examavgTrimesterSelect">الفصل</label>
+                        <select id="examavgTrimesterSelect">
+                            <option value="الأول">الأول</option>
+                            <option value="الثاني" selected>الثاني</option>
+                            <option value="الثالث">الثالث</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="examavgLevelSelect">المستوى</label>
+                        <select id="examavgLevelSelect">
+                            <option value="1" selected>الأولى متوسط</option>
+                            <option value="2">الثانية متوسط</option>
+                            <option value="3">الثالثة متوسط</option>
+                            <option value="4">الرابعة متوسط</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="examavgClassSelect">القسم</label>
+                        <select id="examavgClassSelect">
+                            <option value="all">كل الأقسام</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="actions-row">
+                    <button class="btn" type="button" onclick="renderExamAverage()">
+                        <span data-icon="calculator"></span>
+                        عرض المعدلات
+                    </button>
+                    <button class="btn secondary" type="button" onclick="printExamAverage()">
+                        <span data-icon="print"></span>
+                        طباعة
+                    </button>
+                </div>
+            </div>
+            <div class="card analysis-output" id="examavgContent">
+                <div class="no-data-msg"><span data-icon="info-circle"></span> يرجى اختيار السنة الدراسية ثم عرض المعدلات.</div>
+            </div>
+        </section>
+    </main>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="confirmTitle">تأكيد العملية</h3>
+            <div id="confirmMsg">هل تريد المتابعة؟</div>
+            <div class="modal-actions">
+                <button id="modalConfirm" class="btn danger" type="button">تأكيد</button>
+                <button class="btn light" type="button" onclick="closeModal('confirmModal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <h3>تمت العملية</h3>
+            <div id="successMessage">تمت العملية بنجاح.</div>
+            <div class="modal-actions">
+                <button class="btn secondary" type="button" onclick="closeModal('successModal')">حسنًا</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.Auth && typeof Auth.checkAuth === 'function') {
+                Auth.checkAuth();
+            }
+        });
+    </script>
+    <script src="../assets/js/signature_helper.js"></script>
+    <script src="../assets/js/subject_manager.js"></script>
+    <script src="../assets/js/exempt_subjects_helper.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script src="activity_evaluation.js?v=20260529-import-overview"></script>
+    <script src="../assets/js/fullscreen_toggle.js"></script>
+</body>
+</html>

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النتائج النهائية - تحليل النتائج</title>
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../../assets/js/xlsx.full.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => Auth.checkAuth());
+    </script>
+    <style>
+        .import-section {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .file-drop-zone {
+            border: 3px dashed var(--secondary-color);
+            padding: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+            margin-bottom: 20px;
+        }
+
+        .file-drop-zone:hover,
+        .file-drop-zone.dragover {
+            background: #e8f4fc;
+            border-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .file-drop-zone .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .file-drop-zone p {
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .page-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: stretch;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
+            border: 1px solid #dbe8f6;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 25px;
+            box-shadow: 0 12px 30px rgba(28, 69, 120, 0.08);
+        }
+
+        .toolbar-actions,
+        .toolbar-settings {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .toolbar-settings {
+            background: rgba(232, 244, 253, 0.8);
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
+
+        .toolbar-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+        }
+
+        .toolbar-field label {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .toolbar-field small {
+            color: #6b7a90;
+            font-size: 0.78rem;
+        }
+
+        .year-input {
+            min-width: 150px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .danger-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+        }
+
+        .secondary-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2574a9 100%) !important;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            border-top: 4px solid var(--secondary-color);
+        }
+
+        .stat-card.success {
+            border-top-color: #27ae60;
+        }
+
+        .stat-card.warning {
+            border-top-color: #f39c12;
+        }
+
+        .stat-card.danger {
+            border-top-color: #e74c3c;
+        }
+
+        .stat-card.info {
+            border-top-color: #9b59b6;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+            color: var(--primary-color);
+        }
+
+        .section-title h3 {
+            margin: 0;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 25px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table tr:nth-child(even) {
+            background: var(--bg-color);
+        }
+
+        .data-table tr:hover {
+            background: #e8f4fc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .badge.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge.directed {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge.male {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .badge.female {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+        }
+
+        .no-data-message {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .print-actions-panel {
+            background: linear-gradient(135deg, #f8fcff 0%, #eef6ff 100%);
+            border: 1px solid #d8e6f5;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 24px rgba(17, 59, 104, 0.08);
+        }
+
+        .print-actions-panel h3 {
+            margin: 0 0 14px 0;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .print-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 12px;
+        }
+
+        .print-btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            min-height: 52px;
+            border-radius: 14px;
+            font-weight: 700;
+        }
+
+        .print-btn.stats {
+            background: linear-gradient(135deg, #1abc9c 0%, #148f77 100%) !important;
+        }
+
+        .print-btn.list {
+            background: linear-gradient(135deg, #f39c12 0%, #d68910 100%) !important;
+        }
+
+        .print-btn.full {
+            background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%) !important;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 30, 48, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+            padding: 24px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(920px, 100%);
+            max-height: 88vh;
+            overflow-y: auto;
+            background: var(--card-bg);
+            border-radius: 22px;
+            box-shadow: 0 24px 60px rgba(12, 31, 54, 0.28);
+            border: 1px solid rgba(219, 232, 246, 0.9);
+            padding: 24px;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .modal-title-wrap h3 {
+            margin: 0 0 8px 0;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-title-wrap p {
+            margin: 0;
+            color: #71839a;
+            line-height: 1.8;
+        }
+
+        .modal-close-btn {
+            border: none;
+            background: rgba(231, 76, 60, 0.12);
+            color: #c0392b;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(231, 76, 60, 0.18);
+        }
+
+        .import-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .import-meta-card {
+            background: #f8fbff;
+            border: 1px solid #dce8f5;
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .import-meta-card label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .import-meta-card small {
+            display: block;
+            margin-top: 8px;
+            color: #71839a;
+        }
+
+        .decision-select {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid #dbe8f6;
+            background: #fff;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .decision-select:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        @media print {
+
+            .import-section,
+            .page-toolbar,
+            .print-actions-panel,
+            .modal-overlay,
+            .filters-row,
+            .no-print {
+                display: none !important;
+            }
+
+            .data-table th {
+                background: var(--primary-color) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <header style="margin-bottom: 30px;">
+            <h1><span data-icon="clipboard-list"></span> النتائج النهائية</h1>
+            <p>استيراد وتحليل النتائج السنوية النهائية للتلاميذ</p>
+        </header>
+
+        <section class="page-toolbar no-print">
+            <div class="toolbar-actions">
+                <button onclick="openImportModal()" class="btn-analyze secondary-btn">
+                    <span data-icon="file-import"></span> استيراد النتائج
+                </button>
+                <button onclick="clearAllData()" class="btn-analyze danger-btn">
+                    <span data-icon="trash-alt"></span> حذف جميع البيانات
+                </button>
+            </div>
+            <div class="toolbar-settings" id="directionSettingsContainer">
+                <div class="toolbar-field" id="ageDirectionField">
+                    <label for="directedBirthYearInput">سنة ميلاد الموجهين</label>
+                    <input id="directedBirthYearInput" class="year-input" type="number" min="1990" max="2050"
+                        onchange="handleDirectedYearChange(this.value)">
+                    <small>كل تلميذ معدله أقل من 10 وسنة ميلاده هذه أو أقل يعتبر موجها.</small>
+                </div>
+                <div class="toolbar-field" id="manualDirectionField" style="display: none;">
+                    <label>نظام التوجيه</label>
+                    <small style="max-width: 250px; line-height: 1.4;">في الطور الثانوي، يتم توجيه التلاميذ (معدل &lt; 10) يدوياً من خلال قائمة التلاميذ أسفله.</small>
+                </div>
+            </div>
+        </section>
+
+        <div id="importedFilesList"
+            style="display: none; margin: 0 0 18px 0; padding: 12px 16px; background: #e8f4fd; border-radius: 12px; text-align: center;">
+            <span style="font-size: 1.05rem; font-weight: bold;"><span data-icon="chart-bar"></span> تم تحميل <span
+                    id="importedStudentsCount" style="color: #2980b9;">0</span> تلميذ في النتائج النهائية</span>
+            <span style="display: inline-block; margin-inline-start: 10px; color: #355c7d; font-weight: 700;">| السنة المعروضة:
+                <select id="activeAcademicYearSelect" onchange="changeActiveAcademicYear(this.value)" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #dbe8f6; background: #fff; font-family: inherit; font-size: 0.95rem; font-weight: bold; color: var(--primary-color); cursor: pointer;"></select>
+            </span>
+        </div>
+
+        <div id="mainContent" style="display: none;">
+
+
+            <section class="print-actions-panel no-print" style="margin-bottom: 25px;">
+                <h3><span data-icon="print"></span> خيارات الطباعة</h3>
+                <div class="print-actions-grid">
+                    <button id="printStatisticsBtn" data-print-premium="true" onclick="printStatisticsReport()" class="btn-analyze print-btn stats">
+                        <span data-icon="chart-pie"></span> طباعة الإحصائيات
+                    </button>
+                    <button id="printStudentsBtn" data-print-premium="true" onclick="printStudentsList()" class="btn-analyze print-btn list">
+                        <span data-icon="list"></span> طباعة قائمة التلاميذ
+                    </button>
+                    <button id="printFullReportBtn" data-print-premium="true" onclick="printFullPageReport()" class="btn-analyze print-btn full">
+                        <span data-icon="print"></span> طباعة التقرير الكامل
+                    </button>
+                </div>
+            </section>
+
+
+            <section class="card" style="margin-bottom: 25px;">
+                <div class="section-title">
+                    <h3><span data-icon="chart-pie"></span> الإحصائيات العامة</h3>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">إجمالي التلاميذ</div>
+                        <div class="stat-value" id="totalStudents">0</div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-label">عدد الذكور</div>
+                        <div class="stat-value" id="totalMales">0</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-label">عدد الإناث</div>
+                        <div class="stat-value" id="totalFemales">0</div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-label">المنتقلون</div>
+                        <div class="stat-value" id="totalPassed">0</div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-label">المعيدون</div>
+                        <div class="stat-value" id="totalFailed">0</div>
+                    </div>
+                    <div class="stat-card" style="border-top-color: #f39c12;">
+                        <div class="stat-label">الموجهون</div>
+                        <div class="stat-value" id="totalDirected">0</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card" style="margin-bottom: 25px;">
+                <div class="section-title">
+                    <h3><span data-icon="chart-line"></span> إحصائيات المستويات</h3>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المستوى</th>
+                                <th>التعداد</th>
+                                <th>ذكور</th>
+                                <th>إناث</th>
+                                <th>منتقلون</th>
+                                <th>معيدون</th>
+                                <th>موجهون</th>
+                                <th>نسبة النجاح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="levelStatsBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="card" style="margin-bottom: 25px;">
+                <div class="section-title">
+                    <h3><span data-icon="users"></span> توزيع الانتقال والإعادة حسب الجنس</h3>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">المستوى</th>
+                                <th colspan="2">المنتقلون</th>
+                                <th colspan="2">المعيدون</th>
+                                <th colspan="2">الموجهون</th>
+                            </tr>
+                            <tr>
+                                <th>ذكور</th>
+                                <th>إناث</th>
+                                <th>ذكور</th>
+                                <th>إناث</th>
+                                <th>ذكور</th>
+                                <th>إناث</th>
+                            </tr>
+                        </thead>
+                        <tbody id="genderDistributionBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="card" style="margin-bottom: 25px;">
+                <div class="section-title">
+                    <h3><span data-icon="school"></span> توزيع الأفواج</h3>
+                </div>
+                <div class="filters-row no-print">
+                    <div class="filter-group">
+                        <label>المستوى:</label>
+                        <select id="squadLevelFilter" onchange="renderSquadTable()">
+                            <option value="all">جميع المستويات</option>
+                            <option value="1">السنة الأولى</option>
+                            <option value="2">السنة الثانية</option>
+                            <option value="3">السنة الثالثة</option>
+                            <option value="4">السنة الرابعة</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المستوى</th>
+                                <th>القسم</th>
+                                <th>التعداد</th>
+                                <th>ذكور</th>
+                                <th>إناث</th>
+                                <th>منتقلون</th>
+                                <th>معيدون</th>
+                                <th>موجهون</th>
+                            </tr>
+                        </thead>
+                        <tbody id="squadTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="card" style="margin-bottom: 25px;">
+                <div class="section-title">
+                    <h3><span data-icon="clipboard-list"></span> قائمة التلاميذ حسب القرار</h3>
+                </div>
+                <div class="filters-row no-print">
+                    <div class="filter-group">
+                        <label>القرار:</label>
+                        <select id="decisionFilter" onchange="renderStudentsList()">
+                            <option value="all">جميع التلاميذ</option>
+                            <option value="passed">المنتقلون</option>
+                            <option value="failed">المعيدون</option>
+                            <option value="directed">الموجهون</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>المستوى:</label>
+                        <select id="studentsLevelFilter" onchange="updateClassFilter(); renderStudentsList()">
+                            <option value="all">جميع المستويات</option>
+                            <option value="1">السنة الأولى</option>
+                            <option value="2">السنة الثانية</option>
+                            <option value="3">السنة الثالثة</option>
+                            <option value="4">السنة الرابعة</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>القسم:</label>
+                        <select id="studentsClassFilter" onchange="renderStudentsList()">
+                            <option value="all">جميع الأقسام</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>الجنس:</label>
+                        <select id="studentsGenderFilter" onchange="renderStudentsList()">
+                            <option value="all">الكل</option>
+                            <option value="ذكر">ذكور</option>
+                            <option value="أنثى">إناث</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin: 10px 0; padding: 10px; background: var(--bg-color); border-radius: 8px;">
+                    <strong><span data-icon="list-ol"></span> عدد النتائج:</strong> <span id="studentsListCount">0</span> تلميذ
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اللقب والاسم</th>
+                                <th>الجنس</th>
+                                <th style="min-width: 130px; white-space: nowrap;">تاريخ الميلاد</th>
+                                <th>المستوى</th>
+                                <th>القسم</th>
+                                <th>المعدل السنوي</th>
+                                <th>القرار</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsListBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+
+        <div id="noDataMessage" class="no-data-message">
+            <p style="font-size: 3rem; margin-bottom: 20px;"><span data-icon="folder-open"></span></p>
+            <p>لم يتم استيراد أي بيانات بعد.</p>
+            <p style="font-size: 0.9rem; color: #95a5a6;">افتح نافذة الاستيراد من الزر العلوي، ثم اختر السنة الدراسية والملفات.</p>
+        </div>
+
+    </div>
+
+    <div id="importModal" class="modal-overlay no-print" onclick="handleImportModalOverlay(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <h3><span data-icon="file-import"></span> استيراد النتائج النهائية</h3>
+                    <p>حدد السنة الدراسية أولًا، ثم اختر ملفات Excel الخاصة بالأقسام أو استورد السنة الرابعة من نتائج الشهادة.</p>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeImportModal()">
+                    <span data-icon="times"></span>
+                </button>
+            </div>
+
+            <div class="import-meta-grid">
+                <div class="import-meta-card">
+                    <label for="importAcademicYear">السنة الدراسية</label>
+                    <select id="importAcademicYear" class="year-input"></select>
+                    <small>افتراضيًا يتم اختيار السنة الدراسية الحالية.</small>
+                </div>
+                <div class="import-meta-card">
+                    <label>استيراد خاص</label>
+                    <button onclick="import4thYearFromBEM()" class="btn-analyze"
+                        style="display: inline-block; background-color: #9b59b6; width: 100%;">
+                        <span data-icon="graduation-cap"></span> استيراد السنة الرابعة من نتائج الشهادة
+                    </button>
+                    <small>سيتم حفظ النتائج السنوية في نفس السنة الدراسية المحددة أعلاه.</small>
+                </div>
+            </div>
+
+            <section class="import-section" style="margin-bottom: 0;">
+                <div class="file-drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <div class="icon"><span data-icon="folder-open"></span></div>
+                    <p style="font-size: 1.2rem; font-weight: bold;">اسحب وأفلت ملفات Excel هنا</p>
+                    <p>أو اضغط هنا لاختيار الملفات. كل ملف يمثل قسمًا واحدًا.</p>
+                </div>
+
+                <div style="margin: 15px 0;">
+                    <label for="fileInput" class="btn-analyze"
+                        style="display: inline-block; cursor: pointer; background-color: var(--secondary-color);">
+                        <span data-icon="folder-plus"></span> اختيار ملفات Excel متعددة
+                    </label>
+                    <input type="file" id="fileInput" multiple accept=".xls,.xlsx" style="display: none;"
+                        onchange="handleFileSelect(event)">
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="../../assets/js/icon_manager.js"></script>
+    <script>document.addEventListener('DOMContentLoaded', () => { if (typeof IconManager !== 'undefined') IconManager.render(); });</script>
+    <script src="../../assets/js/sweetalert2.all.min.js"></script>
+    <script src="final_results.js"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+    <script src="../../assets/js/fullscreen_toggle.js"></script>
+</body>
+
+</html>

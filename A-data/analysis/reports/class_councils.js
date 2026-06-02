@@ -1,0 +1,5830 @@
+function initializeStudentTableControls() {
+    const searchInput = document.getElementById('studentSearchInput');
+    if (searchInput && !searchInput.dataset.bound) {
+        searchInput.dataset.bound = 'true';
+        searchInput.value = studentTableState.searchTerm;
+        searchInput.addEventListener('input', () => {
+            studentTableState.searchTerm = searchInput.value.trim();
+            applyFilters();
+        });
+    }
+
+    const atRiskToggle = document.getElementById('showOnlyAtRisk');
+    if (atRiskToggle && !atRiskToggle.dataset.bound) {
+        atRiskToggle.dataset.bound = 'true';
+        atRiskToggle.checked = studentTableState.onlyAtRisk;
+        atRiskToggle.addEventListener('change', () => {
+            studentTableState.onlyAtRisk = atRiskToggle.checked;
+            applyFilters();
+        });
+    }
+
+    const densityToggle = document.getElementById('studentDensityToggle');
+    if (densityToggle && !densityToggle.dataset.bound) {
+        densityToggle.dataset.bound = 'true';
+        densityToggle.addEventListener('click', () => {
+            studentTableState.density = studentTableState.density === 'compact' ? 'comfortable' : 'compact';
+            localStorage.setItem('classCouncilsTableDensity', studentTableState.density);
+            applyStudentTableDensity();
+        });
+    }
+
+    applyStudentTableDensity();
+    updateStudentTableSortStatus();
+}
+
+function applyStudentTableDensity() {
+    const section = document.querySelector('.student-list');
+    const densityToggle = document.getElementById('studentDensityToggle');
+    const isCompact = studentTableState.density === 'compact';
+
+    if (section) {
+        section.classList.toggle('student-table-compact', isCompact);
+    }
+
+    if (densityToggle) {
+        densityToggle.textContent = isCompact ? 'عرض مريح' : 'عرض مضغوط';
+    }
+}
+
+function updateStudentTableSortStatus() {
+    const status = document.getElementById('studentSortStatus');
+    if (!status) return;
+
+    status.textContent = studentTableState.sortDirection === 'asc'
+        ? 'الترتيب: الأدنى أولا'
+        : 'الترتيب: الأعلى أولا';
+}
+
+function updateStudentTableSummary(totalCount = 0, visibleCount = 0, subjectCount = 0) {
+    const visibleEl = document.getElementById('visibleStudentCount');
+    const totalEl = document.getElementById('totalStudentCount');
+    const subjectEl = document.getElementById('visibleSubjectCount');
+
+    if (visibleEl) visibleEl.textContent = String(visibleCount);
+    if (totalEl) totalEl.textContent = String(totalCount);
+    if (subjectEl) subjectEl.textContent = String(subjectCount);
+
+    updateStudentTableSortStatus();
+}
+
+function getCurrentTheme() {
+    return document.documentElement.getAttribute('data-theme')
+        || document.body.getAttribute('data-theme')
+        || localStorage.getItem('theme')
+        || 'light';
+}
+
+function syncThemeToPage(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+}
+
+function ensureDarkifyController() {
+    if (darkifyController || typeof Darkify === 'undefined') {
+        return darkifyController;
+    }
+
+    darkifyController = new Darkify('#themeToggle', {
+        autoMatchTheme: false,
+        useLocalStorage: true,
+        useSessionStorage: false
+    });
+
+    return darkifyController;
+}
+
+function toggleThemeMode() {
+    const controller = ensureDarkifyController();
+    if (controller && typeof controller.toggleTheme === 'function') {
+        controller.toggleTheme();
+        return;
+    }
+
+    const nextTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+    syncThemeToPage(nextTheme);
+    try {
+        localStorage.setItem('theme', nextTheme);
+    } catch (error) {
+        // Ignore storage failures and keep the in-memory theme change.
+    }
+
+    window.dispatchEvent(new CustomEvent('themeChanged', {
+        detail: { theme: nextTheme }
+    }));
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function getSelectDisplayText(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return '';
+    const option = select.options?.[select.selectedIndex];
+    return option ? option.textContent.trim() : (select.value || '');
+}
+
+function getCurrentFilterContext() {
+    return {
+        year: document.getElementById('yearSelect')?.value || '',
+        yearLabel: getSelectDisplayText('yearSelect'),
+        level: document.getElementById('levelSelect')?.value || '',
+        levelLabel: getSelectDisplayText('levelSelect'),
+        stream: document.getElementById('streamSelect')?.value || '',
+        streamLabel: getSelectDisplayText('streamSelect'),
+        classValue: document.getElementById('classSelect')?.value || 'all',
+        classLabel: getSelectDisplayText('classSelect'),
+        trimester: document.getElementById('trimesterSelect')?.value || '1',
+        trimesterLabel: getSelectDisplayText('trimesterSelect')
+    };
+}
+
+function buildComparisonClassLabel(student, includeStreamInLabel) {
+    const classLabel = student.class ? `القسم ${student.class}` : 'قسم غير محدد';
+    if (includeStreamInLabel && student.stream) {
+        return `${student.stream} - ${classLabel}`;
+    }
+    return classLabel;
+}
+
+function getSubjectComparisonData(subjectName) {
+    const filters = getCurrentFilterContext();
+    const stage = institutionSettings.educationStage || 'middle';
+    const includeStreamInLabel = stage === 'secondary' && !filters.stream;
+    const relevantStudents = studentsData.filter(student => {
+        const matchYear = filters.year ? getStudentYear(student) === filters.year : true;
+        const matchLevel = filters.level ? student.level == filters.level : true;
+        const matchStream = filters.stream ? student.stream === filters.stream : true;
+        return matchYear && matchLevel && matchStream;
+    });
+
+    const grouped = new Map();
+
+    relevantStudents.forEach(student => {
+        const rawScore = getSubjectScore(student, subjectName, filters.trimester);
+        const numericScore = parseFloat(rawScore);
+        if (rawScore === null || rawScore === undefined || rawScore === '' || Number.isNaN(numericScore)) {
+            return;
+        }
+
+        const keyParts = [student.stream || '', student.class || ''];
+        const groupKey = includeStreamInLabel ? keyParts.join('__') : (student.class || '');
+        if (!groupKey) return;
+
+        if (!grouped.has(groupKey)) {
+            grouped.set(groupKey, {
+                key: groupKey,
+                label: buildComparisonClassLabel(student, includeStreamInLabel),
+                classValue: student.class || '',
+                streamValue: student.stream || '',
+                scores: []
+            });
+        }
+
+        grouped.get(groupKey).scores.push(numericScore);
+    });
+
+    return Array.from(grouped.values())
+        .map(group => {
+            const count = group.scores.length;
+            const average = count ? (group.scores.reduce((sum, score) => sum + score, 0) / count) : 0;
+            const passed = group.scores.filter(score => score >= 10).length;
+            const successRate = count ? ((passed / count) * 100) : 0;
+            return {
+                ...group,
+                count,
+                average,
+                successRate
+            };
+        })
+        .filter(group => group.count > 0)
+        .sort((a, b) => {
+            if (b.successRate !== a.successRate) return b.successRate - a.successRate;
+            if (b.average !== a.average) return b.average - a.average;
+            return a.label.localeCompare(b.label, 'ar');
+        });
+}
+
+function openSubjectComparisonModal(subjectName) {
+    const modal = document.getElementById('subjectComparisonModal');
+    const title = document.getElementById('subjectComparisonTitle');
+    const subtitle = document.getElementById('subjectComparisonSubtitle');
+    const meta = document.getElementById('subjectComparisonMeta');
+    const body = document.getElementById('subjectComparisonBody');
+    if (!modal || !title || !subtitle || !meta || !body) return;
+
+    const filters = getCurrentFilterContext();
+    const comparisonData = getSubjectComparisonData(subjectName);
+    const metaChips = [
+        filters.yearLabel ? `السنة: ${filters.yearLabel}` : '',
+        filters.levelLabel ? `المستوى: ${filters.levelLabel}` : '',
+        filters.trimesterLabel ? `الفصل: ${filters.trimesterLabel}` : '',
+        filters.stream ? `الشعبة: ${filters.streamLabel}` : 'المقارنة تشمل كل الأقسام في المستوى',
+        filters.classValue && filters.classValue !== 'all' ? 'تم تجاهل فلتر القسم لإظهار المقارنة الشاملة' : ''
+    ].filter(Boolean);
+
+    title.textContent = `مقارنة مادة ${subjectName}`;
+    subtitle.textContent = 'نسبة النجاح ومعدل المادة بين الأقسام في المستوى الحالي';
+    meta.innerHTML = metaChips.map(chip => `<span class="subject-comparison-meta-chip">${escapeHtml(chip)}</span>`).join('');
+
+    if (!comparisonData.length) {
+        body.innerHTML = '<div class="subject-comparison-empty">لا توجد بيانات كافية لهذه المادة ضمن الفلاتر الحالية.</div>';
+        modal.style.display = 'flex';
+        return;
+    }
+
+    body.innerHTML = `
+        <div class="subject-comparison-grid">
+            ${comparisonData.map((group, index) => {
+                const successHeight = Math.max(14, Math.min(100, group.successRate));
+                const averageHeight = Math.max(14, Math.min(100, (group.average / 20) * 100));
+                return `
+                    <article class="subject-comparison-card">
+                        <div class="subject-comparison-card-header">
+                            <div class="subject-comparison-class">${escapeHtml(`${index + 1}. ${group.label}`)}</div>
+                            <div class="subject-comparison-count">${group.count} تلميذا</div>
+                        </div>
+                        <div class="subject-comparison-columns">
+                            <div class="subject-comparison-column success">
+                                <div class="subject-comparison-column-value">${group.successRate.toFixed(2)}%</div>
+                                <div class="subject-comparison-column-track">
+                                    <div class="subject-comparison-column-fill" style="height: ${successHeight}%;"></div>
+                                </div>
+                                <div class="subject-comparison-column-label">نسبة النجاح</div>
+                            </div>
+                            <div class="subject-comparison-column average">
+                                <div class="subject-comparison-column-value">${group.average.toFixed(2)}</div>
+                                <div class="subject-comparison-column-track">
+                                    <div class="subject-comparison-column-fill" style="height: ${averageHeight}%;"></div>
+                                </div>
+                                <div class="subject-comparison-column-label">معدل المادة</div>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+}
+
+function closeSubjectComparisonModal() {
+    const modal = document.getElementById('subjectComparisonModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function getStudentTableVisibleData(data) {
+    const rawSearch = (studentTableState.searchTerm || '').trim();
+    const normalizedSearch = normalizeArabic(rawSearch).replace(/\s+/g, '');
+
+    return data.filter(student => {
+        const averageValue = parseFloat(getStudentAverage(student) || 0);
+        if (studentTableState.onlyAtRisk && averageValue >= 10) {
+            return false;
+        }
+
+        if (!normalizedSearch) {
+            return true;
+        }
+
+        const searchPool = [
+            student.name || '',
+            formatDate(student.dob) || '',
+            student.gender || '',
+            student.class || '',
+            student.stream || '',
+            averageValue.toFixed(2)
+        ].map(value => normalizeArabic(String(value)).replace(/\s+/g, ''));
+
+        return searchPool.some(value => value.includes(normalizedSearch));
+    });
+}
+
+// Helper to get filtered subjects based on level exemption
+
+function getFilteredSubjects(level, baseSubjects) {
+    if (window.ExemptSubjectsHelper && typeof window.ExemptSubjectsHelper.filterSubjects === 'function') {
+        return window.ExemptSubjectsHelper.filterSubjects(baseSubjects, {
+            level,
+            students: studentsData,
+            exemptSubjects
+        });
+    }
+
+    const exempt = exemptSubjects;
+
+    // Extract level number (1, 2, 3, 4) from level string (e.g., "السنة الأولى")
+
+    let lvlKey = null;
+
+    if (level.includes('1') || level.includes('أولى')) lvlKey = '1';
+
+    if (level.includes('2') || level.includes('ثانية')) lvlKey = '2';
+
+    if (level.includes('3') || level.includes('ثالثة')) lvlKey = '3';
+
+    if (level.includes('4') || level.includes('رابعة')) lvlKey = '4';
+
+    if (!lvlKey || !exempt[lvlKey]) return baseSubjects;
+
+    const levelExemptions = exempt[lvlKey];
+
+    const mapping = {
+
+        'art': ['ت.تشكيلية', 'التربية التشكيلية', 'فنون تشكيلية', 'رسم'],
+
+        'music': ['موسيقى', 'التربية الموسيقية'],
+
+        'info': ['معلوماتية', 'اعلام الي', 'إعلام آلي'],
+
+        'ama': ['أمازيغية', 'اللغة الأمازيغية', 'الأمازيغية', 'اللغة اﻷمازيغية', 'اﻷمازيغية']
+
+    };
+
+    return baseSubjects.filter(sub => {
+
+        const normSub = normalizeArabic(sub);
+
+        for (const [key, aliases] of Object.entries(mapping)) {
+
+            if (levelExemptions.includes(key)) {
+
+                if (aliases.some(alias => normSub.includes(normalizeArabic(alias)))) {
+
+                    return false;
+
+                }
+
+            }
+
+        }
+
+        return true;
+
+    });
+
+}
+
+function normalizeCouncilsAcademicYear(value) {
+    const text = String(value || '').trim().replace(/-/g, '/');
+    const years = text.match(/\d{4}/g);
+    if (years && years.length >= 2) {
+        return years.slice(0, 2).sort().join('/');
+    }
+    return text.replace(/\s+/g, '');
+}
+
+function councilsAcademicYearMatches(value, selectedYear) {
+    if (!selectedYear) return true;
+    return normalizeCouncilsAcademicYear(value) === normalizeCouncilsAcademicYear(selectedYear);
+}
+
+function getCouncilsTrimesterCode(value) {
+    const text = normalizeArabic(value || '').replace(/\s+/g, ' ');
+    if (!text) return '';
+    if (text.includes('الثالث') || text.includes('ثالث') || /\b3\b/.test(text)) return '3';
+    if (text.includes('الثاني') || text.includes('ثاني') || /\b2\b/.test(text)) return '2';
+    if (text.includes('الاول') || text.includes('الأول') || text.includes('اول') || /\b1\b/.test(text)) return '1';
+    return text;
+}
+
+function councilsTrimesterMatches(value, selectedTrimester) {
+    if (!selectedTrimester) return true;
+    return getCouncilsTrimesterCode(value) === getCouncilsTrimesterCode(selectedTrimester);
+}
+
+function getCouncilsLevelCode(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^[1-4]$/.test(raw)) return raw;
+
+    const text = normalizeArabic(raw).replace(/\s+/g, '');
+    if (text.includes('اولي') || text.includes('الاولى') || text.includes('الاولي') || text.includes('أولى')) return '1';
+    if (text.includes('ثانيه') || text.includes('الثانيه') || text.includes('ثانية') || text.includes('الثانية')) return '2';
+    if (text.includes('ثالثه') || text.includes('الثالثه') || text.includes('ثالثة') || text.includes('الثالثة')) return '3';
+    if (text.includes('رابعه') || text.includes('الرابعه') || text.includes('رابعة') || text.includes('الرابعة')) return '4';
+
+    const digit = text.match(/[1-4]/);
+    return digit ? digit[0] : '';
+}
+
+function getCouncilsStudentId(student) {
+    return String(student && (student.student_id || student.id || student.reg_number || student.national_id || '') || '').trim();
+}
+
+function getCouncilsNameVariants(student) {
+    const variants = new Set();
+    const name = student && (student.name || student.student_name) ? String(student.name || student.student_name).trim() : '';
+    const lastName = student && (student.lastName || student.last_name) ? String(student.lastName || student.last_name).trim() : '';
+    const firstName = student && (student.firstName || student.first_name) ? String(student.firstName || student.first_name).trim() : '';
+
+    [name, `${lastName} ${firstName}`.trim(), `${firstName} ${lastName}`.trim()]
+        .filter(Boolean)
+        .forEach(value => variants.add(normalizeArabic(value).replace(/\s+/g, '')));
+
+    return variants;
+}
+
+function councilsStudentsMatch(sourceStudent, activityStudent) {
+    const sourceId = getCouncilsStudentId(sourceStudent);
+    const activityId = getCouncilsStudentId(activityStudent);
+    if (sourceId && activityId && sourceId === activityId) return true;
+
+    const sourceNames = getCouncilsNameVariants(sourceStudent);
+    const activityNames = getCouncilsNameVariants(activityStudent);
+    for (const name of sourceNames) {
+        if (activityNames.has(name)) return true;
+    }
+    return false;
+}
+
+function formatCouncilsAverageValue(value) {
+    const numberValue = typeof value === 'string'
+        ? parseFloat(value.replace(',', '.'))
+        : parseFloat(value);
+
+    return Number.isFinite(numberValue) ? numberValue.toFixed(2) : '-';
+}
+
+// Load Data Function
+async function loadData() {
+    const rawStudentsPromise = DB.getResults(true);
+    const selectedYear = document.getElementById('yearSelect')?.value || '';
+    const currentAcademicYear = selectedYear || (DB.getCurrentAcademicYear ? DB.getCurrentAcademicYear() : '2023-2024');
+    const activityEvaluationsPromise = DB.getActivityEvaluations
+        ? DB.getActivityEvaluations({ academicYear: currentAcademicYear }).catch(error => {
+            console.warn("فشل تحميل تقييمات الأنشطة:", error);
+            return [];
+        })
+        : Promise.resolve([]);
+    const metadataPromise = Promise.all([
+        DB.get('exemptSubjects').catch(() => ({})),
+        DB.getTeachers().catch(() => []),
+        DB.get('classResponsibles').catch(() => ({})),
+        DB.getSettings().catch(() => ({})),
+        DB.get('signatureSettings').catch(() => ({})),
+        DB.get(SECONDARY_MANUAL_DECISIONS_KEY).catch(() => ({}))
+    ]);
+
+    let rawStudentsData = await rawStudentsPromise || [];
+
+    // Deduplicate Data
+    // Deduplicate Data & Pre-calculate Metadata
+    // Unified student database to handle merging marks from multiple trimester files
+    const studentMap = new Map();
+    window.schoolHierarchy = {};
+
+    console.time('DataProcessing');
+    for (const student of rawStudentsData) {
+        // Robust normalization for identity matching
+        // Remove spaces and normalize Arabic to avoid "Ahmed " vs "Ahmed" or "محمد" vs "محمّد" issues
+        const cleanStr = (s) => normalizeArabic(s || '').replace(/\s+/g, '');
+
+        const normName = cleanStr(student.name);
+        const normDob = cleanStr(student.dob);
+        const normClass = cleanStr(student.class);
+        const normLevel = cleanStr(student.level);
+        const normStream = cleanStr(student.stream);
+        const normAcademicYear = cleanStr(getStudentYear(student));
+
+        const uniqueKey = `${normName}|${normDob}|${normClass}|${normLevel}|${normStream}|${normAcademicYear}`;
+
+        // Robust trimester detection for secondary stage files
+        const getTrimesterValue = (name) => {
+            const n = normalizeArabic(name || '');
+            if (n.includes('ثاني') || n.includes('2')) return '2';
+            if (n.includes('ثالث') || n.includes('3')) return '3';
+            if (n.includes('اول') || n.includes('1')) return '1';
+            return '1'; // Default
+        };
+
+        const tVal = getTrimesterValue(student.trimester);
+        const stYear = getStudentYear(student);
+        const suffix = ` ف${tVal}`;
+
+        let targetStudent;
+        if (studentMap.has(uniqueKey)) {
+            targetStudent = studentMap.get(uniqueKey);
+        } else {
+            // Initialize student with base data
+            targetStudent = {
+                ...student,
+                __uid: uniqueKey, // Internal unique ID for robust identity matching and caching
+                marks: {},
+                averages: {},
+                activityTestAverages: {}, // [NEW] Stores pre-calculated Exam-Only averages from DB
+                // Keep original strings for display but trimmed
+                name: (student.name || '').trim(),
+                dob: (student.dob || '').trim(),
+                class: (student.class || '').trim(),
+                level: (student.level || '').trim(),
+                stream: (student.stream || '').trim()
+            };
+            studentMap.set(uniqueKey, targetStudent);
+
+            // Build Hierarchy (Year -> Level -> Stream/Class)
+            const yr = stYear;
+            const l = targetStudent.level;
+            if (yr && l) {
+                if (!window.schoolHierarchy[yr]) window.schoolHierarchy[yr] = {};
+                if (!window.schoolHierarchy[yr][l]) {
+                    window.schoolHierarchy[yr][l] = { classes: new Set(), streams: new Set() };
+                }
+                if (targetStudent.class) window.schoolHierarchy[yr][l].classes.add(targetStudent.class);
+                if (targetStudent.stream) window.schoolHierarchy[yr][l].streams.add(targetStudent.stream);
+            }
+        }
+
+        // 1. Harmonize and Merge Marks
+        if (student.marks) {
+            Object.entries(student.marks).forEach(([sub, score]) => {
+                // Check if mark already has a suffix
+                const hasSuffix = ['1', '2', '3'].some(t => sub.includes(`ف${t}`) || sub.includes(`فصل ${t}`));
+                // Ensure consistency: "Subject" becomes "Subject F1" if it's from T1 file
+                const finalKey = hasSuffix ? sub : `${sub}${suffix}`;
+                targetStudent.marks[finalKey] = score;
+            });
+        }
+
+        // 2. Harmonize and Merge Averages (Robustly merge all available averages)
+        if (student.averages) {
+            Object.entries(student.averages).forEach(([t, avg]) => {
+                if (avg !== undefined && avg !== null) {
+                    targetStudent.averages[t] = parseFloat(avg) || 0;
+                    // Also store back to explicit mark key for this trimester
+                    const tSuffix = ` ف${t}`;
+                    const tAvgKey = `معدل الفصل${tSuffix}`;
+                    targetStudent.marks[tAvgKey] = targetStudent.averages[t];
+                }
+            });
+        }
+
+        // Ensure the "native" average from the current file is also stored for its trimester
+        if (student.average !== undefined) {
+            targetStudent.averages[tVal] = parseFloat(student.average) || 0;
+            const avgKey = `معدل الفصل${suffix}`;
+            targetStudent.marks[avgKey] = targetStudent.averages[tVal];
+        }
+
+        // [NEW] Capture Stored Activity Test Average from DB
+        if (student.activity_test_avg !== undefined && student.activity_test_avg !== null) {
+            targetStudent.activityTestAverages[tVal] = parseFloat(student.activity_test_avg);
+            // Optionally also store as a virtual mark for display consistency
+            const actAvgKey = `معدل الاختبار${suffix}`;
+            targetStudent.marks[actAvgKey] = targetStudent.activityTestAverages[tVal];
+        }
+    }
+    studentsData = Array.from(studentMap.values());
+    console.timeEnd('DataProcessing');
+
+    // Pre-index marks by trimester for fast, accurate lookups (prevents cross-trimester contamination)
+    optimizeStudentData(studentsData);
+
+    // Clear caches when loading new data
+    scoreCache.clear();
+    statsCache.clear();
+
+    const metadataResults = await metadataPromise;
+    exemptSubjects = metadataResults[0] || {};
+    // Load Activity Evaluations from relational SQLite db and un-flatten for legacy rendering loops
+    try {
+        const allActivityData = await activityEvaluationsPromise || [];
+        const flatActivityData = allActivityData.filter(d => councilsAcademicYearMatches(d.academic_year, currentAcademicYear));
+        let groupedActivity = {};
+        flatActivityData.forEach(d => {
+            const d_class = d.class_number || d.class;
+            const levelCode = getCouncilsLevelCode(d.level);
+            const key = `${getCouncilsTrimesterCode(d.trimester)}_${levelCode}_${d_class}_${d.subject}`;
+            if (!groupedActivity[key]) {
+                groupedActivity[key] = {
+                    trimester: d.trimester,
+                    stage: 'middle',
+                    level: levelCode || d.level,
+                    class: d_class ? d_class.toString().replace(/^0+/, '') : '',
+                    subject: d.subject,
+                    students: []
+                };
+            }
+            // Safe name handling to avoid crash if student_name is null/undefined
+            const sName = d.student_name || 'تلميذ غير معروف';
+            groupedActivity[key].students.push({
+                id: d.student_id,
+                student_id: d.student_id,
+                lastName: sName.split(' ')[0] || sName,
+                firstName: sName.includes(' ') ? sName.substring(sName.indexOf(' ') + 1) : '',
+                name: sName,
+                testMark: d.test_mark
+            });
+        });
+        window.activityEvaluations = Object.values(groupedActivity);
+    } catch (actErr) {
+        console.warn("فشل تحميل تقييمات الأنشطة:", actErr);
+        window.activityEvaluations = [];
+    }
+
+    teachersList = metadataResults[1] || [];
+    classResponsibles = metadataResults[2] || {};
+    institutionSettings = metadataResults[3] || {};
+    signatureSettings = metadataResults[4] || {};
+    secondaryManualDecisions = metadataResults[5] || {};
+
+    if (studentsData.length > 0) {
+        console.log("تم تحميل البيانات من التخزين المحلي:", studentsData.length, "سجل (بعد إزالة التكرار)");
+
+        // Comprehensive subject discovery
+        const allSubjectsSet = new Set();
+        const nonSubjectPatterns = ['معدل', 'المعدل', 'average', 'avg', 'total', 'المجموع', 'الرتبة', 'التقدير'];
+
+        // Find all unique subjects across all students to build a complete global list
+        // IMPORTANT: Strip trimester suffixes (ف1, ف2, ف3) so the list contains clean base names.
+        // The actual score lookup will re-add the correct suffix via getSubjectScore.
+        studentsData.forEach(s => {
+            if (s.marks) {
+                Object.keys(s.marks).forEach(key => {
+                    const lowerKey = key.toLowerCase();
+                    const normKey = normalizeArabic(key);
+                    const isSubject = !nonSubjectPatterns.some(pattern =>
+                        normKey.startsWith(normalizeArabic(pattern)) ||
+                        lowerKey.startsWith(pattern.toLowerCase())
+                    );
+                    if (isSubject) {
+                        // Strip any trimester suffix before adding to the set
+                        const baseKey = key.replace(/\s*(فصل|ف)\s*[123]\s*$/g, '').trim();
+                        if (baseKey) allSubjectsSet.add(baseKey);
+                    }
+                });
+            }
+        });
+
+        if (allSubjectsSet.size > 0) {
+            subjects = Array.from(allSubjectsSet);
+        } else {
+            subjects = orderedSubjects;
+        }
+    } else {
+        subjects = orderedSubjects;
+    }
+}
+
+/**
+
+ * Get class responsible teacher name
+
+ * @param {string} level - The level (e.g., 'أولى' or 'أولى متوسط')
+
+ * @param {string} classNum - The class number (e.g., '1' or '01')
+
+ * @returns {string} Teacher name or empty string if not assigned
+
+ */
+
+function getClassResponsibleName(level, classNum, stream = null) {
+    if (!classResponsibles || Object.keys(classResponsibles).length === 0) return '';
+
+    let teacherId = null;
+    const normLevel = normalizeLevelKeyForMatching(level);
+    const normStream = stream ? normalizeArabic(stream).replace(/\s+/g, '') : null;
+    const cleanClassNum = String(classNum).replace(/^0+/, '');
+
+    // 1. Direct Try
+    const trialKeys = [
+        `${level}_${stream ? stream + '_' : ''}${classNum}`,
+        `${level}_${stream ? stream + '_' : ''}${cleanClassNum}`
+    ];
+
+    for (const tk of trialKeys) {
+        if (classResponsibles[tk]) {
+            teacherId = classResponsibles[tk];
+            break;
+        }
+    }
+
+    // 2. Fuzzy Fallback
+    if (!teacherId) {
+        const allKeys = Object.keys(classResponsibles);
+        for (const key of allKeys) {
+            const keyParts = key.split('_');
+            if (keyParts.length < 2) continue;
+
+            const kLevel = keyParts[0];
+            const kClass = keyParts[keyParts.length - 1];
+            const kStream = keyParts.length > 2 ? keyParts.slice(1, keyParts.length - 1).join('_') : null;
+
+            const matchLevel = normalizeLevelKeyForMatching(kLevel) === normLevel;
+            const matchClass = String(kClass).replace(/^0+/, '') === cleanClassNum;
+
+            let matchStream = true;
+            if (stream || kStream) {
+                const normKStream = kStream ? normalizeArabic(kStream).replace(/\s+/g, '') : '';
+                const normCurrentStream = normStream || '';
+                matchStream = normKStream === normCurrentStream || normKStream.includes(normCurrentStream) || normCurrentStream.includes(normKStream);
+            }
+
+            if (matchLevel && matchClass && matchStream) {
+                teacherId = classResponsibles[key];
+                break;
+            }
+        }
+    }
+
+    if (!teacherId) return '';
+    const teacher = teachersList.find(t => t.id === teacherId);
+    return teacher ? `${teacher.last_name} ${teacher.first_name}` : '';
+}
+
+/**
+ * Internal helper for fuzzy level matching
+ */
+function normalizeLevelKeyForMatching(levelStr) {
+    if (!levelStr) return '';
+    let s = normalizeArabic(levelStr).replace(/\s+/g, '');
+    s = s.replace(/السنة/g, '');
+    s = s.replace(/متوسط/g, '');
+    s = s.replace(/ثانوي/g, '');
+    s = s.replace(/أولى|1/g, '1');
+    s = s.replace(/ثانية|2/g, '2');
+    s = s.replace(/ثالثة|3/g, '3');
+    s = s.replace(/رابعة|4/g, '4');
+    return s;
+}
+
+// عند تحميل الصفحة
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("Class Councils UI v1.1 - Loading...");
+
+    await loadData();
+
+    // Fill Dropdowns initially
+    populateFilters();
+
+    // Event Listeners
+    document.getElementById('trimesterSelect').addEventListener('change', applyFilters);
+
+    const directedBirthYearQuickInput = document.getElementById('directedBirthYearQuickInput');
+    if (directedBirthYearQuickInput) {
+        directedBirthYearQuickInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                saveDirectedBirthYearQuickSetting();
+            }
+        });
+    }
+
+    const yearSelect = document.getElementById('yearSelect');
+    if (yearSelect) {
+        yearSelect.addEventListener('change', () => {
+            populateFilters();
+            applyFilters();
+        });
+    }
+
+    document.getElementById('levelSelect').addEventListener('change', () => {
+        populateStreams(); // New logic
+        populateClassDropdown();
+        applyFilters();
+    });
+
+    document.getElementById('streamSelect').addEventListener('change', () => {
+        populateClassDropdown();
+        applyFilters();
+    });
+
+    document.getElementById('classSelect').addEventListener('change', () => {
+        updateClassResponsibleDisplay();
+        applyFilters();
+    });
+
+    const toggleTestSelect = document.getElementById('toggleTestSuccessCol');
+    if (toggleTestSelect) {
+        toggleTestSelect.addEventListener('change', applyTestSuccessColumnToggle);
+    }
+    const toggleExamAvgColToggle = document.getElementById('toggleExamAvgCol');
+    if (toggleExamAvgColToggle) {
+        toggleExamAvgColToggle.addEventListener('change', applyExamAvgColumnToggle);
+    }
+
+    initializeStudentTableControls();
+    applyFilters(); // Render initial state (all)
+
+    // Dark Mode Logic
+    const themeToggle = document.getElementById('themeToggle');
+    const themeToggleText = document.getElementById('themeToggleText');
+    const initialTheme = getCurrentTheme();
+    syncThemeToPage(initialTheme);
+
+    if (themeToggle && !themeToggle.dataset.darkifyBound) {
+        themeToggle.dataset.darkifyBound = 'true';
+        themeToggle.addEventListener('click', toggleThemeMode);
+    }
+
+    window.addEventListener('themeChanged', (event) => {
+        const theme = event?.detail?.theme || (darkifyController ? darkifyController.getCurrentTheme() : getCurrentTheme());
+        refreshThemeUI(theme);
+    });
+
+    function refreshThemeUI(theme) {
+        const moonIcon = document.querySelector('[data-icon="moon"]');
+        if (theme === 'dark') {
+            if (moonIcon) moonIcon.innerHTML = '☀️';
+            if (themeToggleText) themeToggleText.textContent = 'الوضع الفاتح';
+        } else {
+            if (moonIcon) moonIcon.innerHTML = '🌙';
+            if (themeToggleText) themeToggleText.textContent = 'الوضع الداكن';
+        }
+    }
+
+    function updateChartColors(theme) {
+        const textColor = theme === 'dark' ? '#f7fbff' : '#2c3e50';
+        const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.08)';
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.color = textColor;
+            Chart.defaults.borderColor = gridColor;
+        }
+    }
+
+    // Initial chart color update
+    refreshThemeUI(initialTheme);
+    updateChartColors(initialTheme);
+
+    // Render Icons
+    if (typeof IconManager !== 'undefined') IconManager.render();
+});
+
+function populateFilters() {
+    const levelSelect = document.getElementById('levelSelect');
+    const yearSelect = document.getElementById('yearSelect');
+
+    console.time('PopulateFilters');
+
+    // Populate Years (Dynamic & Robust)
+    const years = new Set();
+    studentsData.forEach(s => {
+        const y = getStudentYear(s);
+        if (y) years.add(y);
+    });
+    const sortedYears = [...years].sort((a, b) => b.localeCompare(a));
+
+    if (yearSelect) {
+        // Only rebuild if content changed or currently empty
+        const currentOptions = Array.from(yearSelect.options).map(o => o.value);
+        const hasChanges = sortedYears.length !== currentOptions.length || sortedYears.some((y, i) => y !== currentOptions[i]);
+
+        if (hasChanges || yearSelect.options.length === 0) {
+            const preservedValue = yearSelect.value;
+            yearSelect.innerHTML = '';
+            sortedYears.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelect.appendChild(opt);
+            });
+
+            // Restore selection or select latest
+            if (preservedValue && sortedYears.includes(preservedValue)) {
+                yearSelect.value = preservedValue;
+            } else if (sortedYears.length > 0) {
+                yearSelect.value = sortedYears[0];
+            }
+        }
+    }
+
+    const selectedYear = yearSelect ? yearSelect.value : '';
+
+    // Use pre-calculated hierarchy for the selected year
+    const yearHierarchy = window.schoolHierarchy?.[selectedYear] || {};
+    let levels = Object.keys(yearHierarchy).sort();
+
+    // Fallback: If hierarchy is empty for this year, try to get levels directly from studentsData
+    if (levels.length === 0 && studentsData.length > 0) {
+        const uniqueLevels = new Set();
+        studentsData.forEach(s => {
+            if (getStudentYear(s) === selectedYear && s.level) uniqueLevels.add(s.level);
+        });
+        levels = [...uniqueLevels].sort();
+    }
+
+    const currentLevel = levelSelect.value;
+    levelSelect.innerHTML = ''; // Clear existing
+    levels.forEach(l => {
+        const formatLvl = (n) => ({ "1": "الأولى", "2": "الثانية", "3": "الثالثة", "4": "الرابعة" }[String(n).trim()] || n);
+        levelSelect.innerHTML += `<option value="${l}">${formatLvl(l)}</option>`;
+    });
+
+    if (levels.includes(currentLevel)) {
+        levelSelect.value = currentLevel;
+    } else if (levels.length > 0) {
+        levelSelect.value = levels[0];
+    }
+
+    populateStreams();
+    populateClassDropdown();
+    console.timeEnd('PopulateFilters');
+}
+
+function populateStreams() {
+    const levelSelect = document.getElementById('levelSelect').value;
+    const streamSelect = document.getElementById('streamSelect');
+    const streamGroup = document.getElementById('streamGroup');
+    const stage = institutionSettings.educationStage || 'middle';
+
+    if (stage === 'secondary') {
+        streamGroup.style.display = 'flex';
+        streamSelect.innerHTML = '';
+
+        // Optimization: Use hierarchy or SubjectManager
+        let availableStreams = [];
+
+        const currentYear = document.getElementById('yearSelect')?.value;
+        const yearHierarchy = window.schoolHierarchy?.[currentYear] || {};
+        if (yearHierarchy[levelSelect]) {
+            availableStreams = Array.from(yearHierarchy[levelSelect].streams || []);
+        } else {
+            // Fallback
+            availableStreams = SubjectManager.getStreams(levelSelect);
+        }
+
+        // Filter SubjectManager streams to only those present in data?
+        // Or just use data streams? Using data streams is safer for "what exists".
+        // But SubjectManager has the codes.
+
+        // Let's use SubjectManager for definitions, but filtered by what's actually in data if possible.
+        // For now, let's Stick to SubjectManager for canonical order/names, but maybe filter?
+        // Actually, previous logic just showed ALL streams for that level defined in SubjectManager.
+        // Let's keep it simple: Show what SubjectManager says, as it maps codes to Names.
+
+        const streams = SubjectManager.getStreams(levelSelect);
+
+        streams.forEach(code => {
+            // Optional: Check if this stream actually exists in data?
+            // const exists = window.schoolHierarchy[levelSelect]?.streams.has(code);
+            // if (!exists) return;
+
+            const opt = document.createElement('option');
+            opt.value = code;
+            opt.textContent = SubjectManager.getStreamName(code);
+            streamSelect.appendChild(opt);
+        });
+
+    } else {
+        streamGroup.style.display = 'none';
+        streamSelect.innerHTML = '';
+    }
+}
+
+function populateClassDropdown() {
+    console.time('PopulateClassDropdown');
+    const levelSelect = document.getElementById('levelSelect').value;
+    const classSelect = document.getElementById('classSelect');
+
+    classSelect.innerHTML = '<option value="all">-- كل الأقسام --</option>';
+
+    // ADDED: Filter by Stream if Secondary
+    const stage = institutionSettings.educationStage || 'middle';
+    let classesToRender = [];
+
+    const currentYear = document.getElementById('yearSelect')?.value;
+    const yearHierarchy = window.schoolHierarchy?.[currentYear] || {};
+    if (yearHierarchy[levelSelect]) {
+        // Use optimized hierarchy
+        if (stage === 'secondary') {
+            const streamSelect = document.getElementById('streamSelect');
+            const selectedStream = streamSelect ? streamSelect.value : '';
+
+            if (selectedStream) {
+                // Precision filter for stream
+                let relevantStudents = studentsData.filter(s => getStudentYear(s) === currentYear && s.level == levelSelect && s.stream === selectedStream);
+                classesToRender = [...new Set(relevantStudents.map(s => s.class))].filter(c => c).sort();
+            } else {
+                classesToRender = Array.from(yearHierarchy[levelSelect].classes || []).sort();
+            }
+        } else {
+            classesToRender = Array.from(yearHierarchy[levelSelect].classes || []).sort();
+        }
+    } else {
+        // Fallback
+        let relevantStudents = studentsData.filter(s => (currentYear ? getStudentYear(s) === currentYear : true) && s.level == levelSelect);
+        if (stage === 'secondary') {
+            const streamSelect = document.getElementById('streamSelect');
+            const selectedStream = streamSelect ? streamSelect.value : '';
+            if (selectedStream) {
+                relevantStudents = relevantStudents.filter(s => s.stream === selectedStream);
+            }
+        }
+        classesToRender = [...new Set(relevantStudents.map(s => s.class))].filter(c => c).sort();
+    }
+
+    classesToRender.forEach(sec => {
+        classSelect.innerHTML += `<option value="${sec}">${sec}</option>`;
+    });
+
+    updateClassResponsibleDisplay();
+    console.timeEnd('PopulateClassDropdown');
+}
+
+/**
+
+ * Update the class responsible teacher name display
+
+ */
+
+function updateClassResponsibleDisplay() {
+    const selectedLevel = document.getElementById('levelSelect').value;
+    const selectedClass = document.getElementById('classSelect').value;
+    const streamSelect = document.getElementById('streamSelect');
+    const selectedStream = (streamSelect && streamSelect.parentElement.style.display !== 'none') ? streamSelect.value : null;
+
+    if (selectedClass === 'all') {
+        const displayEl = document.getElementById('classResponsibleDisplay');
+        if (displayEl) displayEl.innerHTML = `${typeof IconManager !== 'undefined' ? IconManager.get('teacher') : '👨‍🏫'} الكل`;
+        // continue so analytics can still refresh even when the table view is empty
+    }
+
+    const responsibleName = getClassResponsibleName(selectedLevel, selectedClass, selectedStream);
+    const displayEl = document.getElementById('classResponsibleDisplay');
+
+    if (displayEl) {
+        if (responsibleName) {
+            displayEl.innerHTML = `${typeof IconManager !== 'undefined' ? IconManager.get('teacher') : '👨‍🏫'} ${responsibleName}`;
+        } else {
+            displayEl.innerHTML = '';
+        }
+    }
+}
+
+// Trimester Mapping
+
+const trimesterMap = {
+
+    '1': 'الأول',
+
+    '2': 'الثاني',
+
+    '3': 'الثالث',
+
+    'annual': 'السنوي'
+
+};
+
+function shouldShowDirectedBirthYearQuickPanel() {
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '';
+    return selectedTrimesterVal === '3' || selectedTrimesterVal === 'annual';
+}
+
+function syncDirectedBirthYearQuickPanel() {
+    const panel = document.getElementById('directedBirthYearQuickPanel');
+    const input = document.getElementById('directedBirthYearQuickInput');
+    const currentBadge = document.getElementById('directedBirthYearQuickCurrent');
+    const note = document.getElementById('directedBirthYearQuickNote');
+    const title = document.getElementById('directedBirthYearQuickTitle');
+    const controls = document.getElementById('directedBirthYearQuickControls');
+    if (!panel || !input || !currentBadge || !note || !title || !controls) return;
+
+    const shouldShow = shouldShowDirectedBirthYearQuickPanel();
+    panel.style.display = shouldShow ? 'block' : 'none';
+    if (!shouldShow) return;
+    const stage = (institutionSettings || {}).educationStage || 'middle';
+    const isSecondary = stage === 'secondary';
+
+    if (isSecondary) {
+        title.textContent = 'ملاحظة حول قرار يوجّه';
+        note.textContent = 'يمكن تحديد قرار يوجّه للتلميذ يدويا من عمود القرار، وسيتم حفظ الاختيار لاستخدامه لاحقا.';
+        controls.style.display = 'none';
+        return;
+    }
+
+    title.textContent = 'سنة ميلاد الموجَّهين';
+    controls.style.display = 'flex';
+
+    const currentYear = parseInt((institutionSettings || {}).directedBirthYear, 10);
+    const currentLabel = Number.isFinite(currentYear) ? String(currentYear) : 'غير محددة';
+
+    if (document.activeElement !== input) {
+        input.value = Number.isFinite(currentYear) ? String(currentYear) : '';
+    }
+
+    currentBadge.textContent = `الحالية: ${currentLabel}`;
+    note.textContent = Number.isFinite(currentYear)
+        ? `يوجَّه من كان مولودًا في ${currentYear} أو قبلها.`
+        : 'أدخل سنة الميلاد المعتمدة لتحديد قرار يوجَّه.';
+}
+
+async function saveDirectedBirthYearQuickSetting() {
+    const input = document.getElementById('directedBirthYearQuickInput');
+    if (!input) return;
+
+    const rawValue = String(input.value || '').trim();
+    const parsedYear = parseInt(rawValue, 10);
+    const currentYear = new Date().getFullYear();
+
+    if (!rawValue || !Number.isFinite(parsedYear) || parsedYear < 1900 || parsedYear > currentYear) {
+        if (typeof showToast === 'function') {
+            showToast(`يرجى إدخال سنة صحيحة بين 1900 و${currentYear}`, 'error');
+        }
+        input.focus();
+        input.select();
+        return;
+    }
+
+    if (!window.DB || typeof DB.getSettings !== 'function' || typeof DB.saveSettings !== 'function') {
+        if (typeof showToast === 'function') {
+            showToast('تعذر الوصول إلى إعدادات المؤسسة لحفظ سنة الميلاد', 'error');
+        }
+        return;
+    }
+
+    const saveButton = document.querySelector('#directedBirthYearQuickPanel button');
+
+    try {
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'جارٍ الحفظ...';
+        }
+
+        const nextSettings = {
+            ...(await DB.getSettings() || institutionSettings || {}),
+            directedBirthYear: parsedYear
+        };
+
+        await DB.saveSettings(nextSettings);
+        institutionSettings = nextSettings;
+        syncDirectedBirthYearQuickPanel();
+
+        if (typeof showToast === 'function') {
+            showToast('تم حفظ سنة ميلاد الموجَّهين بنجاح', 'success');
+        }
+
+        applyFilters();
+    } catch (error) {
+        console.error('Failed to save directed birth year from class councils page:', error);
+        if (typeof showToast === 'function') {
+            showToast('تعذر حفظ سنة ميلاد الموجَّهين', 'error');
+        }
+    } finally {
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = 'حفظ';
+        }
+    }
+}
+
+function normalizeSecondaryManualDecisionCode(value) {
+    const normalizedValue = normalizeArabic(String(value || ''))
+        .replace(/\s+/g, '')
+        .toLowerCase();
+    if (!normalizedValue) return '';
+    if (normalizedValue === 'directed' || normalizedValue.includes('وجه')) return 'directed';
+    if (normalizedValue === 'repeated' || normalizedValue.includes('عيد')) return 'repeated';
+    return '';
+}
+
+function getSecondaryManualDecisionStorageKey(student) {
+    const academicYear = normalizeArabic(getStudentYear(student) || '').replace(/\s+/g, '');
+    const rawId = String(student && (student.id || student.student_id || '') || '').trim();
+    if (rawId) {
+        return ['secondary', academicYear, rawId].join('|');
+    }
+    const fallbackParts = [
+        student && student.name,
+        student && student.dob,
+        student && student.level,
+        student && student.class,
+        student && student.stream
+    ].map(function (value) {
+        return normalizeArabic(String(value || '')).replace(/\s+/g, '');
+    });
+    return ['secondary', academicYear].concat(fallbackParts).join('|');
+}
+
+function getSecondaryManualDecisionLabel(decisionCode) {
+    return decisionCode === 'directed' ? 'يوجّه' : 'يعيد';
+}
+
+function getSecondaryManualDecisionColor(decisionCode) {
+    return decisionCode === 'directed' ? '#7f8c8d' : '#c0392b';
+}
+
+function getSavedSecondaryManualDecision(student) {
+    const storageKey = getSecondaryManualDecisionStorageKey(student);
+    const savedCode = normalizeSecondaryManualDecisionCode(secondaryManualDecisions[storageKey]);
+    if (savedCode) {
+        return { storageKey: storageKey, decisionCode: savedCode };
+    }
+    const importedCode = normalizeSecondaryManualDecisionCode(student && student.decision);
+    if (importedCode) {
+        return { storageKey: storageKey, decisionCode: importedCode };
+    }
+    return { storageKey: storageKey, decisionCode: 'repeated' };
+}
+
+function applySecondaryManualDecisionLocally(storageKey, decisionCode) {
+    if (!storageKey) return;
+    const decisionLabel = getSecondaryManualDecisionLabel(decisionCode);
+    studentsData.forEach(function (student) {
+        if (getSecondaryManualDecisionStorageKey(student) === storageKey) {
+            student.decision = decisionLabel;
+        }
+    });
+}
+
+async function saveSecondaryStudentDecisionFromClassCouncils(storageKey, nextDecisionCode) {
+    const normalizedCode = normalizeSecondaryManualDecisionCode(nextDecisionCode);
+    if (!storageKey || !normalizedCode) return false;
+
+    if (!window.DB || typeof DB.set !== 'function') {
+        if (typeof showToast === 'function') {
+            showToast('تعذر حفظ قرار التوجيه اليدوي', 'error');
+        }
+        return false;
+    }
+
+    try {
+        secondaryManualDecisions = Object.assign({}, secondaryManualDecisions, {
+            [storageKey]: normalizedCode
+        });
+        await DB.set(SECONDARY_MANUAL_DECISIONS_KEY, secondaryManualDecisions);
+        applySecondaryManualDecisionLocally(storageKey, normalizedCode);
+        applyFilters();
+        return true;
+    } catch (error) {
+        console.error('Failed to save manual secondary decision from class councils page:', error);
+        if (typeof showToast === 'function') {
+            showToast('تعذر حفظ قرار التوجيه اليدوي', 'error');
+        }
+        return false;
+    }
+}
+
+function buildDecisionCellContent(decisionSnapshot) {
+    if (!decisionSnapshot || !decisionSnapshot.decisionEditable) {
+        return `<span style="font-weight:bold; color:${decisionSnapshot ? decisionSnapshot.decisionColor : 'black'};">${decisionSnapshot ? decisionSnapshot.decision : '-'}</span>`;
+    }
+
+    const storageKeyJson = JSON.stringify(decisionSnapshot.manualDecisionKey || '');
+    const selectedCode = decisionSnapshot.manualDecisionCode === 'directed' ? 'directed' : 'repeated';
+    return `
+        <select
+            title="تحديد القرار يدويًا للطور الثانوي"
+            onmousedown="event.stopPropagation()"
+            onclick="event.stopPropagation()"
+            onchange='event.stopPropagation(); saveSecondaryStudentDecisionFromClassCouncils(${storageKeyJson}, this.value);'
+            style="width:100%; min-width:78px; font-weight:bold; color:${decisionSnapshot.decisionColor}; border:1px solid rgba(44, 62, 80, 0.16); border-radius:8px; background:#fff; padding:4px 6px; cursor:pointer; direction:rtl;"
+        >
+            <option value="repeated"${selectedCode === 'repeated' ? ' selected' : ''}>يعيد</option>
+            <option value="directed"${selectedCode === 'directed' ? ' selected' : ''}>يوجّه</option>
+        </select>
+    `;
+}
+
+function applyFilters() {
+
+    const selectedLevel = document.getElementById('levelSelect').value;
+
+    const selectedClass = document.getElementById('classSelect').value;
+
+    const selectedTrimesterVal = document.getElementById('trimesterSelect').value;
+    syncDirectedBirthYearQuickPanel();
+    // === HIDE EXAM COLUMNS IN ANNUAL MODE ===
+    const isAnnual = selectedTrimesterVal === 'annual';
+    
+    // Hide exam column toggle in detailed student list
+    const examToggleBtn = document.getElementById('examToggleBtn');
+    if (examToggleBtn) {
+        examToggleBtn.style.display = isAnnual ? 'none' : 'flex';
+        const checkbox = document.getElementById('toggleExamAvgCol');
+        if (isAnnual && checkbox && checkbox.checked) {
+            checkbox.checked = false;
+            checkbox.dataset.autoHiddenExamAvg = '1';
+            examToggleBtn.classList.remove('active');
+            const cols = document.querySelectorAll('.exam-avg-col');
+            cols.forEach(col => col.style.display = 'none');
+        } else if (!isAnnual && checkbox && checkbox.dataset.autoHiddenExamAvg === '1') {
+            checkbox.checked = true;
+            delete checkbox.dataset.autoHiddenExamAvg;
+            examToggleBtn.classList.add('active');
+            const cols = document.querySelectorAll('.exam-avg-col');
+            cols.forEach(col => col.style.display = 'table-cell');
+        }
+    }
+
+    // Hide exam test success toggle in subject analysis
+    const testSuccessToggleBtn = document.getElementById('testSuccessToggleBtn');
+    if (testSuccessToggleBtn) {
+        testSuccessToggleBtn.style.display = isAnnual ? 'none' : 'flex';
+        const checkbox = document.getElementById('toggleTestSuccessCol');
+        if (isAnnual && checkbox && checkbox.checked) {
+            checkbox.checked = false;
+            testSuccessToggleBtn.classList.remove('active');
+            if (typeof applyTestSuccessColumnVisibility === 'function') {
+                applyTestSuccessColumnVisibility(false);
+            }
+        }
+    }
+    // =======================================
+
+
+    // Handle empty trimester selection
+    if (!selectedTrimesterVal) {
+        document.getElementById('generalStatsBody').innerHTML = '';
+        document.getElementById('subjectStatsBody').innerHTML = '';
+        const detailedTableBody = document.getElementById('detailedTableBody');
+        updateStudentTableSummary(0, 0, 0);
+        if (detailedTableBody) detailedTableBody.innerHTML = '<tr><td colspan="20" style="text-align:center; padding: 20px; font-size: 1.1em; color: #7f8c8d;">الرجاء اختيار الفصل الدراسي لعرض النتائج</td></tr>';
+
+        const decisionContainer = document.getElementById('decisionStatsContainer');
+        if (decisionContainer) decisionContainer.style.display = 'none';
+
+        if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
+        }
+        // continue so analytics can still refresh even when the table view is empty
+    }
+
+    const selectedTrimesterName = trimesterMap[selectedTrimesterVal];
+
+    // Relaxed Validation: We allow mismatch to support reading "F1" columns from a "F3" file.
+
+    if (studentsData && studentsData.length > 0) {
+
+        // We no longer block execution here.
+
+        // The logic in getSubjectScore will handle finding the right columns.
+
+    }
+
+    // Optimization: Clear caches when filter changes
+    scoreCache.clear();
+    statsCache.clear();
+
+    const yearSelect = document.getElementById('yearSelect');
+    const selectedYear = yearSelect ? yearSelect.value : '';
+    const selectedStream = document.getElementById('streamSelect').value;
+
+    console.time('FilterLogic');
+    const filteredData = studentsData.filter(s => {
+        const matchYear = selectedYear ? (getStudentYear(s) === selectedYear) : true;
+        const matchLevel = s.level == selectedLevel;
+        const matchClass = selectedClass === 'all' ? true : s.class == selectedClass;
+        const matchStream = selectedStream ? (s.stream === selectedStream) : true;
+        return matchYear && matchLevel && matchClass && matchStream;
+    });
+    console.timeEnd('FilterLogic');
+
+    // Dynamic Subject Loading
+    const stage = institutionSettings.educationStage || 'middle';
+    let activeSubjects = [];
+
+    if (stage === 'secondary') {
+
+        // If stream selected, get specific subjects
+
+        if (selectedStream) {
+            activeSubjects = SubjectManager.getSubjects(stage, selectedLevel, selectedStream);
+        } else {
+            // Aggregate subjects from all streams present in filteredData
+            const streamsInLevel = [...new Set(filteredData.map(s => s.stream).filter(st => st))];
+            if (streamsInLevel.length > 0) {
+                const multiStreamSubjects = new Set();
+                streamsInLevel.forEach(st => {
+                    const subs = SubjectManager.getSubjects(stage, selectedLevel, st);
+                    subs.forEach(s => multiStreamSubjects.add(s));
+                });
+                activeSubjects = Array.from(multiStreamSubjects);
+            } else {
+                activeSubjects = []; // Empty or handle gracefully
+            }
+        }
+
+    } else {
+
+        activeSubjects = getFilteredSubjects(selectedLevel, subjects);
+
+    }
+
+    // Filter subjects by trimester suffix if they have one (e.g., "ف2")
+
+    let filteredByTrimester = activeSubjects.filter(sub => {
+
+        // Annual mode: include all base subjects without trimester filtering
+        if (selectedTrimesterVal === 'annual') {
+            return true;
+        }
+
+        const normSub = normalizeArabic(sub);
+
+        const otherTrimesters = ['1', '2', '3'].filter(t => t !== selectedTrimesterVal);
+
+        for (const t of otherTrimesters) {
+
+            // Check for patterns like "ف1", "ف 1", "فصل 1"
+
+            const pattern1 = new RegExp(`ف\\s*${t}(\\s|$)`);
+
+            const pattern2 = new RegExp(`فصل\\s*${t}(\\s|$)`);
+
+            if (pattern1.test(normSub) || pattern2.test(normSub)) {
+
+                return false;
+
+            }
+
+        }
+
+        return true;
+
+    });
+
+    // For 'annual' mode, strip trimester suffixes and deduplicate
+    // so one subject does not appear as separate F1/F2 columns.
+    if (selectedTrimesterVal === 'annual') {
+        const seen = new Set();
+        filteredByTrimester = filteredByTrimester.reduce((result, subjectName) => {
+            const baseName = subjectName.replace(/(فصل|ف)\s*[123](\s|$)/g, '').trim();
+            const normalizedBase = normalizeArabic(baseName);
+            if (!normalizedBase || seen.has(normalizedBase)) {
+                return result;
+            }
+            seen.add(normalizedBase);
+            result.push(baseName);
+            return result;
+        }, []);
+    }
+
+    renderDashboard(filteredData, filteredByTrimester);
+
+}
+
+function showNotification(msg, type) {
+
+    showToast(msg, type);
+
+}
+
+function showToast(message, type = 'success') {
+
+    const container = document.getElementById('toastContainer');
+
+    const toast = document.createElement('div');
+
+    toast.className = `toast ${type}`;
+
+    const icon = type === 'error' ? IconManager.get('warning') : IconManager.get('sparkles');
+
+    toast.innerHTML = `
+
+        <span class="toast-icon">${icon}</span>
+
+        <span class="toast-text">${message}</span>
+
+    `;
+
+    container.appendChild(toast);
+
+    // Force reflow
+
+    toast.offsetHeight;
+
+    // Show
+
+    toast.classList.add('show');
+
+    // Hide and remove after 3 seconds
+
+    setTimeout(() => {
+
+        toast.classList.remove('show');
+
+        setTimeout(() => {
+
+            toast.remove();
+
+        }, 500);
+
+    }, 4000);
+
+}
+
+function hasDataForTrimester(data, trimesterVal) {
+    if (!data || data.length === 0) return false;
+    if (trimesterVal === 'annual') {
+        return data.some(s => hasAnnualAverageData(s) || hasAnnualMarksData(s));
+    }
+    const trimesterMap = { '1': 'الأول', '2': 'الثاني', '3': 'الثالث' };
+    const expectedTrimesterName = trimesterMap[trimesterVal];
+
+    return data.some(s => {
+        if (s.trimester === expectedTrimesterName || s.trimester === trimesterVal) return true;
+        if (s.averages && s.averages[trimesterVal] !== undefined && s.averages[trimesterVal] !== null) return true;
+
+        if (s.marks) {
+            const keys = Object.keys(s.marks);
+            const pattern1 = new RegExp(`ف\\s*${trimesterVal}(\\s|$)`);
+            const pattern2 = new RegExp(`فصل\\s*${trimesterVal}(\\s|$)`);
+            if (keys.some(k => pattern1.test(normalizeArabic(k)) || pattern2.test(normalizeArabic(k)))) return true;
+        }
+        return false;
+    });
+}
+
+function renderDashboard(data, explicitSubjects = null) {
+
+    const selectedLevel = document.getElementById('levelSelect').value;
+
+    const filteredSubjects = explicitSubjects !== null ? explicitSubjects : getFilteredSubjects(selectedLevel, subjects);
+    const filteredOrderedSubjects = explicitSubjects !== null ? explicitSubjects : getFilteredSubjects(selectedLevel, orderedSubjects);
+
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+
+    if (!hasDataForTrimester(data, selectedTrimesterVal)) {
+        document.getElementById('generalStatsBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px; color: #e74c3c;">لا توجد بيانات مستوردة لهذا الفصل</td></tr>';
+        document.getElementById('subjectStatsBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: #e74c3c;">لا توجد بيانات مستوردة لهذا الفصل</td></tr>';
+        document.getElementById('gradeDistributionBody').innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 20px; color: #e74c3c;">لا توجد بيانات</td></tr>';
+        const tbl = document.getElementById('detailedTableBody');
+        updateStudentTableSummary(0, 0, 0);
+        if (tbl) tbl.innerHTML = '<tr><td colspan="20" style="text-align:center; padding: 30px; color: #e74c3c;">لا توجد بيانات</td></tr>';
+
+        const decisionContainer = document.getElementById('decisionStatsContainer');
+        if (decisionContainer) decisionContainer.style.display = 'none';
+
+        const chartWrapper = document.getElementById('subjectsChart');
+        if (chartWrapper) chartWrapper.style.display = 'none';
+
+        // continue so analytics can still refresh even when the table view is empty
+    }
+
+    const chartWrapper = document.getElementById('subjectsChart');
+    if (chartWrapper) chartWrapper.style.display = 'block';
+
+    renderGeneralStats(data);
+
+    updateDecisionStats(data); // Update Decision Stats (T3 Only)
+
+    renderGradeDistribution(data);
+
+    renderSubjectStats(data, filteredSubjects);
+
+    console.time('RenderHeavy');
+    // Defer heavy rendering to allow UI to update first
+    setTimeout(() => {
+        renderDetailedTable(data, filteredOrderedSubjects);
+        initChart(data, filteredSubjects);
+        console.timeEnd('RenderHeavy');
+    }, 10);
+
+}
+
+// 2. دوال التحليل والحساب
+
+// جدول التعداد العام
+
+function renderGeneralStats(data = studentsData) {
+
+    const tbody = document.getElementById('generalStatsBody');
+
+    const total = data.length;
+
+    // تصنيف حسب الجنس
+
+    const males = data.filter(s => s.gender === 'ذكر');
+
+    const females = data.filter(s => s.gender === 'أنثى');
+
+    const stats = [
+
+        { label: 'ذكور', data: males },
+
+        { label: 'إناث', data: females },
+
+        { label: 'المجموع', data: data }
+
+    ];
+
+    let html = '';
+
+    stats.forEach(row => {
+
+        const count = row.data.length;
+
+        const avg = (s) => getStudentAverage(s);
+
+        const passed = row.data.filter(s => avg(s) >= 10).length;
+
+        const failed = count - passed;
+
+        const rate = count > 0 ? ((passed / count) * 100).toFixed(2) : 0;
+
+        html += `
+
+            <tr>
+
+                <td>${row.label}</td>
+
+                <td>${count}</td>
+
+                <td class="high-score">${passed}</td>
+
+                <td class="low-score">${failed}</td>
+
+                <td>${rate}%</td>
+
+            </tr>
+
+        `;
+
+    });
+
+    tbody.innerHTML = html;
+
+}
+
+// جدول توزيع المعدلات
+
+function renderGradeDistribution(data = studentsData) {
+
+    const ranges = [
+
+        { label: '00 - 09.99', min: 0, max: 9.99 },
+
+        { label: '10 - 11.99', min: 10, max: 11.99 },
+
+        { label: '12 - 13.99', min: 12, max: 13.99 },
+
+        { label: '14 - 15.99', min: 14, max: 15.99 },
+
+        { label: '16 - 17.99', min: 16, max: 17.99 },
+
+        { label: '18 - 20.00', min: 18, max: 20 }
+
+    ];
+
+    const tbody = document.getElementById('gradeDistributionBody');
+
+    let html = '';
+
+    ranges.forEach(range => {
+
+        const count = data.filter(s => {
+
+            const avg = getStudentAverage(s);
+
+            return avg >= range.min && avg <= range.max;
+
+        }).length;
+
+        html += `
+
+            <tr>
+
+                <td>${range.label}</td>
+
+                <td>${count}</td>
+
+            </tr>
+
+        `;
+
+    });
+
+    tbody.innerHTML = html;
+
+}
+
+// جدول نتائج المواد (يستخدم subjects الديناميكية للحفاٍ على الأسماء الأصلية)
+
+function renderSubjectStats(data = studentsData, activeSubjects = subjects) {
+
+    const tbody = document.getElementById('subjectStatsBody');
+
+    let html = '';
+
+    // If subjects list is empty (no marks found), show something
+
+    if (!activeSubjects || activeSubjects.length === 0) {
+
+        html = '<tr><td colspan="5">لا توجد مواد متاحة</td></tr>';
+
+        tbody.innerHTML = html;
+
+        return;
+
+    }
+
+    // Determine Previous Trimester
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+    let prevTrimesterVal = null;
+    let prevTrimesterName = '';
+
+    if (selectedTrimesterVal === '2') {
+        prevTrimesterVal = '1';
+        prevTrimesterName = 'الفصل الأول';
+    } else if (selectedTrimesterVal === '3') {
+        prevTrimesterVal = '2';
+        prevTrimesterName = 'الفصل الثاني';
+    }
+
+    // Pre-calculate stats for previous trimester ONCE
+    if (prevTrimesterVal && !statsCache.has(`stats_${prevTrimesterVal}`)) {
+        // Calculate and cache stats for ALL subjects for prev trimester
+        const prevStats = {};
+
+        // we need unique list of all potential subjects
+        const allSubjects = [...new Set([...activeSubjects, ...Object.keys(subjectAliases)])];
+
+        allSubjects.forEach(sub => {
+            // Calculate for this subject
+            const scores = data.map(s => getSubjectScore(s, sub, prevTrimesterVal)).filter(m => m !== null && m !== undefined);
+            if (scores.length > 0) {
+                const passed = scores.filter(m => m >= 10).length;
+                const rate = ((passed / scores.length) * 100).toFixed(2);
+                prevStats[sub] = rate;
+            }
+        });
+        statsCache.set(`stats_${prevTrimesterVal}`, prevStats);
+    }
+
+    // Helper to calculate previous rate efficiently (Using Cache)
+    const getPrevRate = (sub) => {
+        if (!prevTrimesterVal) return null;
+
+        const cachedStats = statsCache.get(`stats_${prevTrimesterVal}`);
+        if (cachedStats && cachedStats[sub] !== undefined) {
+            return cachedStats[sub];
+        }
+
+        return null;
+    };
+
+    activeSubjects.forEach(sub => {
+
+        // Handle potentially missing marks safely by using fuzzy match helper
+
+        // Use currently selected trimester
+
+        const trimesterSelect = document.getElementById('trimesterSelect');
+
+        const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+
+        const scores = data.map(s => getSubjectScore(s, sub, selectedTrimesterVal)).filter(m => m !== null && m !== undefined);
+
+        // Show/Hide Comparison Header
+        const prevRateHeader = document.getElementById('prevRateHeader');
+        if (prevRateHeader) {
+            prevRateHeader.style.display = prevTrimesterVal ? 'table-cell' : 'none';
+        }
+
+        const currentRateHeader = document.getElementById('currentRateHeader');
+        if (currentRateHeader) {
+            currentRateHeader.textContent = selectedTrimesterVal !== '1' ? `نسبة ف${selectedTrimesterVal}` : 'نسبة النجاح';
+        }
+
+        if (scores.length === 0) {
+
+            html += `<tr><td>${sub}</td><td colspan="${prevTrimesterVal ? 5 : 4}">-</td></tr>`;
+
+            return;
+
+        }
+
+        // Skip subjects where all scores are 0
+        if (scores.every(s => s === 0)) return;
+
+        const passed = scores.filter(s => s >= 10).length;
+
+        const failed = scores.length - passed;
+
+        const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
+
+        const rate = ((passed / scores.length) * 100).toFixed(2);
+
+        const rateColor = rate < 50
+            ? 'color: var(--text-low-score); font-weight: bold;'
+            : 'color: var(--text-high-score); font-weight: bold;';
+
+        // Tooltip Data
+
+        let tooltipAttr = '';
+        let trendIcon = '';
+        let prevRateHtml = '';
+
+        if (prevTrimesterVal) {
+
+            const prevRate = getPrevRate(sub);
+
+            // Default empty cell if comparison is active but no data
+            prevRateHtml = '<td>-</td>';
+
+            if (prevRate !== null) {
+
+                tooltipAttr = `onmouseenter="showTooltip(event, '${prevTrimesterName}', '${prevRate}%')" onmousemove="moveTooltip(event)" onmouseleave="hideTooltip()"`;
+
+                // Add Trend Arrow
+                if (parseFloat(rate) > parseFloat(prevRate)) {
+                    trendIcon = '&nbsp;<span style="color:#27ae60; font-size:1em;">▲</span>';
+                } else if (parseFloat(rate) < parseFloat(prevRate)) {
+                    trendIcon = '&nbsp;<span style="color:#c0392b; font-size:1em;">▼</span>';
+                }
+
+                prevRateHtml = `<td style="background-color: var(--comparison-cell-bg); color: var(--text-main); font-weight: bold; font-size: 1.05em; border-right: 1px dashed var(--comparison-cell-border);">${prevRate}%</td>`;
+
+            }
+
+        }
+
+        html += `
+            <tr ${tooltipAttr} style="cursor: help;">
+                <td>${sub}</td>
+                <td>${passed}</td>
+                <td>${failed}</td>
+                <td>${avg}</td>
+                ${prevRateHtml}
+                <td style="${rateColor}">${rate}%${trendIcon}</td>
+            </tr>
+        `;
+
+    });
+
+    tbody.innerHTML = html;
+
+}
+
+// Tooltip Helpers
+
+let tooltipEl = null;
+
+function createTooltip() {
+
+    if (!tooltipEl) {
+
+        tooltipEl = document.createElement('div');
+
+        tooltipEl.className = 'stats-tooltip';
+
+        document.body.appendChild(tooltipEl);
+
+    }
+
+}
+
+function showTooltip(e, title, value) {
+
+    createTooltip();
+
+    tooltipEl.innerHTML = `<strong>${title}</strong>نسبة النجاح: ${value}`;
+
+    tooltipEl.classList.add('visible');
+
+    moveTooltip(e);
+
+}
+
+function moveTooltip(e) {
+
+    if (tooltipEl) {
+
+        const x = e.clientX + 15;
+
+        const y = e.clientY + 15;
+
+        tooltipEl.style.left = `${x}px`;
+
+        tooltipEl.style.top = `${y}px`;
+
+    }
+
+}
+
+function hideTooltip() {
+
+    if (tooltipEl) {
+
+        tooltipEl.classList.remove('visible');
+
+    }
+
+}
+
+// القائمة التفصيلية (تستخدم الـ subjects المفلترة)
+
+function renderDetailedTable(data = studentsData, activeOrderedSubjects = orderedSubjects) {
+
+    const sortedData = [...data].sort((a, b) => {
+        const avgA = parseFloat(getStudentAverage(a) || 0);
+        const avgB = parseFloat(getStudentAverage(b) || 0);
+        return studentTableState.sortDirection === 'asc' ? avgA - avgB : avgB - avgA;
+    });
+
+    const visibleData = getStudentTableVisibleData(sortedData);
+    renderRows(visibleData, activeOrderedSubjects, sortedData);
+
+}
+
+// Pre-index student marks by trimester for fast, isolated lookups.
+// Ported from level_analysis.js to prevent cross-trimester contamination.
+function optimizeStudentData(data) {
+    if (!data) return;
+    const trimesters = ['1', '2', '3'];
+    const patterns = {};
+    trimesters.forEach(t => {
+        patterns[t] = [
+            new RegExp(`ف\\s*${t}(\\s|$)`),
+            new RegExp(`فصل\\s*${t}(\\s|$)`)
+        ];
+    });
+
+    const getTrimesterValue = (name) => {
+        const n = normalizeArabic(name || '');
+        if (n.includes('ثاني') || n.includes('2')) return '2';
+        if (n.includes('ثالث') || n.includes('3')) return '3';
+        if (n.includes('اول') || n.includes('1')) return '1';
+        return '1';
+    };
+
+    data.forEach(student => {
+        if (!student.marks) return;
+        student._opt = { '1': {}, '2': {}, '3': {} };
+        const fileTrimesterVal = getTrimesterValue(student.trimester);
+        const keys = Object.keys(student.marks);
+        keys.forEach(key => {
+            const normKey = normalizeArabic(key);
+            let keyTrimester = fileTrimesterVal;
+            for (const t of trimesters) {
+                if (patterns[t].some(p => p.test(normKey))) {
+                    keyTrimester = t;
+                    break;
+                }
+            }
+            if (!student._opt[keyTrimester]) student._opt[keyTrimester] = {};
+            // Store WITHOUT suffix so lookups find "مادة" directly
+            const baseKey = key.replace(/\s*(فصل|ف)\s*[123]\s*$/g, '').trim() || key;
+            student._opt[keyTrimester][baseKey] = student.marks[key];
+            // Also store original key for alias fallback
+            student._opt[keyTrimester][key] = student.marks[key];
+        });
+    });
+}
+
+// Helper to normalize Arabic text (Ignore Hamza, Taa Marbuta/Ha, Ya/Alif Maqsura)
+
+function normalizeArabic(text) {
+
+    if (!text) return "";
+
+    return text.toString()
+        .normalize('NFKC')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/ﻷ|ﻹ|ﻵ|ﻻ/g, 'لا')
+        .replace(/لأ|لإ|لآ/g, 'لا')
+        .replace(/\s+/g, ' ');
+
+}
+
+// Cached getSubjectScore
+function _orig_getSubjectScore(student, targetSub, overrideTrimester = null) {
+    if (!student.marks) return null;
+
+    // Determine Context Trimester
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const selectedTrimesterVal = overrideTrimester || (trimesterSelect ? trimesterSelect.value : '1');
+
+    // Create Cache Key - MUST use __uid to avoid collision for students with same name/id across files
+    const studentId = student.__uid || student.id || `${student.name}|${student.class}|${student.dob || ''}`;
+    const cacheKey = `${studentId}_${normalizeArabic(targetSub)}_${selectedTrimesterVal}`;
+
+    // Check Cache
+    if (scoreCache.has(cacheKey)) {
+        return scoreCache.get(cacheKey);
+    }
+
+    // Clean targetSub for matching (remove trimester suffixes if any)
+    const baseTargetSub = targetSub.replace(/\s*(فصل|ف)\s*[123]\s*$/g, '').trim();
+    const shortNorm = normalizeArabic(baseTargetSub);
+    const aliasList = subjectAliases[baseTargetSub] || subjectAliases[targetSub] || [];
+
+    const exclusions = ['فيزيائية', 'تكنولوجيا', 'اسلامية', 'إسلامية', 'شرعية', 'انسانية', 'اجتماعية'];
+    const isScience = (baseTargetSub.includes('طبيعية') || baseTargetSub === 'علوم');
+    const isSport = (baseTargetSub === 'رياضة' || baseTargetSub === 'تربية بدنية');
+    const isArt = (baseTargetSub === 'ت.تشكيلية' || baseTargetSub.includes('فني'));
+
+    const isMatch = (key) => {
+        const normKey = normalizeArabic(key);
+        if (isScience && exclusions.some(ex => normKey.includes(normalizeArabic(ex)))) return false;
+        if (isSport && ['فنية', 'تشكيلية', 'فنون', 'رسم'].some(ex => normKey.includes(normalizeArabic(ex)))) return false;
+        if (isArt && ['رياضة', 'بدنية', 'رياضية'].some(ex => normKey.includes(normalizeArabic(ex)))) return false;
+        if (normKey.includes(shortNorm) || shortNorm.includes(normKey)) return true;
+        return aliasList.some(alias => {
+            const normAlias = normalizeArabic(alias);
+            return normKey.includes(normAlias) || normAlias.includes(normKey);
+        });
+    };
+
+    // === Priority 1: Use pre-indexed _opt cache (from optimizeStudentData) ===
+    if (student._opt && student._opt[selectedTrimesterVal]) {
+        const trimesterCache = student._opt[selectedTrimesterVal];
+        for (const key in trimesterCache) {
+            if (isMatch(key)) {
+                const result = trimesterCache[key];
+                scoreCache.set(cacheKey, result);
+                return result;
+            }
+        }
+        // Not found in this trimester - student doesn't have this subject for this trimester
+        scoreCache.set(cacheKey, null);
+        return null;
+    }
+
+    // === Legacy Fallback (no _opt index, single-file student) ===
+    const fileTrimesterName = student.trimester;
+    let fileTrimesterVal = '1';
+    if (fileTrimesterName === 'الثاني') fileTrimesterVal = '2';
+    else if (fileTrimesterName === 'الثالث') fileTrimesterVal = '3';
+
+    const keys = Object.keys(student.marks);
+
+    // 1. Explicit suffix match for selected trimester
+    const tPattern1 = new RegExp(`ف\\s*${selectedTrimesterVal}(\\s|$)`);
+    const tPattern2 = new RegExp(`فصل\\s*${selectedTrimesterVal}(\\s|$)`);
+    let bestMatchKey = keys.find(k => {
+        const normKey = normalizeArabic(k);
+        return isMatch(k) && (tPattern1.test(normKey) || tPattern2.test(normKey));
+    });
+
+    // 2. Generic match only if file context matches
+    if (!bestMatchKey && fileTrimesterVal === selectedTrimesterVal) {
+        bestMatchKey = keys.find(k => {
+            const normKey = normalizeArabic(k);
+            if (!isMatch(k)) return false;
+            const otherTrimesters = ['1', '2', '3'].filter(t => t !== selectedTrimesterVal);
+            for (const t of otherTrimesters) {
+                if (new RegExp(`ف\\s*${t}(\\s|$)`).test(normKey) || new RegExp(`فصل\\s*${t}(\\s|$)`).test(normKey)) return false;
+            }
+            return true;
+        });
+    }
+
+    if (!bestMatchKey && fileTrimesterVal === selectedTrimesterVal) {
+        if (student.marks[baseTargetSub] !== undefined) bestMatchKey = baseTargetSub;
+        else if (student.marks[targetSub] !== undefined) bestMatchKey = targetSub;
+    }
+
+    const result = bestMatchKey ? student.marks[bestMatchKey] : null;
+    scoreCache.set(cacheKey, result);
+    return result;
+}
+
+// Aliases for matching official subject names to our display columns
+
+const subjectAliases = {
+
+    // -- Langes --
+
+    'عربية': ['لغة عربية', 'أدب عربي', 'اللغة العربية', 'اللغة العربية وآدابها', 'اللغة العربية و آدابها'],
+
+    'لغة عربية': ['عربية', 'أدب عربي', 'اللغة العربية', 'اللغة العربية وآدابها', 'اللغة العربية و آدابها'],
+
+    'فرنسية': ['لغة فرنسية', 'فرنسية', 'اللغة الفرنسية'],
+
+    'لغة فرنسية': ['فرنسية', 'لغة فرنسية', 'اللغة الفرنسية'],
+
+    'انجليزية': ['لغة انجليزية', 'انجليزية', 'اللغة الإنجليزية', 'اللغة الانجليزية'],
+
+    'لغة انجليزية': ['انجليزية', 'لغة انجليزية', 'اللغة الإنجليزية', 'اللغة الانجليزية', 'اللغة الأنجليزية'],
+
+    'لغة ثالثة': ['اللغة اﻷجنبية الثالثة', 'اللغة الأجنبية الثالثة', 'لغة أجنبية ثالثة', 'لغة ثالثة', 'اللغة الثالثة', 'ألمانية', 'اسبانية', 'إسبانية', 'إيطالية', 'ايطالية', 'لغة 3', 'اللغة 3', 'اللغة الأجنبية 3', 'Allemand', 'Espagnol', 'Italien', 'Deutsch', 'Spanish', 'Italian'],
+
+    'أمازيغية': ['اللغة الأمازيغية', 'امازيغية', 'الأمازيغية', 'تاريخ و جغرافيا الأمازيغية', 'لغة أمازيغية'],
+
+    // -- Sciences --
+
+    'رياضيات': ['رياضيات', 'الرياضيات'],
+
+    'علوم': ['علوم طبيعية', 'ع.طبيعية', 'ع الطبيعة و الحياة', 'طبيعة و حياة', 'العلوم الطبيعية', 'علوم', 'علوم الطبيعة والحياة', 'العلوم الطبيعة والحياة'],
+
+    'علوم طبيعية': ['علوم', 'ع.طبيعية', 'ع الطبيعة والحياة', 'ع الطبيعة و الحياة', 'طبيعة و حياة', 'العلوم الطبيعية', 'علوم الطبيعة والحياة', 'العلوم الطبيعة والحياة'],
+
+    'فيزياء': ['علوم فيزيائية', 'ع.فيزيائية', 'تكنولوجيا', 'فيزياء', 'العلوم الفيزيائية'],
+
+    'علوم فيزيائية': ['فيزياء', 'ع.فيزيائية', 'تكنولوجيا', 'العلوم الفيزيائية'],
+
+    'تكنولوجيا': ['هندسة', 'هندسة مدنية', 'هندسة ميكانيكية', 'هندسة طرائق', 'هندسة كهربائية', 'تكنولوجيا'],
+
+    // -- Humanities --
+
+    'اسلامية': ['علوم اسلامية', 'إسلامية', 'التربية الاسلامية', 'شريعة', 'العلوم الإسلامية', 'العلوم الاسلامية', 'التربية الإسلامية', 'تربية إسلامية', 'تربية اسلامية'],
+
+    'علوم اسلامية': ['اسلامية', 'إسلامية', 'التربية الاسلامية', 'شريعة', 'العلوم الإسلامية', 'العلوم الاسلامية'],
+
+    'تاريخ': ['تاريخ', 'اجتماعيات', 'تاريخ و جغرافيا', 'التاريخ والجغرافيا', 'التاريخ و الجغرافيا'],
+
+    'تاريخ وجغرافيا': ['تاريخ', 'جغرافيا', 'اجتماعيات', 'تاريخ و جغرافيا', 'التاريخ والجغرافيا', 'التاريخ و الجغرافيا'],
+
+    'مدنية': ['مدنية', 'تربية مدنية', 'التربية المدنية', 'تربية مدنية'],
+
+    'فلسفة': ['فلسفة', 'الفلسفة'],
+
+    // -- Tech / Management --
+
+    'معلوماتية': ['معلوماتية', 'اعلام', 'إعلام آلي', 'اعلام آلي', 'الإعلام الآلي', 'الاعلام الالي', 'إعلام آلي'],
+
+    'اعلام آلي': ['معلوماتية', 'اعلام', 'إعلام', 'اعلام الي'],
+
+    'تسيير محاسبي': ['تسيير', 'محاسبة', 'تسيير مالي', 'التسيير المحاسبي والمالي', 'ت. المحاسبي و المالي'],
+
+    'اقتصاد ومناجمنت': ['اقتصاد', 'مناجمنت', 'الإقتصاد والمناجمنت'],
+
+    'قانون': ['قانون'],
+
+    'هندسة مدنية': ['هندسة مدنية', 'ه.مدنية'],
+
+    'هندسة ميكانيكية': ['هندسة ميكانيكية', 'ه.ميكانيكية'],
+
+    'هندسة كهربائية': ['هندسة كهربائية', 'ه.كهربائية'],
+
+    'هندسة طرائق': ['هندسة طرائق', 'ه.طرائق'],
+
+    // -- Arts / Sport --
+
+    'ت.تشكيلية': ['ت.تشكيلية', 'فنون تشكيلية', 'التربية التشكيلية', 'رسم', 'فنون', 'التربية الفنية'],
+
+    'موسيقى': ['موسيقى', 'التربية الموسيقية'],
+
+    'رياضة': ['رياضة', 'تربية بدنية', 'التربية البدنية', 'Sport', 'EPS', 'E.P.S', 'ت.بدنية', 'إ.بدنية', 'Education Physique', 'Ed.Physique', 'Physique', 'ت البدنية والرياضية', 'ت البدنية و الرياضية'],
+
+    'تربية بدنية': ['رياضة', 'بدنية', 'التربية البدنية', 'Sport', 'EPS', 'E.P.S', 'ت.بدنية', 'إ.بدنية', 'Education Physique', 'Ed.Physique', 'Physique', 'ت البدنية والرياضية', 'ت البدنية و الرياضية'],
+
+    // -- Other --
+
+    'فلسفة': ['فلسفة', 'الفلسفة']
+
+};
+
+// Capture header info (Institution info from settings) should be inside or global. It was mangled.
+
+function renderRows(data, activeOrderedSubjects, analyticsData = data) {
+
+    const analysisData = Array.isArray(analyticsData) ? analyticsData : data;
+
+    // Store data globally for modal access
+
+    currentStudentsData = data;
+
+    // Filter out subjects where ALL students have a score of 0, '-', null, or undefined
+    const _trimSel = document.getElementById('trimesterSelect');
+    const _trimVal = _trimSel ? _trimSel.value : '1';
+
+    activeOrderedSubjects = activeOrderedSubjects.filter(sub => {
+        return analysisData.some(s => {
+            const mark = getSubjectScore(s, sub, _trimVal);
+            const numMark = parseFloat(mark);
+            return mark !== null && mark !== undefined && mark !== '-' && !isNaN(numMark) && numMark > 0;
+        });
+    });
+
+    // حفظ قائمة المواد المفلترة لاستخدامها في حساب معدل الاختبار
+    window._currentFilteredSubjects = activeOrderedSubjects;
+
+    // *** Pre-compute subject scores for renderSubjectAnalysis ***
+    // This ensures perfect consistency: rates are derived from exactly what's in the table.
+    window._computedSubjectScores = {};
+    activeOrderedSubjects.forEach(sub => {
+        const scores = analysisData.map(s => {
+            const mark = getSubjectScore(s, sub, _trimVal);
+            const numMark = parseFloat(mark);
+            return (mark !== null && mark !== undefined && !isNaN(numMark)) ? numMark : null;
+        }).filter(m => m !== null);
+        window._computedSubjectScores[sub] = scores;
+    });
+
+    updateStudentTableSummary(analysisData.length, data.length, activeOrderedSubjects.length);
+
+    const tbody = document.getElementById('detailedTableBody');
+
+    const theadRow = document.querySelector('.student-list table thead tr'); // Ensure correct selector
+
+    // Settings for Decision Logic
+
+    const settings = institutionSettings;
+
+    const directedBirthYear = parseInt(settings.directedBirthYear);
+
+    const trimesterSelect = document.getElementById('trimesterSelect');
+
+    const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+
+    const isT3 = selectedTrimesterVal === '3';
+    const isAnnual = selectedTrimesterVal === 'annual';
+
+    // T2 uses standard comparison
+
+    const hasComparison = selectedTrimesterVal === '2';
+
+    const prevTrimVal = selectedTrimesterVal === '2' ? '1' : null;
+    const stage = institutionSettings.educationStage || 'middle';
+    const levelValue = document.getElementById('levelSelect') ? document.getElementById('levelSelect').value : '';
+    const isFinalYear = (stage === 'secondary' && levelValue === '3') || (stage !== 'secondary' && levelValue === '4');
+    const showDecisionColumn = (isT3 || isAnnual) && !isFinalYear;
+    const decisionColumnWidth = stage === 'secondary' ? '88' : '40';
+
+    const comparisonHeader = 'م.ف1';
+
+    // Update Header
+
+    // Update Header
+
+    // TanStack Table Core Integration
+    const columns = [
+        TableCore.createColumnHelper().accessor('id', { id: 'index' }),
+        TableCore.createColumnHelper().accessor('name', { id: 'name' }),
+        TableCore.createColumnHelper().accessor('gender', { id: 'gender' }),
+        TableCore.createColumnHelper().accessor('dob', { id: 'dob' }),
+    ];
+    activeOrderedSubjects.forEach(sub => {
+        columns.push(
+            TableCore.createColumnHelper().accessor(row => getSubjectScore(row, sub, selectedTrimesterVal), {
+                id: 'sub_' + sub,
+                sortType: 'basic'
+            })
+        );
+    });
+    columns.push(
+        TableCore.createColumnHelper().accessor(row => {
+            const avg = getStudentAverage(row);
+            return typeof avg === 'number' ? avg : parseFloat(avg || 0);
+        }, {
+            id: 'average',
+            sortType: 'basic'
+        })
+    );
+
+    // Initialize TanStack Table State
+    if (typeof window._tanstackTableState === 'undefined') {
+        // Load saved visibility or default
+        const savedVis = localStorage.getItem('classCouncilsColVis');
+        window._tanstackTableState = { 
+            sorting: [],
+            columnVisibility: savedVis ? JSON.parse(savedVis) : {}
+        };
+    }
+
+    // Capture sort direction for UI
+    if (window._tanstackTableState.sorting.length > 0) {
+        studentTableState.sortDirection = window._tanstackTableState.sorting[0].desc ? 'desc' : 'asc';
+    }
+
+    const table = TableCore.createTable({
+        data,
+        columns,
+        getCoreRowModel: TableCore.getCoreRowModel(),
+        getSortedRowModel: TableCore.getSortedRowModel(),
+        state: {
+            sorting: window._tanstackTableState.sorting,
+            columnVisibility: window._tanstackTableState.columnVisibility
+        },
+        onColumnVisibilityChange: updater => {
+            window._tanstackTableState.columnVisibility = typeof updater === 'function' ? updater(window._tanstackTableState.columnVisibility) : updater;
+            localStorage.setItem('classCouncilsColVis', JSON.stringify(window._tanstackTableState.columnVisibility));
+            renderRows(data, activeOrderedSubjects, analyticsData);
+        },
+        onSortingChange: updater => {
+            window._tanstackTableState.sorting = typeof updater === 'function' ? updater(window._tanstackTableState.sorting) : updater;
+            renderRows(data, activeOrderedSubjects, analyticsData); // re-render
+        }
+    });
+
+    // Replace the manual sort toggle
+    window.sortStudentsByScore = () => {
+        const currentSort = window._tanstackTableState.sorting.find(col => col.id === 'average');
+        const desc = currentSort ? !currentSort.desc : true; // default to desc (highest first)
+        window._tanstackTableState.sorting = [{ id: 'average', desc }];
+        renderRows(data, activeOrderedSubjects, analyticsData);
+    };
+
+    const decisionColumnVisible = showDecisionColumn && (!window._tanstackTableState || window._tanstackTableState.columnVisibility['decision'] !== false);
+
+
+    if (theadRow) {
+
+        let headerHtml = `
+
+            <th width="25" class="sticky-col sticky-index">#</th>
+
+            <th width="110">اللقب والاسم</th>
+
+            ${table.getColumn('gender') && !table.getColumn('gender').getIsVisible() ? '' : '<th width="35" class="gender-col">الجنس</th>'}
+
+            ${table.getColumn('dob') && !table.getColumn('dob').getIsVisible() ? '' : '<th width="75">ت.الميلاد</th>'}
+
+        `;
+
+        activeOrderedSubjects.forEach(sub => {
+
+            headerHtml += `<th class="vertical-col"><div class="vertical-header">${getSubjectAbbreviation(sub)}</div></th>`;
+
+        });
+
+        // T2 Comparison Column
+
+        if (hasComparison) {
+
+            headerHtml += `<th width="45" style="background:var(--comparison-header-bg); color:var(--comparison-header-color);">${comparisonHeader}</th>`;
+
+        }
+
+        const isChecked = document.getElementById('toggleExamAvgCol') ? document.getElementById('toggleExamAvgCol').checked : true;
+        const examAvgDispStyle = isChecked ? 'table-cell' : 'none';
+        const sortArrow = studentTableState.sortDirection === 'asc' ? '↑' : '↓';
+
+        headerHtml += `
+            ${window._tanstackTableState && window._tanstackTableState.columnVisibility['exam_avg'] === false ? '' : `<th class="exam-avg-col exam-avg-col-header" width="45" style="display:${examAvgDispStyle};">م.الاختبار</th>`}
+            <th width="45" style="background:#e74c3c; color:white;">المعدل</th>
+        `;
+
+        if (isT3) {
+
+            // T3 Specific Columns: Annual Avg + Decision
+
+            // Explicitly added for ALL levels (including 4MS/3AS)
+
+            headerHtml += `<th width="45" class="vertical-header" style="background:#8e44ad; color:white;"><div>م.سنوي</div></th>`;
+
+            if (decisionColumnVisible) {
+                headerHtml += `<th width="${decisionColumnWidth}" class="decision-col" style="background:#2c3e50; color:white;">القرار</th>`;
+            }
+
+        } else if (showDecisionColumn) {
+
+            if (decisionColumnVisible) {
+                headerHtml += `<th width="${decisionColumnWidth}" class="decision-col" style="background:#2c3e50; color:white;">القرار</th>`;
+            }
+
+        } else if (!isAnnual) {
+
+            // Standard Appreciation Column (T1 & T2)
+
+            headerHtml += `<th width="40" class="appreciation-col" style="background:#e74c3c; color:white;">التقدير</th>`;
+
+        }
+
+        theadRow.innerHTML = headerHtml;
+
+        const headerCells = theadRow.querySelectorAll('th');
+        if (headerCells[0]) headerCells[0].classList.add('sticky-col', 'sticky-index');
+        if (headerCells[1]) headerCells[1].classList.add('sticky-col', 'sticky-name');
+
+        const scoreHeaderIndex = 4 + activeOrderedSubjects.length + (hasComparison ? 1 : 0) + 1;
+        const scoreHeader = headerCells[scoreHeaderIndex];
+        if (scoreHeader) {
+            scoreHeader.classList.add('sortable-score-header');
+            scoreHeader.setAttribute('onclick', 'sortStudentsByScore()');
+            scoreHeader.setAttribute('title', 'اعكس ترتيب الجدول');
+            scoreHeader.innerHTML = `المعدل <span class="sort-arrow">${sortArrow}</span>`;
+        }
+
+    }
+
+    let html = '';
+
+    if (data.length === 0) {
+        const finalColumnsCount = isT3 ? (decisionColumnVisible ? 2 : 1) : (decisionColumnVisible ? 1 : (isAnnual ? 0 : 1));
+        const columnCount = 4 + activeOrderedSubjects.length + (hasComparison ? 1 : 0) + 2 + finalColumnsCount;
+        const emptyMessage = analysisData.length > 0
+            ? 'لا توجد نتائج مطابقة لأدوات البحث أو التصفية الحالية.'
+            : 'لا توجد بيانات';
+        html = `<tr><td colspan="${columnCount}" class="student-empty-state">${emptyMessage}</td></tr>`;
+
+        tbody.innerHTML = '<tr><td colspan="20">لا توجد بيانات</td></tr>';
+
+        return;
+
+    }
+
+    // Use TanStack sorted rows instead of raw data
+    table.getRowModel().rows.forEach((rowNode) => {
+        const s = rowNode.original;
+        const index = rowNode.index;
+
+        let marksHtml = '';
+
+        // Loop through the FILTERED subjects
+        activeOrderedSubjects.forEach(targetSub => {
+            const mark = getSubjectScore(s, targetSub);
+            const displayMark = mark !== null && mark !== undefined ? mark : '-';
+            let markClass = '';
+            let inlineStyle = '';
+            if (typeof mark === 'number') {
+                if (mark < 10) markClass = 'mark-bad';
+                else if (mark >= 15) markClass = 'mark-excellent';
+                else if (mark >= 10) markClass = 'mark-good';
+            } else {
+                inlineStyle = 'color:var(--text-secondary);';
+            }
+            marksHtml += `<td class="${markClass}" style="${inlineStyle}">${displayMark}</td>`;
+        });
+
+        const currentAvg = typeof getStudentAverage(s) === 'number' ? getStudentAverage(s) : parseFloat(getStudentAverage(s) || 0);
+        let avgClass = '';
+        if (currentAvg < 10) avgClass = 'mark-bad';
+        else if (currentAvg >= 15) avgClass = 'mark-excellent';
+        else if (currentAvg >= 10) avgClass = 'mark-good';
+
+        let comparisonHtml = '';
+
+        let trendHtml = '';
+
+        if (hasComparison) {
+
+            const avgPrev = getTrimesterAverage(s, prevTrimVal);
+
+            // Prev Trim Column Cell
+
+            comparisonHtml = `<td style="font-weight:bold; color:var(--text-secondary); font-size:0.9em;">${avgPrev > 0 ? avgPrev : '-'}</td>`;
+
+            if (currentAvg > avgPrev && avgPrev > 0) {
+
+                trendHtml = '&nbsp;<span style="color:#27ae60; font-size:1.1em; vertical-align:middle;">▲</span>';
+
+            } else if (currentAvg < avgPrev && avgPrev > 0) {
+
+                trendHtml = '&nbsp;<span style="color:#c0392b; font-size:1.1em; vertical-align:middle;">▼</span>';
+
+            }
+
+        }
+
+        // Final Columns Logic
+
+        let finalColumnsHtml = '';
+
+        if (isT3) {
+            const decisionSnapshot = getAnnualDecisionSnapshot(s, directedBirthYear);
+            s.decision = decisionSnapshot.decision;
+
+            finalColumnsHtml = `
+
+                <td style="font-weight:bold; background:var(--table-row-even);">${decisionSnapshot.annualAverage}</td>
+
+            `;
+
+            if (decisionColumnVisible) {
+
+                finalColumnsHtml += `<td class="decision-col">${buildDecisionCellContent(decisionSnapshot)}</td>`;
+
+            }
+
+        } else if (decisionColumnVisible) {
+
+            const decisionSnapshot = getAnnualDecisionSnapshot(s, directedBirthYear);
+            s.decision = decisionSnapshot.decision;
+            finalColumnsHtml = `<td class="decision-col">${buildDecisionCellContent(decisionSnapshot)}</td>`;
+
+        } else if (!isAnnual) {
+
+            // Standard Appreciation (T1, T2)
+
+            finalColumnsHtml = `<td class="appreciation-col">${getAppreciation(currentAvg)}</td>`;
+
+        }
+
+        const selectedCls = document.getElementById('classSelect') ? document.getElementById('classSelect').value : '';
+        const classBadge = (selectedCls === 'all' && s.class) ? ` <span style="color:#7f8c8d; font-size:0.85em; font-weight:normal;">(${s.class})</span>` : '';
+
+        const rawExamAvgDisplayValue = typeof calculateStudentExamAverage !== 'undefined' ? calculateStudentExamAverage(s, selectedTrimesterVal, index) : '-';
+        const examAvgDisplayValue = formatCouncilsAverageValue(rawExamAvgDisplayValue);
+        const isChecked = document.getElementById('toggleExamAvgCol') ? document.getElementById('toggleExamAvgCol').checked : true;
+        const examAvgDispStyle = isChecked ? 'table-cell' : 'none';
+        const examAvgHtml = (window._tanstackTableState && window._tanstackTableState.columnVisibility['exam_avg'] === false) ? '' : `<td class="exam-avg-col exam-avg-col-cell" style="display:${examAvgDispStyle};" title="معدل درجات الاختبار لمختلف المواد">${examAvgDisplayValue}</td>`;
+
+        html += `
+            <tr onclick="showStudentModal('${s.__uid || s.id}')" style="cursor:pointer;" title="اضغط لعرض تفاصيل التلميذ">
+                <td class="sticky-col sticky-index">${index + 1}</td>
+
+                <td class="sticky-col sticky-name student-name-cell">${s.name}${classBadge}</td>
+
+                ${table.getColumn('gender') && !table.getColumn('gender').getIsVisible() ? '' : `<td style="font-size:0.85em;">${s.gender || '-'}</td>`}
+
+                ${table.getColumn('dob') && !table.getColumn('dob').getIsVisible() ? '' : `<td style="white-space: nowrap; font-size:0.85em;">${formatDate(s.dob)}</td>`}
+
+                ${marksHtml}
+
+                ${comparisonHtml}
+                ${examAvgHtml}
+                <td class="${avgClass}" style="white-space: nowrap;">${currentAvg.toFixed(2)}${trendHtml}</td>
+
+                ${finalColumnsHtml}
+
+            </tr>
+
+        `;
+
+    });
+
+    // KPI Calculations
+    if (analysisData.length > 0) {
+        let totalMales = 0;
+        let totalFemales = 0;
+        let sumAverages = 0;
+        let highestAvg = 0;
+        let lowestAvg = 20; // Start high
+        let passedCount = 0;
+        let excellenceCount = 0;    // امتياز >= 18
+        let congratsCount = 0;      // تهنئة >= 16
+        let encourageCount = 0;     // تشجيع >= 14
+        let honorCount = 0;         // لوحة شرف >= 12
+
+        analysisData.forEach(s => {
+            if (s.gender === 'ذكر' || s.gender === 'M') totalMales++;
+            else if (s.gender === 'أنثى' || s.gender === 'F') totalFemales++;
+
+            const currentAvg = typeof getStudentAverage(s) === 'number' ? getStudentAverage(s) : parseFloat(getStudentAverage(s) || 0);
+
+            sumAverages += currentAvg;
+            if (currentAvg > highestAvg) highestAvg = currentAvg;
+            if (currentAvg < lowestAvg) lowestAvg = currentAvg;
+            if (currentAvg >= 10) passedCount++;
+
+            // Honor award counts (exclusive tiers)
+            const excellenceThreshold = parseFloat(institutionSettings.evalExcellence) || 18;
+            const congratulationThreshold = parseFloat(institutionSettings.evalCongratulation) || 16;
+            const encouragementThreshold = parseFloat(institutionSettings.evalEncouragement) || 14;
+            const honorThreshold = parseFloat(institutionSettings.evalHonor) || 12;
+
+            if (currentAvg >= excellenceThreshold) excellenceCount++;
+            else if (currentAvg >= congratulationThreshold) congratsCount++;
+            else if (currentAvg >= encouragementThreshold) encourageCount++;
+            else if (currentAvg >= honorThreshold) honorCount++;
+        });
+
+        const classAvg = (sumAverages / analysisData.length).toFixed(2);
+        const successRate = ((passedCount / analysisData.length) * 100).toFixed(2);
+        const failRate = (100 - successRate).toFixed(2);
+
+        // Safely update DOM if KPI elements exist
+        const eTotal = document.getElementById('kpi-total');
+        if (eTotal) {
+            eTotal.innerText = analysisData.length;
+            document.getElementById('kpi-male').innerText = totalMales;
+            document.getElementById('kpi-female').innerText = totalFemales;
+            document.getElementById('kpi-class-avg').innerText = classAvg;
+            document.getElementById('kpi-highest').innerText = highestAvg.toFixed(2);
+            document.getElementById('kpi-lowest').innerText = analysisData.length > 0 ? lowestAvg.toFixed(2) : '0.00';
+            document.getElementById('kpi-success').innerText = successRate + '%';
+            document.getElementById('kpi-fail').innerText = failRate + '%';
+        }
+        // Update Honor Award KPIs
+        const eExcellence = document.getElementById('kpi-excellence');
+        if (eExcellence) {
+            eExcellence.innerText = excellenceCount;
+            document.getElementById('kpi-congratulations').innerText = congratsCount;
+            document.getElementById('kpi-encouragement').innerText = encourageCount;
+            document.getElementById('kpi-honor').innerText = honorCount;
+        }
+        // Update the Bar Chart
+        if (typeof updateAverageDistributionChart === 'function') {
+            updateAverageDistributionChart(analysisData);
+        }
+        // Update the Subject Analysis Table
+        if (typeof renderSubjectAnalysis === 'function') {
+            renderSubjectAnalysis(analysisData, activeOrderedSubjects);
+        }
+        // Update the Subject Success Rate Chart
+        if (typeof updateSubjectSuccessChart === 'function') {
+            updateSubjectSuccessChart(analysisData, activeOrderedSubjects);
+        }
+    } else {
+        // Reset KPIs if no data
+        const eTotal = document.getElementById('kpi-total');
+        if (eTotal) {
+            eTotal.innerText = '0';
+            document.getElementById('kpi-male').innerText = '0';
+            document.getElementById('kpi-female').innerText = '0';
+            document.getElementById('kpi-class-avg').innerText = '0.00';
+            document.getElementById('kpi-highest').innerText = '0.00';
+            document.getElementById('kpi-lowest').innerText = '0.00';
+            document.getElementById('kpi-success').innerText = '0%';
+            document.getElementById('kpi-fail').innerText = '0%';
+        }
+        // Reset Honor Award KPIs
+        const eExcellence = document.getElementById('kpi-excellence');
+        if (eExcellence) {
+            eExcellence.innerText = '0';
+            document.getElementById('kpi-congratulations').innerText = '0';
+            document.getElementById('kpi-encouragement').innerText = '0';
+            document.getElementById('kpi-honor').innerText = '0';
+        }
+    }
+
+    // Add Summary Row (Averages)
+
+    let summaryMarksHtml = '';
+
+    activeOrderedSubjects.forEach(sub => {
+
+        const scores = data.map(s => getSubjectScore(s, sub)).filter(m => m !== null && m !== undefined);
+
+        const avg = scores.length > 0 ? (scores.reduce((a, b) => a + Number(b), 0) / scores.length).toFixed(2) : '-';
+
+        summaryMarksHtml += `<td style="font-weight:bold; background:var(--table-row-even);">${avg}</td>`;
+
+    });
+
+    // Summary Row Removed as per user request
+
+    /*
+
+    const classAvg = data.length > 0 ? (data.reduce((a, b) => a + (parseFloat(b.average) || 0), 0) / data.length).toFixed(2) : '0';
+
+    html += `
+
+        <tr style="background:#f9f9f9; border-top:2px solid #333;">
+
+            <td colspan="4" style="font-weight:bold; text-align:center;">معدلات المواد</td>
+
+            ${summaryMarksHtml}
+
+            <td style="font-weight:bold; background:#d5dbdb;">${classAvg}</td>
+
+            <td style="background:#ecf0f1;">-</td>
+
+        </tr>
+
+    `;
+
+    */
+
+    tbody.innerHTML = html;
+
+    Array.from(tbody.rows).forEach(row => {
+        if (row.cells[0]) row.cells[0].classList.add('sticky-col', 'sticky-index');
+        if (row.cells[1]) row.cells[1].classList.add('sticky-col', 'sticky-name', 'student-name-cell');
+    });
+
+    // Apply initial column visibility
+    if (typeof applyExamAvgColumnToggle === 'function') {
+        applyExamAvgColumnToggle();
+    }
+
+}
+
+// Helper to format date (Remove time part from ISO string)
+
+function formatDate(dateStr) {
+
+    if (!dateStr) return '-';
+
+    // If it contains T, take the first part
+
+    if (dateStr.includes('T')) {
+
+        return dateStr.split('T')[0];
+
+    }
+
+    return dateStr;
+
+}
+
+// Helper to get Appreciation text
+
+function getAppreciation(avg) {
+    if (!institutionSettings) return '';
+
+    const excellenceThreshold = parseFloat(institutionSettings.evalExcellence) || 18;
+    const congratulationThreshold = parseFloat(institutionSettings.evalCongratulation) || 16;
+    const encouragementThreshold = parseFloat(institutionSettings.evalEncouragement) || 14;
+    const honorThreshold = parseFloat(institutionSettings.evalHonor) || 12;
+
+    if (avg >= excellenceThreshold) return '<span class="high-score">امتياز</span>';
+    if (avg >= congratulationThreshold) return '<span class="high-score">تهنئة</span>';
+    if (avg >= encouragementThreshold) return '<span class="high-score" style="color:var(--text-encouragement)">تشجيع</span>';
+    if (avg >= honorThreshold) return '<span class="high-score" style="color:var(--text-honor)">ل.شرف</span>';
+    if (avg >= 10) return ' / ';
+    return '';
+}
+
+// الترتيب
+
+function sortStudentsByScore() {
+
+    studentTableState.sortDirection = studentTableState.sortDirection === 'asc' ? 'desc' : 'asc';
+    localStorage.setItem('classCouncilsTableSort', studentTableState.sortDirection);
+    updateStudentTableSortStatus();
+    applyFilters(); // Re-apply filters to sort visible data
+
+}
+
+// Abbreviation Mapping
+
+const headerAbbreviations = {
+
+    'اللغة العربية': 'العربية',
+
+    'اللغة الأمازيغية': 'أمازيغية',
+
+    'اللغة الفرنسية': 'الفرنسية',
+
+    'اللغة الإنجليزية': 'إنجليزية',
+
+    'اللغة الانجليزية': 'إنجليزية',
+
+    'الرياضيات': 'رياضيات',
+
+    'ع الطبيعة و الحياة': 'العلوم',
+
+    'علوم الطبيعة والحياة': 'العلوم',
+
+    'التربية الإسلامية': 'إسلامية',
+
+    'ع الفيزيائية والتكنولوجيا': 'فيزياء',
+
+    'العلوم الفيزيائية': 'فيزياء',
+
+    'التاريخ والجغرافيا': 'تاريخ وج',
+
+    'التربية المدنية': 'مدنية',
+
+    'التربية الموسيقية': 'موسيقية',
+
+    'المعلوماتية': 'معلوماتية',
+
+    'ت البدنية و الرياضية': 'رياضة',
+
+    'التربية البدنية': 'رياضة',
+
+    'التربية التشكيلية': 'تشكيلية',
+
+    'اللغة اﻷمازيغية': 'أمازيغية', // Specific unicode variant if needed
+
+    'اللغة اﻷمازيغية': 'أمازيغية', // Specific unicode variant if needed
+
+    'معدل الفصل': 'م.الفصل',
+
+    'التسيير المحاسبي والمالي': 'ت.مالي',
+
+    'تسيير محاسبي': 'ت.مالي',
+
+    'اقتصاد ومناجمنت': 'اقتصاد',
+
+    'الإقتصاد والمناجمنت': 'اقتصاد',
+
+    'قانون': 'قانون',
+
+    'هندسة مدنية': 'ه.مدنية',
+
+    'هندسة ميكانيكية': 'ه.ميكانيكية',
+
+    'هندسة كهربائية': 'ه.كهربائية',
+
+    'هندسة طرائق': 'ه.طرائق',
+
+    'فلسفة': 'فلسفة',
+
+    'لغة أجنبية ثالثة': 'لغة 3',
+
+    'لغة ثالثة': 'لغة 3',
+
+    'ألمانية': 'أ(Deu)',
+
+    'اسبانية': 'إ(Esp)',
+
+};
+
+function getSubjectAbbreviation(subjectName) {
+
+    if (!subjectName) return '';
+
+    // 1. Remove Trimester Suffixes (ف1, ف2, ف3)
+
+    let cleanName = subjectName.replace(/\s*(ف|فصل)\s*[1-3]\s*$/, '').trim();
+
+    // 2. Normalize for matching
+
+    const norm = normalizeArabic(cleanName);
+
+    // 3. Check exact matches in mapping (using normalized keys if needed)
+
+    for (const [key, abbr] of Object.entries(headerAbbreviations)) {
+
+        if (normalizeArabic(key) === norm) {
+
+            return abbr;
+
+        }
+
+    }
+
+    // 4. Return cleaned name if no match found
+
+    return cleanName;
+
+}
+
+let chartInstance = null;
+
+// الرسم البياني (Bar Chart)
+
+function initChart(data = studentsData, activeSubjects = subjects) {
+
+    if (!activeSubjects || activeSubjects.length === 0) return;
+
+    // Use currently selected trimester
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+
+    // FILTER activeSubjects to remove subjects where ALL students have 0, '-', null or undefined
+    activeSubjects = activeSubjects.filter(sub => {
+        return data.some(s => {
+            const mark = getSubjectScore(s, sub, selectedTrimesterVal);
+            const numMark = parseFloat(mark);
+            return mark !== null && mark !== undefined && mark !== '-' && !isNaN(numMark) && numMark > 0;
+        });
+    });
+
+    if (activeSubjects.length === 0) return;
+
+    const ctx = document.getElementById('subjectsChart').getContext('2d');
+
+    const labels = activeSubjects; // Use dynamic subjects for Chart
+
+    const statsData = activeSubjects.map(sub => {
+
+        const scores = data.map(s => getSubjectScore(s, sub, selectedTrimesterVal)).filter(m => m !== null && m !== undefined);
+
+        if (scores.length === 0) return 0;
+
+        const passed = scores.filter(s => s >= 10).length;
+
+        return ((passed / scores.length) * 100).toFixed(2);
+
+    });
+
+    // Define colors based on data
+
+    const backgroundColors = statsData.map(val => val < 50 ? 'rgba(231, 76, 60, 0.7)' : 'rgba(52, 152, 219, 0.7)');
+
+    const borderColors = statsData.map(val => val < 50 ? 'rgba(192, 57, 43, 1)' : 'rgba(52, 152, 219, 1)');
+
+    if (chartInstance) {
+
+        chartInstance.destroy();
+
+    }
+
+    // Custom Plugin for Data Labels
+
+    const dataLabelsPlugin = {
+
+        id: 'dataLabels',
+
+        afterDatasetsDraw(chart, args, options) {
+
+            const { ctx } = chart;
+
+            chart.data.datasets.forEach((dataset, i) => {
+
+                const meta = chart.getDatasetMeta(i);
+
+                meta.data.forEach((bar, index) => {
+
+                    const value = dataset.data[index] + '%';
+
+                    const { x, y } = bar.tooltipPosition();
+
+                    ctx.save();
+
+                    ctx.fillStyle = 'black';
+
+                    ctx.font = 'bold 12px Tajawal';
+
+                    ctx.textAlign = 'center';
+
+                    ctx.textBaseline = 'bottom';
+
+                    ctx.fillText(value, x, y - 5);
+
+                    ctx.restore();
+
+                });
+
+            });
+
+        }
+
+    };
+
+    chartInstance = new Chart(ctx, {
+
+        type: 'bar',
+
+        data: {
+
+            labels: labels,
+
+            datasets: [{
+
+                label: 'نسبة النجاح (%)',
+
+                data: statsData,
+
+                backgroundColor: backgroundColors,
+
+                borderColor: borderColors,
+
+                borderWidth: 1
+
+            }]
+
+        },
+
+        options: {
+
+            animation: { duration: 0 },
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true,
+
+                    max: 100
+
+                },
+
+                x: {
+
+                    ticks: {
+
+                        color: getCurrentTheme() === 'dark' ? '#f7fbff' : '#000000',
+
+                        font: {
+
+                            weight: 'bold',
+
+                            family: 'Tajawal',
+
+                            size: 12
+
+                        }
+
+                    }
+
+                }
+
+            },
+
+            plugins: {
+
+                title: {
+
+                    display: true,
+
+                    text: 'نسب النجاح حسب المواد الدراسية',
+
+                    font: { family: 'Tajawal', size: 16 }
+
+                }
+            },
+            layout: {
+                padding: {
+                    top: 20
+                }
+            }
+        },
+
+        plugins: [dataLabelsPlugin]
+
+    });
+
+}
+
+// Print to New Tab Functionality
+
+function printToNewTab() {
+
+    const printWindow = window.open('', '_blank');
+
+    // Capture the chart as an image first
+
+    // Clone sections
+
+    const dashboard = document.querySelector('.dashboard').cloneNode(true);
+
+    const studentList = document.querySelector('.student-list').cloneNode(true);
+
+    // FILTER: Hide columns where ALL scores are 0 (User Request)
+    const table = studentList.querySelector('.data-table');
+    if (table) {
+        const headers = table.querySelectorAll('thead th');
+        const rows = table.querySelectorAll('tbody tr');
+        const colCount = headers.length;
+
+        // Identify subject columns (those with vertical-header)
+        const subjectIndices = [];
+        headers.forEach((th, index) => {
+            // FIX: Check classList on the TH element itself
+            if (th.classList.contains('vertical-header')) {
+                subjectIndices.push(index);
+            }
+        });
+
+        // Check each subject column
+        subjectIndices.forEach(colIndex => {
+            let allZero = true;
+            for (let i = 0; i < rows.length; i++) {
+                const cell = rows[i].children[colIndex];
+                if (cell) {
+                    const text = cell.textContent.trim();
+                    // If any cell is NOT 0 and NOT empty/dash, then column is not all-zero
+                    if (text !== '0' && text !== '0.0' && text !== '0.00' && text !== '-' && text !== '') {
+                        allZero = false;
+                        break;
+                    }
+                }
+            }
+
+            // Hide if all zero
+            if (allZero) {
+                // Hide header
+                headers[colIndex].style.display = 'none';
+                // Hide cells
+                rows.forEach(row => {
+                    if (row.children[colIndex]) {
+                        row.children[colIndex].style.display = 'none';
+                    }
+                });
+            }
+        });
+    }
+
+    // In the dashboard clone, replace the canvas container with the static image using DOM manipulation
+
+    const chartCanvas = document.getElementById('subjectsChart');
+    const cloneChartContainer = dashboard.querySelector('.chart-container');
+
+    if (chartCanvas && cloneChartContainer) {
+        const chartImage = chartCanvas.toDataURL('image/png');
+        cloneChartContainer.innerHTML = `<img src="${chartImage}" style="width:100%; height:100%; object-fit:contain; display:block; margin: 0 auto;">`;
+        // Ensure container style in print
+        cloneChartContainer.style.height = '230px';
+        cloneChartContainer.style.overflow = 'hidden';
+        cloneChartContainer.style.display = 'block'; // Ensure it's visible
+    }
+
+    const dashboardCloneHtml = dashboard.innerHTML;
+
+    // Capture dynamic title info
+
+    const selectedLevel = document.getElementById('levelSelect').value;
+
+    const selectedClass = document.getElementById('classSelect').value;
+
+    const selectedTrimesterVal = document.getElementById('trimesterSelect').value;
+
+    const selectedTrimesterName = trimesterMap[selectedTrimesterVal] || selectedTrimesterVal;
+
+    // Get class responsible teacher
+
+    const responsibleName = getClassResponsibleName(selectedLevel, selectedClass);
+
+    const responsibleInfo = responsibleName ? ` | الأستاذ م.القسم: ${responsibleName}` : '';
+
+    // Capture header info (Institution info from settings)
+
+    const settings = institutionSettings;
+
+    // ADDED: Stream Info for Secondary
+
+    let streamInfo = '';
+
+    const stage = settings.educationStage || 'middle';
+
+    if (stage === 'secondary') {
+
+        const streamSelect = document.getElementById('streamSelect');
+
+        const selectedStreamCode = streamSelect ? streamSelect.value : '';
+
+        if (selectedStreamCode) {
+
+            const streamName = (typeof SubjectManager !== 'undefined') ? SubjectManager.getStreamName(selectedStreamCode) : selectedStreamCode;
+
+            streamInfo = ` | الشعبة: ${streamName}`;
+
+        }
+
+    }
+
+    const pageTitle = `تحليل نتائج الفصل ${selectedTrimesterName} لمستوى ${selectedLevel} - القسم ${selectedClass}${streamInfo}${responsibleInfo}`;
+
+    // Capture header info (Institution info from settings)
+
+    // Settings already declared above
+
+    const headerHtml = `
+
+        <div style="font-family: 'Cairo', sans-serif; direction: rtl; margin-bottom: 10px;">
+
+            <div style="text-align: center; margin-bottom: 5px;">
+
+                <h3 style="margin: 0; font-size: 12pt; font-weight: bold;">الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+
+                <h3 style="margin: 2px 0; font-size: 11pt;">وزارة التربية الوطنية</h3>
+
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px;">
+
+                <div style="text-align: right; font-size: 10pt;">
+
+                    <div style="margin-bottom:2px"><strong>مديرية التربية لولاية:</strong> ${settings.wilaya || '.......'}</div>
+
+                    <div style="margin-bottom:2px"><strong>المؤسسة:</strong> ${settings.institutionName || '.......'}</div>
+
+                </div>
+
+                <div style="text-align: left; font-size: 10pt;">
+
+                     <div style="margin-bottom:2px"><strong>السنة الدراسية:</strong> \</div>
+
+                     <div style="margin-bottom:2px"><strong>البلدية:</strong> ${settings.municipality || '.......'}</div>
+
+                </div>
+
+            </div>
+
+            <div style="text-align: center; background-color: #f9f9f9; padding: 5px; border: 1px solid #ddd; border-radius: 5px;">
+
+                 <h2 style="margin: 0; font-size: 14pt; color: #2c3e50;">${pageTitle}</h2>
+
+            </div>
+
+        </div>
+
+    `;
+
+    // Capture footer info
+
+    const today = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Get signer info from signature settings
+
+    const sigSettings = signatureSettings;
+
+    const reportConfig = sigSettings.reportSettings?.['class_analysis'] || { signer: 'director', showSignature: true };
+
+    const signerData = sigSettings.signers?.[reportConfig.signer] || { fullName: settings.managerName || '', gender: 'male' };
+
+    // Determine title based on signer type and gender
+
+    let signerTitle;
+
+    if (reportConfig.signer === 'director') {
+
+        signerTitle = signerData.gender === 'female' ? 'المديرة' : 'المدير';
+
+    } else {
+
+        signerTitle = signerData.gender === 'female' ? 'الناظرة' : 'الناظر';
+
+    }
+
+    const signerName = signerData.fullName || settings.managerName || '................';
+
+    const footerHtml = `
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; align-items: flex-start; direction: rtl; font-size: 10pt;">
+            <div style="text-align: center; min-width: 150px; line-height: 1.2;">
+                <div style="margin-bottom: 8px; font-weight: normal;">حرر بـ: ${settings.municipality || '.......'} في: ${today}</div>
+                <div style="font-weight: normal; font-size: 14pt;">${signerTitle}</div>
+            </div>
+        </div>
+    `;
+
+    // ADDED: Logic to hide appreciation column if Trimester 2 or 3
+
+    let customPrintStyle = '';
+
+    // T3 Check
+
+    const isT3 = selectedTrimesterVal === '3';
+
+    if (selectedTrimesterVal === '2' || isT3) {
+
+        customPrintStyle += `
+
+            .appreciation-col { display: none !important; }
+
+        `;
+
+    }
+
+    // CONDITIONAL PRINT STYLING FOR LARGE CLASSES OR MANY SUBJECTS
+
+    const rowCount = document.querySelectorAll('#detailedTableBody tr').length;
+
+    // Count subjects (vertical headers) to detect wide tables
+
+    const subjectCount = document.querySelectorAll('.student-list .data-table thead th.vertical-header').length;
+
+    // Fix for truncation when subjects >= 12
+
+    if (subjectCount >= 12) {
+
+        customPrintStyle += `
+
+            .student-list .data-table td {
+
+                font-size: 8pt !important;
+
+                padding: 1px 1px !important;
+
+                white-space: nowrap !important;
+
+            }
+
+            .student-list .data-table th {
+
+                font-size: 8pt !important;
+
+                padding: 1px !important;
+
+            }
+
+            /* Added: Reduce dashboard table padding for many subjects */
+            .dashboard .data-table td, .dashboard .data-table th {
+                padding: 1px 3px !important;
+                line-height: 1.15 !important;
+            }
+
+        `;
+
+    }
+
+    if (rowCount > 30) {
+
+        customPrintStyle += `
+
+            .student-list .data-table td {
+
+                padding: 1px 3px !important;
+
+                height: 20px !important;
+
+                line-height: 1.2;
+
+                /* If we already set font-size in subjectCount block, this might override it to 9pt if we are not careful.
+
+                   Let's fallback to 9pt only if not already smaller. But simpler to just let them coexist or prioritize subject count.
+
+                   If subjectCount >= 12, we want 8pt. If rowCount > 30, we want compact height.
+
+                   Let's merge carefullly. */
+
+            }
+
+            /* Ensure we don't accidentally increase font size back if it was set to 8pt */
+
+            .student-list .data-table td {
+
+                font-size: ${subjectCount >= 12 ? '8pt' : '9pt'} !important;
+
+            }
+
+            .student-list .data-table th {
+
+                font-size: ${subjectCount >= 12 ? '8pt' : '9pt'} !important;
+
+                padding: 3px !important;
+
+            }
+
+            .vertical-header div {
+
+                max-height: 130px !important;
+
+                padding: 3px !important;
+
+            }
+
+            .vertical-header {
+
+                height: 130px !important;
+
+            }
+
+        `;
+
+    }
+
+    printWindow.document.write(`
+
+        <!DOCTYPE html>
+
+        <html lang="ar" dir="rtl">
+
+        <head>
+
+            <meta charset="UTF-8">
+
+            <title>طباعة تقرير تحليل القسم</title>
+
+            <!-- No external stylesheet to avoid conflicts -->
+
+            <style>
+
+                @font-face {
+                    font-family: 'Cairo';
+                    font-style: normal;
+                    font-weight: 400;
+                    src: url('assets/fonts/Cairo-Regular.ttf') format('truetype');
+                }
+                @font-face {
+                    font-family: 'Cairo';
+                    font-style: normal;
+                    font-weight: 700;
+                    src: url('assets/fonts/Cairo-Bold.ttf') format('truetype');
+                }
+
+                @page { margin: 0.8cm; } /* Reduced margin for more space */
+
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+
+                body { font-family: 'Cairo', sans-serif; padding: 0px; background: white; font-size: 9pt; margin: 0; }
+
+                .navbar, .controls, .btn-analyze, .toast-container { display: none !important; }
+
+                ${customPrintStyle} /* Injected CSS for hiding columns or compacting rows */
+
+                /* Dashboard Page - Always break after */
+
+                .dashboard-page {
+
+                    display: block;
+
+                    page-break-after: always;
+
+                }
+
+                /* Footer styling */
+
+                .static-footer {
+
+                    width: 100%;
+
+                    border-top: 1px dashed #999;
+
+                    padding-top: 5px;
+
+                    background: white;
+
+                    margin-top: 10px;
+
+                }
+
+                /* List Section */
+
+                .list-section {
+
+                    display: block;
+
+                }
+
+                .content-wrapper { display: block; }
+
+                /* Large Sizes for Page 1 (Dashboard) */
+
+                .dashboard .data-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; font-size: 11pt; font-weight: bold; }
+
+                .dashboard .data-table th, .dashboard .data-table td { border: 1px solid black !important; padding: 2px 4px; text-align: center; height: auto; font-weight: bold; line-height: 1.2; }
+
+                .dashboard .data-table th { background-color: white; color: black; font-weight: bold; }
+
+                .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+                .dashboard .card { border: 1px solid #eee; padding: 6px; border-radius: 6px; margin-bottom: 3px; }
+
+                .dashboard .card h3 { font-size: 11pt !important; margin-bottom: 3px !important; }
+
+                .dashboard .card p { font-size: 11.5pt !important; margin: 0 !important; }
+
+                /* Ensure Decision Stats is visible in print if T3 */
+
+                #decisionStatsContainer {
+
+                    display: ${isT3 ? 'block' : 'none'} !important;
+
+                    margin-top: 10px;
+
+                    border-top: 1px solid #eee;
+
+                }
+
+                /* Page 2 Text Size */
+
+                .data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt; }
+
+                .data-table th, .data-table td { border: 1pt solid black !important; padding: 4px; text-align: center; }
+
+                /* Fix Vertical Headers Borders - Print Specific */
+
+                .vertical-header {
+
+                    border: 1px solid black !important;
+
+                    vertical-align: bottom !important;
+
+                    background-color: white !important;
+
+                    writing-mode: horizontal-tb !important;
+
+                    transform: none !important;
+
+                    padding: 0 !important;
+
+                    height: auto !important;
+
+                }
+
+                .vertical-header div {
+
+                    writing-mode: vertical-rl;
+
+                    transform: rotate(180deg);
+
+                    white-space: nowrap;
+
+                    padding: 4px;
+
+                    margin: 0 auto;
+
+                    width: 100%;
+
+                    max-height: 150px;
+
+                }
+
+                .student-list .data-table {
+
+                    table-layout: fixed;
+
+                    width: 100% !important;
+
+                }
+
+                .student-list .data-table th,
+
+                .student-list .data-table td {
+
+                    border: 1pt solid black !important;
+
+                    padding: 2px 3px !important;
+
+                    /* Padding is handled by customPrintStyle above if large class */
+
+                    overflow: hidden;
+
+                }
+
+                    writing-mode: vertical-rl !important;
+
+                    transform: rotate(180deg) !important;
+
+                    white-space: nowrap;
+
+                    padding: 2px 0 !important;
+
+                    min-height: 60px;
+
+                    width: 25px !important;
+
+                }
+
+                .decision-col {
+
+                    font-size: 0.75rem !important; /* Slightly larger than previous 0.7 */
+
+                    font-weight: bold;
+
+                    min-width: 50px !important; /* Increased width */
+
+                }
+
+                /* Force all headers text to be black, but keep background (which is usually white in print) */
+
+                .data-table th {
+
+                    color: black !important;
+
+                }
+
+                .data-table th { background-color: white !important; color: black; font-size: 8.5pt; }
+
+                .data-table th { background-color: white; color: black; }
+
+                /* Disable Sticky for Print */
+
+                .data-table thead th { position: static !important; }
+
+                /* Balanced Chart Size for Page 1 */
+
+                .chart-container { margin: 2px 0; width: 100% !important; height: 230px !important; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #eee; border-radius: 6px; padding: 2px; }
+
+                .chart-container img { max-height: 100%; width: auto; max-width: 100%; }
+
+                .honor-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 5px; }
+
+                .honor-card { padding: 5px !important; font-size: 10pt; margin-bottom: 0px !important;}
+
+            </style>
+
+        \n            ${window.PrintToolbarHelper ? window.PrintToolbarHelper.getHeadContent() : ''}\n        </head>
+
+        <body>\n            ${window.PrintToolbarHelper ? window.PrintToolbarHelper.getToolbarHtml({ advanced: false }) : ''}
+
+            <div class="print-page dashboard-page">
+
+                ${headerHtml.replace('font-size: 16pt', 'font-size: 18pt')}
+
+                <div class="content-wrapper">
+
+                    <section class="dashboard">
+
+                        ${dashboardCloneHtml}
+
+                    </section>
+
+                </div>
+
+                <!-- Footer removed from first page as per user request -->
+
+            </div>
+
+            <div class="list-section">
+
+                 <div class="content-wrapper">
+
+                    <section class="student-list">
+
+                        ${studentList.innerHTML}
+
+                    </section>
+
+                </div>
+
+                 <div class="footer static-footer">
+
+                    ${footerHtml}
+
+                </div>
+
+            </div>
+
+            <script>
+
+                window.onload = function() {
+
+                    setTimeout(() => {
+
+                        // window.print(); /* Replaced by global Toolbar */
+
+                    }, 500);
+
+                };
+
+            </script>
+
+        \n            ${window.PrintToolbarHelper ? window.PrintToolbarHelper.getScriptHtml({ advanced: false }) : ''}\n        </body>
+
+        </html>
+
+    `);
+
+    printWindow.document.close();
+
+}
+
+// Helper for dynamic average based on selected trimester
+
+function getStudentAverage(student) {
+
+    const trimesterSelect = document.getElementById('trimesterSelect');
+
+    const val = trimesterSelect ? trimesterSelect.value : '1';
+
+    return getTrimesterAverage(student, val);
+
+}
+
+// Low-level helper to get average for a specific trimester
+
+function getTrimesterAverage(student, trimesterVal) {
+    // Annual average: delegate to getAnnualAverage
+    if (trimesterVal === 'annual') {
+        return getAnnualAverage(student);
+    }
+
+    // 1. Priority: Use harmonized averages map if populated during loadData
+    if (student.averages && student.averages[trimesterVal] !== undefined) {
+        return parseFloat(student.averages[trimesterVal]) || 0;
+    }
+
+    // 2. Secondary: Look for trimester-explicit mark name
+    const suffix = ` ف${trimesterVal}`;
+    const avgKey = `معدل الفصل${suffix}`;
+    if (student.marks && student.marks[avgKey] !== undefined) {
+        return parseFloat(student.marks[avgKey]) || 0;
+    }
+
+    // 3. Fallback: Native trimester match (for legacy or single-file cases)
+    const getTrimesterValue = (name) => {
+        const n = normalizeArabic(name || '');
+        if (n.includes('ثاني') || n.includes('2')) return '2';
+        if (n.includes('ثالث') || n.includes('3')) return '3';
+        if (n.includes('اول') || n.includes('1')) return '1';
+        return '1';
+    };
+    if (getTrimesterValue(student.trimester) === trimesterVal) {
+        return parseFloat(student.average) || 0;
+    }
+
+    return 0; // No data for this trimester
+}
+
+// === Annual Average Helper Functions ===
+
+function hasAnnualAverageData(student) {
+    if (!student || !student.averages) return false;
+    return ['1', '2', '3'].every(trimesterVal =>
+        student.averages[trimesterVal] !== undefined &&
+        student.averages[trimesterVal] !== null &&
+        student.averages[trimesterVal] !== ''
+    );
+}
+
+function hasAnnualMarksData(student) {
+    if (!student || !student.marks) return false;
+    const keys = Object.keys(student.marks).map(normalizeArabic);
+    return ['1', '2', '3'].every(trimesterVal => {
+        const pattern1 = new RegExp(`ف\\s*${trimesterVal}(\\s|$)`);
+        const pattern2 = new RegExp(`فصل\\s*${trimesterVal}(\\s|$)`);
+        return keys.some(key => pattern1.test(key) || pattern2.test(key));
+    });
+}
+
+function getStoredTrimesterAverage(student, trimesterVal) {
+    if (student.averages && student.averages[trimesterVal] !== undefined && student.averages[trimesterVal] !== null && student.averages[trimesterVal] !== '') {
+        const parsedAverage = parseFloat(student.averages[trimesterVal]);
+        return isNaN(parsedAverage) ? null : parsedAverage;
+    }
+    const trimesterNameMap = { '1': 'الأول', '2': 'الثاني', '3': 'الثالث' };
+    if (student.trimester === trimesterNameMap[trimesterVal]) {
+        const parsedAverage = parseFloat(student.average);
+        return isNaN(parsedAverage) ? null : parsedAverage;
+    }
+    return null;
+}
+
+function getAnnualAverage(student) {
+    const trimesterValues = ['1', '2', '3'].map(trimesterVal => getStoredTrimesterAverage(student, trimesterVal));
+    if (trimesterValues.some(value => value === null || value === undefined || value === '' || isNaN(value))) {
+        return 0;
+    }
+    return parseFloat((trimesterValues.reduce((sum, value) => sum + value, 0) / trimesterValues.length).toFixed(2));
+}
+
+function getAnnualDecisionSnapshot(student, directedBirthYear) {
+    const annualAverageNum = getAnnualAverage(student);
+    const annualAverage = annualAverageNum.toFixed(2);
+    const birthYear = student && student.dob ? new Date(student.dob).getFullYear() : 0;
+    const stage = (institutionSettings || {}).educationStage || 'middle';
+
+    let decision = '';
+    let decisionColor = 'black';
+    let decisionEditable = false;
+    let manualDecisionCode = '';
+    let manualDecisionKey = '';
+
+    if (annualAverageNum >= 10) {
+        decision = 'ينتقل';
+        decisionColor = 'green';
+    } else if (annualAverageNum >= 9) {
+        decision = 'يستدرك';
+        decisionColor = '#d35400';
+    } else if (stage === 'secondary') {
+        const manualDecision = getSavedSecondaryManualDecision(student);
+        manualDecisionCode = manualDecision.decisionCode || 'repeated';
+        manualDecisionKey = manualDecision.storageKey || '';
+        decisionEditable = true;
+        decision = getSecondaryManualDecisionLabel(manualDecisionCode);
+        decisionColor = getSecondaryManualDecisionColor(manualDecisionCode);
+    } else if (directedBirthYear && birthYear > 0) {
+        if (birthYear > directedBirthYear) {
+            decision = 'يعيد';
+            decisionColor = '#c0392b';
+        } else {
+            decision = 'يوجّه';
+            decisionColor = '#7f8c8d';
+        }
+    } else {
+        decision = 'يعيد';
+        decisionColor = 'red';
+    }
+
+    return {
+        annualAverage: annualAverage,
+        annualAverageNum: annualAverageNum,
+        decision: decision,
+        decisionColor: decisionColor,
+        decisionEditable: decisionEditable,
+        manualDecisionCode: manualDecisionCode,
+        manualDecisionKey: manualDecisionKey
+    };
+}
+
+function getAnnualSubjectScore(student, targetSub) {
+    const trimesterScores = ['1', '2', '3'].map(trimesterVal => getSubjectScore(student, targetSub, trimesterVal));
+    const numericScores = trimesterScores.map(score => {
+        if (score === null || score === undefined || score === '') return null;
+        const numericValue = parseAnalysisNumber(score);
+        return isNaN(numericValue) ? null : numericValue;
+    });
+    if (numericScores.some(score => score === null)) {
+        return null;
+    }
+    return (numericScores.reduce((sum, score) => sum + score, 0) / numericScores.length).toFixed(2);
+}
+
+function parseAnalysisNumber(value) {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') return parseFloat(value.replace(',', '.'));
+    return parseFloat(value || 0);
+}
+
+// NEW: Function to Update Decision Stats (T3 Only)
+
+function updateDecisionStats(data) {
+
+    const trimesterSelect = document.getElementById('trimesterSelect');
+
+    const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+
+    const container = document.getElementById('decisionStatsContainer');
+
+    const tbody = document.getElementById('decisionStatsBody');
+
+    const stage = institutionSettings.educationStage || 'middle';
+
+    const levelSelect = document.getElementById('levelSelect');
+
+    const levelValue = levelSelect ? levelSelect.value : '';
+
+    const isFinalYear = (stage === 'secondary' && levelValue === '3') ||
+
+        (stage !== 'secondary' && levelValue === '4');
+
+    if (selectedTrimesterVal !== '3' || isFinalYear) {
+
+        if (container) container.style.display = 'none';
+
+        return;
+
+    }
+
+    if (container) container.style.display = 'block';
+
+    const settings = institutionSettings;
+
+    const directedBirthYear = parseInt(settings.directedBirthYear);
+
+    let passed = 0;
+
+    let remedial = 0;
+
+    let repeated = 0;
+
+    let directed = 0;
+
+    data.forEach(s => {
+        const trimesterValues = ['1', '2', '3'].map(trimesterVal => getStoredTrimesterAverage(s, trimesterVal));
+        if (trimesterValues.some(value => value === null || value === undefined || value === '' || isNaN(value))) {
+            return;
+        }
+
+        const decisionSnapshot = getAnnualDecisionSnapshot(s, directedBirthYear);
+
+        if (decisionSnapshot.decision === 'ينتقل') {
+            passed++;
+        } else if (decisionSnapshot.decision === 'يستدرك') {
+            remedial++;
+        } else if (decisionSnapshot.decision === 'يوجّه') {
+            directed++;
+        } else {
+            repeated++;
+        }
+
+    });
+
+    if (tbody) {
+
+        tbody.innerHTML = `
+
+            <tr>
+
+                <td style="font-weight:bold; color:#27ae60;">${passed}</td>
+
+                <td style="font-weight:bold; color:#d35400;">${remedial}</td>
+
+                <td style="font-weight:bold; color:#c0392b;">${repeated}</td>
+
+                <td style="font-weight:bold; color:#7f8c8d;">${directed}</td>
+
+            </tr>
+
+        `;
+
+    }
+
+}
+
+// Student Details Modal Functions
+
+let currentStudentsData = []; // Store reference to current filtered data
+
+function getStudentModalPreviousTrimester(trimesterVal) {
+    if (trimesterVal === '2') {
+        return { value: '1', label: 'الفصل الأول' };
+    }
+    if (trimesterVal === '3') {
+        return { value: '2', label: 'الفصل الثاني' };
+    }
+    return { value: null, label: '' };
+}
+
+function getStudentModalIdentityKey(student) {
+    return String(student.__uid || student.id || [student.name, student.dob, student.level, student.class, getStudentYear(student)].join('|'));
+}
+
+function formatStudentModalDate(value) {
+    if (!value) return '-';
+    if (typeof formatDate === 'function') {
+        const formatted = formatDate(value);
+        if (formatted && formatted !== '-') return formatted;
+    }
+    return value;
+}
+
+function getStudentModalPlainText(value) {
+    return String(value || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function getStudentModalLevelLabel(student) {
+    const rawLevel = String(student.level || '').trim();
+    if (!rawLevel) return '-';
+    if (typeof displayLevel === 'function') {
+        const display = displayLevel(rawLevel);
+        if (display && display !== rawLevel) return display;
+    }
+
+    const levelMap = {
+        '1': 'السنة الأولى',
+        '2': 'السنة الثانية',
+        '3': 'السنة الثالثة',
+        '4': 'السنة الرابعة'
+    };
+
+    return levelMap[rawLevel] || rawLevel;
+}
+
+function getStudentModalGenderLabel(student) {
+    if (student.gender === 'ذكر' || student.gender === 'M') return 'ذكر';
+    if (student.gender === 'أنثى' || student.gender === 'F') return 'أنثى';
+    return student.gender || '-';
+}
+
+function getStudentModalScoreStyle(score) {
+    if (score >= 16) {
+        return { color: '#166534', background: 'rgba(34, 197, 94, 0.16)', hint: 'ممتاز', prefix: '⭐ ' };
+    }
+    if (score >= 14) {
+        return { color: '#15803d', background: 'rgba(74, 222, 128, 0.18)', hint: 'جيد جدا', prefix: '✓ ' };
+    }
+    if (score >= 10) {
+        return { color: '#1d4ed8', background: 'rgba(96, 165, 250, 0.16)', hint: 'مقبول', prefix: '' };
+    }
+    return { color: '#b91c1c', background: 'rgba(248, 113, 113, 0.16)', hint: 'يحتاج متابعة', prefix: '! ' };
+}
+
+function buildStudentModalSubjectCards(student, trimesterVal, previousTrimester) {
+    const marks = student.marks || {};
+    let allowedSubjects = Object.keys(marks);
+
+    if (student.level) {
+        allowedSubjects = getFilteredSubjects(student.level, allowedSubjects);
+    }
+
+    const cards = [];
+
+    Object.entries(marks).forEach(([subject, rawScore]) => {
+        if (!allowedSubjects.includes(subject)) return;
+
+        if (trimesterVal && trimesterVal !== 'all') {
+            const suffix = `ف${trimesterVal}`;
+            const hasCorrectSuffix = subject.includes(suffix) || subject.includes(`ف ${trimesterVal}`);
+            if (!hasCorrectSuffix) {
+                const isGeneric = !subject.includes('ف') && !subject.includes('فصل');
+                if (isGeneric) {
+                    let fileTrimesterVal = '1';
+                    if (student.trimester === 'الثاني' || student.trimester === '2' || (student.trimester && student.trimester.match(/(?:Trimester|Trimestre)\s*2/i))) fileTrimesterVal = '2';
+                    else if (student.trimester === 'الثالث' || student.trimester === '3' || (student.trimester && student.trimester.match(/(?:Trimester|Trimestre)\s*3/i))) fileTrimesterVal = '3';
+                    if (fileTrimesterVal !== trimesterVal) return;
+                } else {
+                    return;
+                }
+            }
+        }
+
+        const numericScore = typeof rawScore === 'number' ? rawScore : parseFloat(rawScore);
+        if (isNaN(numericScore)) return;
+
+        const displayName = subject.replace(/ ف\d$/, '').replace(/ ف \d$/, '');
+        const scoreStyle = getStudentModalScoreStyle(numericScore);
+        const previousScore = previousTrimester.value ? getSubjectScore(student, displayName, previousTrimester.value) : null;
+        let previousScoreLabel = '';
+        let deltaLabel = '';
+        let deltaDirection = 'steady';
+
+        if (previousScore !== null && previousScore !== undefined && previousScore !== '') {
+            const previousNumeric = typeof previousScore === 'number' ? previousScore : parseFloat(previousScore);
+            if (!isNaN(previousNumeric)) {
+                const diff = numericScore - previousNumeric;
+                previousScoreLabel = previousNumeric.toFixed(2);
+                if (diff > 0) {
+                    deltaLabel = '+' + diff.toFixed(2) + ' ↑';
+                    deltaDirection = 'up';
+                } else if (diff < 0) {
+                    deltaLabel = diff.toFixed(2) + ' ↓';
+                    deltaDirection = 'down';
+                } else {
+                    deltaLabel = '0.00 =';
+                }
+            }
+        }
+
+        cards.push({
+            subject: displayName,
+            scoreLabel: scoreStyle.prefix + numericScore.toFixed(2),
+            scoreColor: scoreStyle.color,
+            scoreBackground: scoreStyle.background,
+            scoreHint: scoreStyle.hint,
+            previousScoreLabel: previousScoreLabel,
+            deltaLabel: deltaLabel,
+            deltaDirection: deltaDirection
+        });
+    });
+
+    return cards;
+}
+
+function buildStudentModalViewModel(student) {
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const trimesterLabel = trimesterSelect && trimesterSelect.selectedIndex >= 0
+        ? trimesterSelect.options[trimesterSelect.selectedIndex].text
+        : 'الفصل الحالي';
+    const trimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+    const previousTrimester = getStudentModalPreviousTrimester(trimesterVal);
+    const subjectCards = buildStudentModalSubjectCards(student, trimesterVal, previousTrimester);
+    const averageRaw = parseFloat(getStudentAverage(student));
+    const averageValue = isNaN(averageRaw) ? 0 : averageRaw;
+    const appreciation = getStudentModalPlainText(getAppreciation(averageValue));
+    const averageStyle = averageValue >= 14
+        ? { color: '#15803d', tint: 'rgba(34, 197, 94, 0.14)' }
+        : averageValue >= 10
+            ? { color: '#1d4ed8', tint: 'rgba(59, 130, 246, 0.14)' }
+            : { color: '#b91c1c', tint: 'rgba(239, 68, 68, 0.14)' };
+    const previousAverageRaw = previousTrimester.value ? parseFloat(getTrimesterAverage(student, previousTrimester.value)) : NaN;
+    const previousAverageLabel = !isNaN(previousAverageRaw) ? previousAverageRaw.toFixed(2) : '';
+    let previousAverageDeltaLabel = '';
+    let previousAverageDirection = 'steady';
+
+    if (!isNaN(previousAverageRaw)) {
+        const diff = averageValue - previousAverageRaw;
+        if (diff > 0) {
+            previousAverageDeltaLabel = '+' + diff.toFixed(2) + ' ↑';
+            previousAverageDirection = 'up';
+        } else if (diff < 0) {
+            previousAverageDeltaLabel = diff.toFixed(2) + ' ↓';
+            previousAverageDirection = 'down';
+        } else {
+            previousAverageDeltaLabel = '0.00 =';
+        }
+    }
+
+    const streamLabel = student.stream && typeof SubjectManager !== 'undefined' && SubjectManager.getStreamName
+        ? SubjectManager.getStreamName(student.stream)
+        : '';
+    const examAverageValue = typeof calculateStudentExamAverage === 'function'
+        ? calculateStudentExamAverage(student, trimesterVal, 0)
+        : '-';
+    const classLabel = String(student.class || student.class_number || '-').replace(/^0+/, '') || '-';
+    const fullName = student.name || [student.last_name, student.first_name].filter(Boolean).join(' ').trim();
+    const initials = fullName
+        ? fullName.split(/\s+/).slice(0, 2).map(function (part) { return part.charAt(0); }).join('').substring(0, 2)
+        : '?';
+
+    return {
+        key: getStudentModalIdentityKey(student),
+        title: fullName || 'تفاصيل التلميذ',
+        fullName: fullName,
+        initials: initials || '?',
+        genderLabel: getStudentModalGenderLabel(student),
+        levelLabel: getStudentModalLevelLabel(student),
+        classLabel: classLabel,
+        birthDateLabel: formatStudentModalDate(student.dob || student.birth_date),
+        streamLabel: streamLabel,
+        trimesterLabel: trimesterLabel,
+        decisionLabel: student.decision && student.decision !== '-' ? student.decision : '',
+        averageLabel: averageValue.toFixed(2),
+        averageColor: averageStyle.color,
+        averageTint: averageStyle.tint,
+        appreciation: appreciation,
+        previousAverageLabel: previousAverageLabel ? (previousTrimester.label + ': ' + previousAverageLabel) : '',
+        previousAverageDeltaLabel: previousAverageDeltaLabel,
+        previousAverageDirection: previousAverageDirection,
+        subjectCount: subjectCards.length,
+        identitySubtitle: streamLabel
+            ? (student.level || '-') + ' • القسم ' + classLabel + ' • ' + streamLabel
+            : (student.level || '-') + ' • القسم ' + classLabel,
+        summaryCards: [
+            { label: 'تاريخ الميلاد', value: formatStudentModalDate(student.dob || student.birth_date) },
+            { label: 'متوسط الاختبار', value: examAverageValue || '-' },
+            { label: 'الفصل السابق', value: previousAverageLabel || '-' },
+            { label: 'التقدير', value: appreciation || '-' }
+        ],
+        subjectRows: subjectCards,
+        photoLoading: true,
+        photoData: null
+    };
+}
+
+async function showStudentModal(studentId) {
+    const student = currentStudentsData.find(s => (s.__uid || s.id) == studentId);
+    if (!student) return;
+
+    const modalApi = window.ClassCouncilsStudentModal;
+    const photoService = window.ClassCouncilsPhotoService;
+
+    if (modalApi && typeof modalApi.open === 'function') {
+        const viewModel = buildStudentModalViewModel(student);
+        modalApi.open(viewModel);
+
+        if (!photoService || typeof photoService.loadPhotoForStudent !== 'function') {
+            modalApi.updatePhoto(viewModel.key, null);
+            return;
+        }
+
+        try {
+            const photoResult = await photoService.loadPhotoForStudent(student);
+            modalApi.updatePhoto(viewModel.key, photoResult && photoResult.data ? photoResult.data : null);
+        } catch (error) {
+            console.warn('[ClassCouncils] Student photo lookup failed:', error);
+            modalApi.updatePhoto(viewModel.key, null);
+        }
+        return;
+    }
+
+    const modal = document.getElementById('studentModal');
+    const nameEl = document.getElementById('studentModalName');
+    const bodyEl = document.getElementById('studentModalBody');
+
+    const genderIcon = (student.gender === 'ذكر' || student.gender === 'M') ? '👦' : '👧';
+    nameEl.textContent = `${genderIcon} ${student.name}`;
+
+    const trimesterVal = document.getElementById('trimesterSelect').value;
+    const avg = getStudentAverage(student);
+    const avgColor = avg >= 14 ? '#27ae60' : avg >= 10 ? '#2980b9' : '#c0392b';
+    const avgBg = avg >= 14 ? '#f0fdf4' : avg >= 10 ? '#ebf5fb' : '#fdf0f0';
+    const appreciation = getAppreciation(avg);
+
+    let prevTrimesterVal = null;
+    let prevTrimesterName = '';
+    if (trimesterVal === '2') {
+        prevTrimesterVal = '1';
+        prevTrimesterName = 'الفصل الأول';
+    } else if (trimesterVal === '3') {
+        prevTrimesterVal = '2';
+        prevTrimesterName = 'الفصل الثاني';
+    }
+
+    // ---- Student Info Cards ----
+    let infoHTML = `
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+            <div style="flex:1; min-width:140px; background:#f8f9fa; border-radius:10px; padding:12px; border-right:4px solid #3498db;">
+                <div style="color:#7f8c8d; font-size:0.85rem; margin-bottom:4px;">🎓 المستوى</div>
+                <div style="font-weight:bold; color:#2c3e50;">${student.level || '-'}</div>
+            </div>
+            <div style="flex:1; min-width:140px; background:#f8f9fa; border-radius:10px; padding:12px; border-right:4px solid #9b59b6;">
+                <div style="color:#7f8c8d; font-size:0.85rem; margin-bottom:4px;">📚 القسم</div>
+                <div style="font-weight:bold; color:#2c3e50;">${student.class || '-'}</div>
+            </div>
+            <div style="flex:1; min-width:140px; background:#f8f9fa; border-radius:10px; padding:12px; border-right:4px solid #e67e22;">
+                <div style="color:#7f8c8d; font-size:0.85rem; margin-bottom:4px;">📅 تاريخ الميلاد</div>
+                <div style="font-weight:bold; color:#2c3e50;">${student.dob || '-'}</div>
+            </div>
+        </div>
+    `;
+
+    // ---- Marks Table ----
+    const marks = student.marks || {};
+    let allowedSubjects = Object.keys(marks);
+    if (student.level) {
+        allowedSubjects = getFilteredSubjects(student.level, allowedSubjects);
+    }
+
+    let marksRows = '';
+    let rowIndex = 0;
+
+    for (const [subject, score] of Object.entries(marks)) {
+        if (!allowedSubjects.includes(subject)) continue;
+
+        // Filter by trimester
+        if (trimesterVal && trimesterVal !== 'all') {
+            const suffix = `ف${trimesterVal}`;
+            const hasCorrectSuffix = subject.includes(suffix) || subject.includes(`ف ${trimesterVal}`);
+            if (!hasCorrectSuffix) {
+                const isGeneric = !subject.includes('ف') && !subject.includes('فصل');
+                if (isGeneric) {
+                    let fileTrimesterVal = '1';
+                    if (student.trimester === 'الثاني' || student.trimester === '2' || (student.trimester && student.trimester.match(/(?:Trimester|Trimestre)\s*2/i))) fileTrimesterVal = '2';
+                    else if (student.trimester === 'الثالث' || student.trimester === '3' || (student.trimester && student.trimester.match(/(?:Trimester|Trimestre)\s*3/i))) fileTrimesterVal = '3';
+                    if (fileTrimesterVal !== trimesterVal) continue;
+                } else {
+                    continue;
+                }
+            }
+        }
+
+        const displayName = subject.replace(/ ف\d$/, '').replace(/ ف \d$/, '');
+        let scoreColor, scoreBg, scoreIcon;
+        if (score >= 16) {
+            scoreColor = '#155724'; scoreBg = '#d4edda'; scoreIcon = '⭐';
+        } else if (score >= 14) {
+            scoreColor = '#27ae60'; scoreBg = '#f0fdf4'; scoreIcon = '✅';
+        } else if (score >= 10) {
+            scoreColor = '#2980b9'; scoreBg = '#ebf5fb'; scoreIcon = '';
+        } else {
+            scoreColor = '#c0392b'; scoreBg = '#fdf0f0'; scoreIcon = '⚠️';
+        }
+
+        let prevScoreHTML = '';
+        if (prevTrimesterVal) {
+            const prevScore = getSubjectScore(student, displayName, prevTrimesterVal);
+            if (prevScore !== null && prevScore !== undefined) {
+                const prevScoreNum = typeof prevScore === 'number' ? prevScore : parseFloat(prevScore);
+                const diff = (score - prevScoreNum).toFixed(2);
+                let trendIcon = '';
+                let trendColor = '';
+                if (diff > 0) {
+                    trendIcon = '↑';
+                    trendColor = '#27ae60';
+                } else if (diff < 0) {
+                    trendIcon = '↓';
+                    trendColor = '#c0392b';
+                } else {
+                    trendIcon = '=';
+                    trendColor = '#7f8c8d';
+                }
+                prevScoreHTML = `
+                    <div style="font-size: 0.85rem; color: #7f8c8d; margin-top: 5px;">
+                        السابق: ${prevScoreNum.toFixed(2)}
+                        <span style="color: ${trendColor}; direction: ltr; display: inline-block; font-weight: bold;">(${diff > 0 ? '+' : ''}${diff}) ${trendIcon}</span>
+                    </div>
+                `;
+            } else {
+                prevScoreHTML = `<div style="font-size: 0.85rem; color: #aaa; margin-top: 5px;">السابق: -</div>`;
+            }
+        }
+
+        const zebra = rowIndex % 2 === 0 ? '' : 'background:#fafbfc;';
+        marksRows += `
+            <tr style="${zebra}">
+                <td style="padding:10px 12px; border-bottom:1px solid #eee; font-weight:600;">${displayName}</td>
+                <td style="padding:10px 12px; border-bottom:1px solid #eee; text-align:center;">
+                    <div style="display:inline-flex; flex-direction:column; align-items:center;">
+                        <span style="display:inline-block; padding:4px 14px; border-radius:20px; background:${scoreBg}; color:${scoreColor}; font-weight:bold; font-size:1.05rem;">
+                            ${scoreIcon} ${score !== null ? score.toFixed(2) : '-'}
+                        </span>
+                        ${prevScoreHTML}
+                    </div>
+                </td>
+            </tr>
+        `;
+        rowIndex++;
+    }
+
+    let marksHTML = `
+        <div style="margin-bottom:20px;">
+            <h4 style="margin:0 0 10px 0; color:#34495e; font-size:1.1rem; display:flex; align-items:center; gap:8px;">
+                <span>📝</span> علامات المواد
+            </h4>
+            <table style="width:100%; border-collapse:collapse; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <thead>
+                    <tr style="background:linear-gradient(135deg, #34495e, #2c3e50); color:white;">
+                        <th style="padding:12px; text-align:right; font-weight:600;">المادة</th>
+                        <th style="padding:12px; text-align:center; font-weight:600;">العلامة ${prevTrimesterVal ? 'بالمقارنة مع ' + prevTrimesterName : ''}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${marksRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    let prevAvgHTML = '';
+    if (prevTrimesterVal) {
+        const prevAvg = getTrimesterAverage(student, prevTrimesterVal);
+        const prevAvgNum = parseFloat(prevAvg);
+        if (!isNaN(prevAvgNum)) {
+            const diff = (avg - prevAvgNum).toFixed(2);
+            let trendIcon = '';
+            let trendColor = '';
+            if (diff > 0) {
+                trendIcon = '↑';
+                trendColor = '#27ae60';
+            } else if (diff < 0) {
+                trendIcon = '↓';
+                trendColor = '#c0392b';
+            } else {
+                trendIcon = '=';
+                trendColor = '#7f8c8d';
+            }
+            prevAvgHTML = `
+                <div style="margin-top: 15px; font-size: 1rem; color: #7f8c8d; border-top: 1px dashed #ccc; padding-top: 10px;">
+                    معدل ${prevTrimesterName}: <span style="font-weight:bold; color:#2c3e50;">${prevAvgNum.toFixed(2)}</span>
+                    <span style="color:${trendColor}; font-weight:bold; margin-right: 10px; direction: ltr; display: inline-block;">
+                        ${diff > 0 ? '+' : ''}${diff} ${trendIcon}
+                    </span>
+                </div>
+            `;
+        }
+    }
+
+    // ---- Average Display ----
+    let avgHTML = `
+        <div style="background:${avgBg}; border-radius:12px; padding:20px; text-align:center; border:2px solid ${avgColor}20;">
+            <div style="color:#7f8c8d; font-size:0.9rem; margin-bottom:8px;">المعدل الفصلي</div>
+            <div style="font-size:2.8rem; font-weight:900; color:${avgColor}; line-height:1;">${avg.toFixed(2)}</div>
+            <div style="margin-top:8px; display:inline-block; padding:4px 16px; border-radius:20px; background:${avgColor}15; color:${avgColor}; font-weight:bold; font-size:0.95rem;">
+                ${appreciation}
+            </div>
+            ${prevAvgHTML}
+        </div>
+    `;
+
+    bodyEl.innerHTML = infoHTML + marksHTML + avgHTML;
+    modal.style.display = 'flex';
+}
+
+function closeStudentModal() {
+    if (window.ClassCouncilsStudentModal && typeof window.ClassCouncilsStudentModal.close === 'function') {
+        window.ClassCouncilsStudentModal.close();
+        return;
+    }
+
+    document.getElementById('studentModal').style.display = 'none';
+
+}
+
+// Close modal when clicking outside
+
+document.addEventListener('click', (e) => {
+
+    const modal = document.getElementById('studentModal');
+    const subjectComparisonModal = document.getElementById('subjectComparisonModal');
+
+    if (e.target === modal) {
+
+        closeStudentModal();
+
+    }
+
+    if (e.target === subjectComparisonModal) {
+        closeSubjectComparisonModal();
+    }
+
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+
+    closeStudentModal();
+    closeSubjectComparisonModal();
+});
+
+// ============================================
+// PRINT COUNCIL REPORT (محضر مجلس الأقسام)
+// ============================================
+
+async function printCouncilReport() {
+    // 1. Gather current filter selections
+    const selectedLevel = document.getElementById('levelSelect').value;
+    const selectedClass = document.getElementById('classSelect').value;
+    const selectedTrimesterVal = document.getElementById('trimesterSelect').value;
+
+    if (!selectedLevel || !selectedClass || !selectedTrimesterVal) {
+        if (typeof showToast === 'function') {
+            showToast('يرجى اختيار الفصل والمستوى والقسم أولاً', 'warning');
+        }
+        return;
+    }
+
+    const trimesterNames = { '1': 'الأول', '2': 'الثاني', '3': 'الثالث' };
+    const trimesterName = trimesterNames[selectedTrimesterVal] || selectedTrimesterVal;
+
+    // 2. Get settings and data
+    const settings = institutionSettings || {};
+    const stage = settings.educationStage || 'middle';
+    const stageName = stage === 'secondary' ? 'الثانوي' : 'المتوسط';
+
+    // Stream info for secondary
+    let streamInfo = '';
+    if (stage === 'secondary') {
+        const streamSelect = document.getElementById('streamSelect');
+        const selectedStreamCode = streamSelect ? streamSelect.value : '';
+        if (selectedStreamCode && typeof SubjectManager !== 'undefined') {
+            streamInfo = ` - الشعبة: ${SubjectManager.getStreamName(selectedStreamCode)}`;
+        }
+    }
+
+    // 3. Get teachers who teach this class
+    const assignments = await DB.get('teacherAssignments') || {};
+    const classTeachers = [];
+    const classNum = String(selectedClass).padStart(2, '0');
+    const classNumRaw = String(selectedClass);
+
+    // Build expected class identifiers in the standard format: levelNum + separator + classNum
+    // The assignment system stores classes as e.g. "1م01", "3ث02"
+    // We need to figure out the level number from selectedLevel
+    const levelNumMap = { 'أولى': '1', 'ثانية': '2', 'ثالثة': '3', 'رابعة': '4' };
+    const levelNum = levelNumMap[selectedLevel] || selectedLevel;
+    const separatorChar = stage === 'secondary' ? 'ث' : 'م';
+    const expectedClassId = `${levelNum}${separatorChar}${classNum}`;
+
+    // Get selected stream for secondary filtering
+    const filterStream = (stage === 'secondary' && document.getElementById('streamSelect'))
+        ? document.getElementById('streamSelect').value : '';
+    const techMathVariants = ['tech_math', 'tech_math_civil', 'tech_math_elec', 'tech_math_methods', 'tech_math_mech'];
+
+    // Search all teachers for those who have this class in their schedule
+    for (const [teacherId, days] of Object.entries(assignments)) {
+        let teachesThisClass = false;
+
+        for (const [dayName, periods] of Object.entries(days)) {
+            for (const [periodId, entry] of Object.entries(periods)) {
+                let assignedClass = '';
+                let assignedStream = '';
+                if (typeof entry === 'object' && entry.class) {
+                    assignedClass = entry.class;
+                    assignedStream = entry.stream || '';
+                } else if (typeof entry === 'string') {
+                    assignedClass = entry;
+                }
+
+                if (assignedClass) {
+                    // Exact match against the expected class identifier
+                    // e.g. "1م01" === "1م01"
+                    let matchFound = (assignedClass === expectedClassId);
+
+                    // Fallback: parse the assigned class to extract level and class numbers
+                    if (!matchFound) {
+                        const parsed = assignedClass.match(/^(\d+)[مث](\d+)$/);
+                        if (parsed) {
+                            const aLevel = parsed[1];
+                            const aClass = String(parseInt(parsed[2]));
+                            matchFound = (aLevel === levelNum) &&
+                                (aClass === classNumRaw || parsed[2] === classNum);
+                        }
+                    }
+
+                    // For secondary: also check stream matches
+                    if (matchFound && filterStream && assignedStream) {
+                        const isTechMathSelected = techMathVariants.includes(filterStream);
+                        const isTechMathAssigned = techMathVariants.includes(assignedStream);
+                        if (isTechMathSelected && isTechMathAssigned) {
+                            // Both are tech_math variants, consider it a match
+                        } else if (assignedStream !== filterStream) {
+                            matchFound = false;
+                        }
+                    }
+
+                    if (matchFound) {
+                        teachesThisClass = true;
+                        break;
+                    }
+                }
+            }
+            if (teachesThisClass) break;
+        }
+
+        if (teachesThisClass) {
+            const teacher = teachersList.find(t => t.id === teacherId);
+            if (teacher) {
+                classTeachers.push({
+                    name: `${teacher.last_name} ${teacher.first_name}`,
+                    subject: teacher.subject || ''
+                });
+            }
+        }
+    }
+
+    // Sort teachers alphabetically
+    classTeachers.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+    const customSettings = JSON.parse(localStorage.getItem('councilSettings')) || {};
+    if (customSettings.counselor) {
+        classTeachers.unshift({ name: `مستشار التوجيه: ${customSettings.counselor}`, subject: '' });
+    }
+    if (customSettings.censor) {
+        classTeachers.unshift({ name: `الناظر: ${customSettings.censor}`, subject: '' });
+    }
+    if (customSettings.director) {
+        classTeachers.unshift({ name: `المدير: ${customSettings.director}`, subject: '' });
+    }
+
+    // 4. Get class responsible teacher
+    const responsibleName = getClassResponsibleName(selectedLevel, selectedClass);
+
+    // 4b. Compute class data for page 2
+    const selectedStream = document.getElementById('streamSelect') ? document.getElementById('streamSelect').value : '';
+    const classStudents = studentsData.filter(s => {
+        const matchLevel = s.level == selectedLevel;
+        const matchClass = s.class == selectedClass;
+        const matchStream = selectedStream ? (s.stream === selectedStream) : true;
+        return matchLevel && matchClass && matchStream;
+    });
+
+    // Get active subjects for this class
+    let reportSubjects = [];
+    if (stage === 'secondary') {
+        const streamCode = selectedStream || (classStudents.length > 0 ? classStudents[0].stream : '');
+        if (streamCode && typeof SubjectManager !== 'undefined') {
+            reportSubjects = SubjectManager.getSubjects(stage, selectedLevel, streamCode);
+        }
+    } else {
+        reportSubjects = typeof getFilteredSubjects === 'function' ? getFilteredSubjects(selectedLevel, subjects) : (subjects || []);
+    }
+
+    // Filter subjects by selected trimester (remove subjects with other trimester suffixes)
+    reportSubjects = reportSubjects.filter(sub => {
+        const normSub = typeof normalizeArabic === 'function' ? normalizeArabic(sub) : sub;
+        const otherTrimesters = ['1', '2', '3'].filter(t => t !== selectedTrimesterVal);
+        for (const t of otherTrimesters) {
+            const p1 = new RegExp(`\u0641\\s*${t}(\\s|$)`);
+            const p2 = new RegExp(`\u0641\u0635\u0644\\s*${t}(\\s|$)`);
+            if (p1.test(normSub) || p2.test(normSub)) return false;
+        }
+        return true;
+    });
+
+    // Compute subject statistics
+    const subjectStats = reportSubjects.map(sub => {
+        const scores = classStudents.map(s => getSubjectScore(s, sub, selectedTrimesterVal)).filter(m => m !== null && m !== undefined);
+        const total = scores.length;
+        const avg = total > 0 ? (scores.reduce((a, b) => a + b, 0) / total).toFixed(2) : '-';
+        const ranges = {
+            r0_8: scores.filter(s => s < 8).length,
+            r8_10: scores.filter(s => s >= 8 && s < 10).length,
+            r10_12: scores.filter(s => s >= 10 && s < 12).length,
+            r12_15: scores.filter(s => s >= 12 && s < 15).length,
+            r15_20: scores.filter(s => s >= 15).length
+        };
+        return { name: sub, total, avg, ranges };
+    });
+
+    // Compute class general stats
+    const classAvgs = classStudents.map(s => getTrimesterAverage(s, selectedTrimesterVal)).filter(a => a > 0);
+    const totalStudents = classStudents.length;
+    const passCount = classAvgs.filter(a => a >= 10).length;
+    const failCount = totalStudents - passCount;
+    const classAvg = classAvgs.length > 0 ? (classAvgs.reduce((a, b) => a + b, 0) / classAvgs.length).toFixed(2) : '-';
+
+    // Highest / Lowest average with student name
+    let highestAvg = 0, highestName = '-', lowestAvg = 20, lowestName = '-';
+    classStudents.forEach(s => {
+        const avg = getTrimesterAverage(s, selectedTrimesterVal);
+        if (avg > 0) {
+            if (avg > highestAvg) { highestAvg = avg; highestName = `${s.name || (s.last_name + ' ' + s.first_name)}`; }
+            if (avg < lowestAvg) { lowestAvg = avg; lowestName = `${s.name || (s.last_name + ' ' + s.first_name)}`; }
+        }
+    });
+
+    // Gender stats
+    const males = classStudents.filter(s => s.gender === 'ذكر' || s.gender === 'M');
+    const females = classStudents.filter(s => s.gender === 'أنثى' || s.gender === 'F');
+    const malePass = males.filter(s => getTrimesterAverage(s, selectedTrimesterVal) >= 10).length;
+    const femalePass = females.filter(s => getTrimesterAverage(s, selectedTrimesterVal) >= 10).length;
+    const maleFail = males.length - malePass;
+    const femaleFail = females.length - femalePass;
+    const pct = (n, t) => t > 0 ? (n / t * 100).toFixed(2) + '%' : '-';
+
+    const todayObj = new Date();
+    const today = `${todayObj.getFullYear()}/${String(todayObj.getMonth() + 1).padStart(2, '0')}/${String(todayObj.getDate()).padStart(2, '0')}`;
+
+    // 5. Build attendance table (2 columns)
+    const totalTeachers = classTeachers.length;
+    const maxRows = Math.max(Math.ceil(totalTeachers / 2), 7);
+    const col1 = classTeachers.slice(0, maxRows);
+    const col2 = classTeachers.slice(maxRows);
+
+    // Abbreviate long subject names for the council report
+    const shortenSubject = (s) => {
+        if (!s) return '';
+        return s
+            .replace(/العلوم الفيزيائية والتكنولوجيا/g, 'ع فيزيائية')
+            .replace(/التربية البدنية والرياضية/g, 'ت بدنية');
+    };
+
+    let attendanceRows = '';
+    for (let i = 0; i < maxRows; i++) {
+        const t1 = col1[i];
+        const t2 = col2[i];
+        const num1 = String(i + 1).padStart(2, '0');
+        const num2 = String(i + maxRows + 1).padStart(2, '0');
+
+        attendanceRows += `
+            <tr>
+                <td class="cell num-cell">${t1 || i < 7 ? num1 : ''}</td>
+                <td class="cell name-cell">${t1 ? t1.name + (t1.subject ? ' (' + shortenSubject(t1.subject) + ')' : '') : ''}</td>
+                <td class="cell"></td>
+                <td class="cell num-cell">${t2 || i < 7 ? num2 : ''}</td>
+                <td class="cell name-cell">${t2 ? t2.name + (t2.subject ? ' (' + shortenSubject(t2.subject) + ')' : '') : ''}</td>
+                <td class="cell"></td>
+            </tr>
+        `;
+    }
+
+    // Absent table (2 rows x 2 columns)
+    let absentRows = '';
+    for (let i = 0; i < 2; i++) {
+        absentRows += `
+            <tr>
+                <td class="cell num-cell">${String(i + 1).padStart(2, '0')}</td>
+                <td class="cell name-cell"></td>
+                <td class="cell"></td>
+                <td class="cell num-cell">${String(i + 3).padStart(2, '0')}</td>
+                <td class="cell name-cell"></td>
+                <td class="cell"></td>
+            </tr>
+        `;
+    }
+
+    // Get custom settings
+    // customSettings already loaded above
+    const councilDate = customSettings.date || '..../..../........';
+    const councilTime = customSettings.time || '..................';
+
+    // Deliberations texts
+    const defaultDelib2 = "- تغيبات التلاميذ قليلة جدا وإن وُجدت يتم معالجتها بالطرق القانونية للتربية ( إحضار الولي أو ما يبرر ذلك..... )\n- لم يتم تسجيل مخالفات تتنافى مع التنظيم الداخلي للمؤسسة.\n- المراقبة اليومية للتلاميذ و مرافقتهم تربويا ونفسيا ومعالجة النقائص في حينها.";
+    const defaultDelib5 = "0-9.99 - عليك بالعمل أكثر لتدارك النقائص.    10-11.99 - استفاقة ملحوظة عليك بمواصلة التركيز والجدية لتحسينه.\n12-14.99 - نتائج حسنة ننتظر منك الأفضل.    14.99-15 - عمل يستحق الشكر و التقدير واصل / واصلي.\n15-20.00 - قدرات وإمكانات متميزة نتمنى لك التوفيق.";
+    const defaultDelib6 = "- متابعة ملامح التوجيه الأولي للتلميذ.\n- تشجيع التلميذ قدر المستطاع لتحقيق التوجيه الذي يصبو إليه.\n- مرافقة مستشار التوجيه و الإرشاد المدرسي و المهني للتلميذ.";
+
+    const d2 = customSettings.delib2 || defaultDelib2;
+    const delib2Html = d2.split('\n').map(l => `<div>${l}</div>`).join('');
+
+    let d5 = customSettings.delib5 || defaultDelib5;
+    // Auto bold numeric ranges like 0-9.99 or 15-20.00
+    d5 = d5.replace(/(\d+(?:\.\d+)?-\d+(?:\.\d+)?)/g, '<strong>$1</strong>');
+    const delib5Html = `<div style="line-height: 1.9;">${d5.split('\n').map(l => `<div>${l}</div>`).join('')}</div>`;
+
+    const d6 = customSettings.delib6 || defaultDelib6;
+    const delib6Html = d6.split('\n').map(l => `<div>${l}</div>`).join('');
+
+    // Agenda handling
+    let agendaHtml = '';
+    if (customSettings.agenda && customSettings.agenda.trim() !== '') {
+        const lines = customSettings.agenda.split('\n').filter(l => l.trim() !== '');
+        agendaHtml = lines.map(l => `<div>${l}</div>`).join('');
+    } else {
+        agendaHtml = `
+            <div>1 - تحليل ظروف تطبيق المناهج التعليمية واتخاذ الإجراءات الملائمة لمعالجة النقائص المسجلة.</div>
+            <div>2 - تشخيص الوضعية المتعلقة بمواظبة التلاميذ وانضباطهم.</div>
+            <div>3 - تحليل النتائج المدرسية.</div>
+            <div>4 - تقييم عمل التلميذ بالاعتماد على النتائج المحصل عليها.</div>
+            <div>5 - تدوين الملاحظات المستخلصة على كشوف التلاميذ.</div>
+            <div>6 - دراسة و مناقشة التوجيه التدريجي للتلميذ.</div>
+        `;
+    }
+
+    const reportHtml = `
+        <div class="report-wrapper">
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 2px;">
+                <div style="font-weight: bold; font-size: 13pt;">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+                <div style="font-size: 12pt;">وزارة التربية الوطنية</div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 11pt;">
+                <div style="text-align: right;">
+                    <div>مديرية التربية لولاية: <strong>${settings.wilaya || '.......'}</strong></div>
+                    <div>المؤسسة: <strong>${settings.institutionName || '.......................'}</strong></div>
+                </div>
+                <div style="text-align: left;">
+                    <div>الموسم الدراسي: <strong>\</strong></div>
+                </div>
+            </div>
+
+            <!-- Title -->
+            <div style="text-align: center; margin: 6px 0 4px; border: 2px solid #000; padding: 4px;">
+                <div style="font-size: 14pt; font-weight: bold;">محضر مجلس الأقسام للثلاثي ${trimesterName}</div>
+                <div style="font-size: 11pt; margin-top: 1px;">المستوى: ${selectedLevel} - القسم: ${classNum}${streamInfo}${responsibleName ? ` | مسؤول القسم: ${responsibleName}` : ''}</div>
+            </div>
+
+            <!-- Reference -->
+            <div style="font-size: 11pt; margin-bottom: 2px;">
+                <strong>المرجع:</strong> القرار رقم 68 المؤرخ في 12 جويلية 2018 المحدد لكيفيات إنشاء مجلس القسم في المتوسطة والثانوية وسيره.
+            </div>
+
+            <div style="font-size: 11pt; margin-bottom: 1px;">
+                في يوم: ${councilDate}  في الساعة: ${councilTime}  انعقد مجلس القسم: <strong>${stage === 'secondary' ? selectedLevel + (typeof SubjectManager !== 'undefined' ? SubjectManager.getStreamAbbreviation(selectedStream) : '') + classNum : selectedLevel + 'م' + classNum}</strong>
+            </div>
+            <div style="font-size: 11pt; margin-bottom: 4px;">
+                تحت إشراف السيد/ مدير المؤسسة، بحضور أعضاء الفريق الإداري والأساتذة المذكورين أدناه
+            </div>
+
+            <!-- Attendance -->
+            <div class="section-title">الحاضرون:</div>
+            <table class="report-table tight-table" style="font-size: 10.5pt;" cellpadding="0">
+                <thead>
+                    <tr>
+                        <th class="cell" style="width:5%; padding: 0;">الرقم</th>
+                        <th class="cell" style="width:25%; padding: 0;">اللقب والاسم (المادة)</th>
+                        <th class="cell" style="width:12%; padding: 0;">التوقيع</th>
+                        <th class="cell" style="width:5%; padding: 0;">الرقم</th>
+                        <th class="cell" style="width:25%; padding: 0;">اللقب والاسم (المادة)</th>
+                        <th class="cell" style="width:12%; padding: 0;">التوقيع</th>
+                    </tr>
+                </thead>
+                <tbody>${attendanceRows}</tbody>
+            </table>
+
+            <!-- Absent -->
+            <div class="section-title">الغياب:</div>
+            <table class="report-table tight-table" style="font-size: 10.5pt;" cellpadding="0">
+                <thead>
+                    <tr>
+                        <th class="cell" style="width:5%;">الرقم</th>
+                        <th class="cell" style="width:25%;">اللقب والاسم (المادة)</th>
+                        <th class="cell" style="width:12%;">التوقيع</th>
+                        <th class="cell" style="width:5%;">الرقم</th>
+                        <th class="cell" style="width:25%;">اللقب والاسم (المادة)</th>
+                        <th class="cell" style="width:12%;">التوقيع</th>
+                    </tr>
+                </thead>
+                <tbody>${absentRows}</tbody>
+            </table>
+
+            <!-- Agenda -->
+            <div class="section-title" style="margin-top: 12px;">جدول الأعمال:</div>
+            <div class="agenda-list">
+                ${agendaHtml}
+            </div>
+
+            <!-- Deliberations -->
+            <div class="section-title" style="margin-top: 8px;">المداولات:</div>
+            <div class="deliberations">
+                <div class="delib-item"><strong>1 - تحليل ظروف تطبيق المناهج التعليمية واتخاذ الإجراءات الملائمة لمعالجة النقائص المسجلة.</strong></div>
+                <div class="delib-sub">
+                    <div class="delib-sub-title">- الإجراءات المتخذة بخصوص النقائص:</div>
+                    <div class="dotted-line"></div>
+                    <div class="dotted-line"></div>
+                </div>
+
+                <div class="delib-item"><strong>2 - تشخيص الوضعية المتعلقة بمواظبة التلاميذ وانضباطهم:</strong></div>
+                <div class="delib-sub">
+                    ${delib2Html}
+                </div>
+
+                <div class="delib-item page-break-here"><strong>3 - تحليل النتائج المدرسية:</strong></div>
+                <div class="delib-sub">
+                    <table class="report-table" style="font-size: 10pt;" cellpadding="0">
+                        <thead>
+                            <tr>
+                                <th class="cell" style="width:15%;">المادة</th>
+                                <th class="cell" style="width:5%;">ع-التلاميذ</th>
+                                <th class="cell" style="width:7%;">م-المادة</th>
+                                <th class="cell" style="width:5%;">النسبة</th>
+                                <th class="cell" style="width:5%;">0-8</th>
+                                <th class="cell" style="width:5%;">8-9.99</th>
+                                <th class="cell" style="width:5%;">10-11.99</th>
+                                <th class="cell" style="width:5%;">12-14.99</th>
+                                <th class="cell" style="width:5%;">15-20</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${subjectStats.map(s => {
+        const passRate = s.total > 0 ? ((s.ranges.r10_12 + s.ranges.r12_15 + s.ranges.r15_20) / s.total * 100).toFixed(2) + '%' : '-';
+        return `
+                                <tr>
+                                    <td class="cell name-cell">${s.name}</td>
+                                    <td class="cell">${s.total}</td>
+                                    <td class="cell">${s.avg}</td>
+                                    <td class="cell">${passRate}</td>
+                                    <td class="cell">${s.ranges.r0_8 || ''}</td>
+                                    <td class="cell">${s.ranges.r8_10 || ''}</td>
+                                    <td class="cell">${s.ranges.r10_12 || ''}</td>
+                                    <td class="cell">${s.ranges.r12_15 || ''}</td>
+                                    <td class="cell">${s.ranges.r15_20 || ''}</td>
+                                </tr>
+                            `}).join('')}
+                            <tr style="font-weight: bold; background: #f0f0f0;">
+                                <td class="cell name-cell">معدل القسم</td>
+                                <td class="cell">${totalStudents}</td>
+                                <td class="cell">${classAvg}</td>
+                                <td class="cell">${totalStudents > 0 ? ((passCount / totalStudents) * 100).toFixed(2) + '%' : '-'}</td>
+                                <td class="cell" colspan="5"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="delib-item"><strong>4 - تقييم عمل التلميذ بالاعتماد على النتائج المحصل عليها.</strong></div>
+                <div class="delib-sub">
+                    <div style="font-weight: bold; margin: 8px 0 4px;">دراسة النتائج العامة للتلميذ والقسم:</div>
+                    <table class="report-table" style="font-size: 9.5pt;" cellpadding="0">
+                        <thead>
+                            <tr>
+                                <th class="cell">القسم</th>
+                                <th class="cell">عدد التلاميذ</th>
+                                <th class="cell">الحاصلون على المعدل</th>
+                                <th class="cell">غ. الحاصلين على المعدل</th>
+                                <th class="cell">أعلى معدل (اسم التلميذ)</th>
+                                <th class="cell">أدنى معدل (اسم التلميذ)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="cell">${stage === 'secondary' ? selectedLevel + (typeof SubjectManager !== 'undefined' ? SubjectManager.getStreamAbbreviation(selectedStream) : '') + classNum : selectedLevel + 'م' + classNum}</td>
+                                <td class="cell">${totalStudents}</td>
+                                <td class="cell">${passCount}</td>
+                                <td class="cell">${failCount}</td>
+                                <td class="cell">${highestAvg.toFixed(2)} (${highestName})</td>
+                                <td class="cell">${lowestAvg.toFixed(2)} (${lowestName})</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="font-weight: bold; margin: 10px 0 4px;">دراسة المعدلات العامة حسب الجنس :</div>
+                    <table class="report-table" style="font-size: 9pt;" cellpadding="0">
+                        <thead>
+                            <tr>
+                                <th class="cell" rowspan="2">القسم</th>
+                                <th class="cell" rowspan="2">م</th>
+                                <th class="cell" rowspan="2">عدد التلاميذ</th>
+                                <th class="cell" colspan="4" style="background:#d4edda;">الحاصلون على المعدل</th>
+                                <th class="cell" colspan="4" style="background:#f8d7da;">غير الحاصلين على المعدل</th>
+                            </tr>
+                            <tr>
+                                <th class="cell">ذكور</th>
+                                <th class="cell">النسبة</th>
+                                <th class="cell">إناث</th>
+                                <th class="cell">النسبة</th>
+                                <th class="cell">ذكور</th>
+                                <th class="cell">النسبة</th>
+                                <th class="cell">إناث</th>
+                                <th class="cell">النسبة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="cell">${stage === 'secondary' ? selectedLevel + (typeof SubjectManager !== 'undefined' ? SubjectManager.getStreamAbbreviation(selectedStream) : '') + classNum : selectedLevel + 'م' + classNum}</td>
+                                <td class="cell">${classAvg}</td>
+                                <td class="cell">${totalStudents}</td>
+                                <td class="cell">${malePass}</td>
+                                <td class="cell">${pct(malePass, males.length)}</td>
+                                <td class="cell">${femalePass}</td>
+                                <td class="cell">${pct(femalePass, females.length)}</td>
+                                <td class="cell">${maleFail}</td>
+                                <td class="cell">${pct(maleFail, males.length)}</td>
+                                <td class="cell">${femaleFail}</td>
+                                <td class="cell">${pct(femaleFail, females.length)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="delib-item"><strong>5 - تدوين الملاحظات المستخلصة على كشوف التلاميذ.</strong></div>
+                <div class="delib-sub">
+                    ${delib5Html}
+                </div>
+
+                <div class="delib-item"><strong>6 - دراسة و مناقشة التوجيه التدريجي للتلميذ.</strong></div>
+                <div class="delib-sub">
+                    ${delib6Html}
+                </div>
+            </div>
+
+            <!-- Signatures -->
+            <div style="margin-top: 5px; font-weight: bold; font-size: 11pt; padding: 0 40px; page-break-inside: avoid;">
+                <div style="text-align: left; margin-bottom: 20px;">حرر بـ: ${settings.municipality || '........'} في: ${today}</div>
+                <div style="display: flex; justify-content: space-between;">
+                    <div style="text-align: right;">إمضاء كاتب الجلسة</div>
+                    <div style="text-align: left;">إمضاء المدير</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 6. Open print window
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html dir="rtl" lang="ar">
+            <head>
+                <meta charset="UTF-8">
+                <title>محضر مجلس الأقسام - ${selectedLevel} ${classNum}</title>
+                <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+                <style>
+                    body {
+                        margin: 0; padding: 0; background: #fff;
+                        font-family: 'Cairo', sans-serif;
+                    }
+                    .report-wrapper {
+                        direction: rtl; padding: 0; font-size: 12pt; line-height: 1.5;
+                    }
+                    .section-title {
+                        font-weight: bold; font-size: 13pt; margin-bottom: 2px; text-decoration: underline;
+                    }
+                    .report-table {
+                        width: 100%; border-collapse: collapse; margin-bottom: 5px; direction: rtl;
+                    }
+                    .report-table .cell {
+                        border: 1px solid #000; padding: 4px; text-align: center;
+                    }
+                    .report-table.tight-table .cell {
+                        padding: 2px 4px !important;
+                    }
+                    .report-table .name-cell { text-align: right; }
+                    .report-table .num-cell { text-align: center; font-weight: bold; }
+                    .report-table thead th { background: #eee; font-weight: bold; }
+                    .agenda-list { font-size: 12pt; padding-right: 10px; line-height: 1.6; }
+                    .deliberations { font-size: 11.5pt; padding-right: 5px; line-height: 1.6; }
+                    .delib-item { margin-top: 5px; }
+                    .delib-sub { margin-right: 15px; margin-bottom: 5px; }
+                    .delib-sub-title { font-weight: bold; margin-bottom: 2px; }
+                    .dotted-line {
+                        border-bottom: 1px dotted #999; min-height: 18px; margin-bottom: 4px;
+                    }
+                    .report-footer {
+                        display: flex; justify-content: space-between; margin-top: 20px;
+                        font-size: 10pt; color: #555; border-top: 1px solid #ccc; padding-top: 8px;
+                    }
+                    @media print {
+                        @page { size: A4; margin: 0.6cm; }
+                        body { -webkit-print-color-adjust: exact; }
+                        .page-break-here { page-break-before: always; break-before: page; margin-top: 0; padding-top: 10px; }
+                    }
+                    table { page-break-inside: auto; }
+                    tr { page-break-inside: avoid; }
+                </style>
+            \n            ${window.PrintToolbarHelper ? window.PrintToolbarHelper.getHeadContent() : ''}\n        </head>
+            <body>\n            ${window.PrintToolbarHelper ? window.PrintToolbarHelper.getToolbarHtml({ advanced: false }) : ''}
+                ${reportHtml}
+                <script>
+                    window.onload = function() {
+                        setTimeout(() => { // window.print(); /* Replaced by global Toolbar */ }, 500);
+                    }
+                </script>
+            \n            ${window.PrintToolbarHelper ? window.PrintToolbarHelper.getScriptHtml({ advanced: false }) : ''}\n        </body>
+            </html>
+        `);
+        printWindow.document.close();
+    } else {
+        if (typeof showToast === 'function') {
+            showToast('يرجى السماح بالنوافذ المنبثقة لطباعة التقرير', 'warning');
+        }
+    }
+}
+
+// ==========================================
+// Council Settings Modal Functions
+// ==========================================
+function openCouncilSettings() {
+    const modal = document.getElementById('councilSettingsModal');
+    if (!modal) return;
+
+    const defaultDelib2 = "- تغيبات التلاميذ قليلة جدا وإن وُجدت يتم معالجتها بالطرق القانونية للتربية ( إحضار الولي أو ما يبرر ذلك..... )\n- لم يتم تسجيل مخالفات تتنافى مع التنظيم الداخلي للمؤسسة.\n- المراقبة اليومية للتلاميذ و مرافقتهم تربويا ونفسيا ومعالجة النقائص في حينها.";
+    const defaultDelib5 = "0-9.99 - عليك بالعمل أكثر لتدارك النقائص.    10-11.99 - استفاقة ملحوظة عليك بمواصلة التركيز والجدية لتحسينه.\n12-14.99 - نتائج حسنة ننتظر منك الأفضل.    14.99-15 - عمل يستحق الشكر و التقدير واصل / واصلي.\n15-20.00 - قدرات وإمكانات متميزة نتمنى لك التوفيق.";
+    const defaultDelib6 = "- متابعة ملامح التوجيه الأولي للتلميذ.\n- تشجيع التلميذ قدر المستطاع لتحقيق التوجيه الذي يصبو إليه.\n- مرافقة مستشار التوجيه و الإرشاد المدرسي و المهني للتلميذ.";
+
+    // Load existing settings
+    const settings = JSON.parse(localStorage.getItem('councilSettings')) || {};
+    document.getElementById('councilDirectorInput').value = settings.director || '';
+    document.getElementById('councilCensorInput').value = settings.censor || '';
+    document.getElementById('councilCounselorInput').value = settings.counselor || '';
+
+    document.getElementById('councilDateInput').value = settings.date || '';
+    document.getElementById('councilTimeInput').value = settings.time || '';
+    document.getElementById('councilAgendaInput').value = settings.agenda || '';
+
+    document.getElementById('councilDelib2Input').value = settings.delib2 || defaultDelib2;
+    document.getElementById('councilDelib5Input').value = settings.delib5 || defaultDelib5;
+    document.getElementById('councilDelib6Input').value = settings.delib6 || defaultDelib6;
+
+    modal.style.display = 'flex';
+}
+
+function closeCouncilSettings() {
+    const modal = document.getElementById('councilSettingsModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function saveCouncilSettings() {
+    const director = document.getElementById('councilDirectorInput').value.trim();
+    const censor = document.getElementById('councilCensorInput').value.trim();
+    const counselor = document.getElementById('councilCounselorInput').value.trim();
+
+    const date = document.getElementById('councilDateInput').value.trim();
+    const time = document.getElementById('councilTimeInput').value.trim();
+    const agenda = document.getElementById('councilAgendaInput').value.trim();
+
+    const delib2 = document.getElementById('councilDelib2Input').value.trim();
+    const delib5 = document.getElementById('councilDelib5Input').value.trim();
+    const delib6 = document.getElementById('councilDelib6Input').value.trim();
+
+    const settings = { director, censor, counselor, date, time, agenda, delib2, delib5, delib6 };
+    localStorage.setItem('councilSettings', JSON.stringify(settings));
+
+    closeCouncilSettings();
+    if (typeof showToast === 'function') {
+        showToast('تم حفظ إعدادات المحضر بنجاح', 'success');
+    }
+}
+
+// ==========================================
+// Averages Distribution Chart
+// ==========================================
+let averageDistributionChartInstance = null;
+
+function updateAverageDistributionChart(data) {
+    const ctx = document.getElementById('averageDistributionChart');
+    if (!ctx) return;
+
+    // Brackets: <5, 5-<10, 10-<12, 12-<14, 14-<16, 16-<18, 18-20
+    const brackets = [0, 0, 0, 0, 0, 0, 0];
+    const labels = [
+        'أقل من 5',
+        '5 إلى 9.99',
+        '10 إلى 11.99',
+        '12 إلى 13.99',
+        '14 إلى 15.99',
+        '16 إلى 17.99',
+        '18 فأكثر'
+    ];
+    // Modern Data Show Colors
+    const backgroundColors = [
+        'rgba(231, 76, 60, 0.85)',   // <5 Red
+        'rgba(230, 126, 34, 0.85)',  // 5-<10 Orange
+        'rgba(241, 196, 15, 0.85)',  // 10-<12 Yellow
+        'rgba(52, 152, 219, 0.85)',  // 12-<14 Blue
+        'rgba(155, 89, 182, 0.85)',  // 14-<16 Purple
+        'rgba(46, 204, 113, 0.85)',  // 16-<18 Green
+        'rgba(39, 174, 96, 0.85)'    // 18-20 Dark Green
+    ];
+
+    data.forEach(s => {
+        const currentAvg = typeof getStudentAverage(s) === 'number' ? getStudentAverage(s) : parseFloat(getStudentAverage(s) || 0);
+        if (currentAvg < 5) brackets[0]++;
+        else if (currentAvg < 10) brackets[1]++;
+        else if (currentAvg < 12) brackets[2]++;
+        else if (currentAvg < 14) brackets[3]++;
+        else if (currentAvg < 16) brackets[4]++;
+        else if (currentAvg < 18) brackets[5]++;
+        else brackets[6]++;
+    });
+
+    if (averageDistributionChartInstance) {
+        averageDistributionChartInstance.destroy();
+    }
+
+    const averageDataLabelsPlugin = {
+        id: 'averageDataLabels',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((bar, index) => {
+                    const data = dataset.data[index];
+                    if (data > 0) {
+                        const { x, y } = bar.tooltipPosition();
+                        ctx.save();
+                        ctx.fillStyle = Chart.defaults.color;
+                        ctx.font = 'bold 20px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(data, x, y - 5);
+                        ctx.restore();
+                    }
+                });
+            });
+        }
+    };
+
+    averageDistributionChartInstance = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'عدد التلاميذ',
+                data: brackets,
+                backgroundColor: backgroundColors,
+                borderColor: backgroundColors.map(c => c.replace('0.85', '1')),
+                borderWidth: 2,
+                borderRadius: 8,
+                barPercentage: 0.7
+            }]
+        },
+        options: {
+            layout: {
+                padding: {
+                    top: 25 // Ensure room for labels above the highest bars
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 1000, easing: 'easeOutQuart' },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grace: '10%', // Add extra space at the top of the scale
+                    ticks: {
+                        stepSize: 1,
+                        font: { size: 18, family: "'Tajawal', sans-serif", weight: 'bold' }
+                    },
+                    grid: { borderDash: [5, 5] }
+                },
+                x: {
+                    ticks: {
+                        font: { size: 18, family: "'Tajawal', sans-serif", weight: 'bold' }
+                    },
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    titleFont: { size: 16, family: "'Tajawal', sans-serif", weight: 'bold' },
+                    bodyFont: { size: 16, family: "'Tajawal', sans-serif" },
+                    padding: 15,
+                    cornerRadius: 8,
+                    displayColors: false
+                }
+            }
+        },
+        plugins: [averageDataLabelsPlugin]
+    });
+
+    // Ensure chart resizes correctly when entering presentation mode
+    window.addEventListener('resize', () => {
+        if (averageDistributionChartInstance) {
+            averageDistributionChartInstance.resize();
+        }
+    });
+}
+
+// ==========================================
+// Subject Analysis Table
+// ==========================================
+function renderSubjectAnalysis(data, activeSubjects = subjects) {
+    const tbody = document.getElementById('subjectAnalysisBody');
+    if (!tbody) return;
+
+    // Use passed subjects list
+    const rawSubjects = activeSubjects || [];
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+
+    // Filter subjects by trimester suffix - remove subjects from other trimesters
+    // e.g., if trimester 1 is selected, remove subjects ending with "ف2" or "ف3"
+    const subjectsList = rawSubjects.filter(sub => {
+        const normSub = typeof normalizeArabic === 'function' ? normalizeArabic(sub) : sub;
+        const otherTrimesters = ['1', '2', '3'].filter(t => t !== selectedTrimesterVal);
+        for (const t of otherTrimesters) {
+            const pattern1 = new RegExp(`ف\\s*${t}(\\s|$)`);
+            const pattern2 = new RegExp(`فصل\\s*${t}(\\s|$)`);
+            if (pattern1.test(normSub) || pattern2.test(normSub)) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    // Determine previous trimester for comparison
+    let prevTrimesterVal = null;
+    if (selectedTrimesterVal === '2') {
+        prevTrimesterVal = '1';
+    } else if (selectedTrimesterVal === '3') {
+        prevTrimesterVal = '2';
+    }
+
+    // Show/hide comparison column header
+    const prevHeader = document.getElementById('subjectPrevRateHeader');
+    if (prevHeader) {
+        prevHeader.style.display = prevTrimesterVal ? 'table-cell' : 'none';
+        if (prevTrimesterVal) {
+            prevHeader.textContent = prevTrimesterVal === '1' ? 'نسبة ف1' : 'نسبة ف2';
+        }
+    }
+
+    let html = '';
+
+    subjectsList.forEach(sub => {
+        // Use pre-computed scores from detailed table if available (ensures consistency)
+        let scores;
+        if (window._computedSubjectScores && window._computedSubjectScores[sub] !== undefined) {
+            scores = window._computedSubjectScores[sub];
+        } else {
+            scores = data.map(s => getSubjectScore(s, sub, selectedTrimesterVal))
+                .filter(m => m !== null && m !== undefined)
+                .map(Number);
+        }
+
+        if (scores.length === 0) return; // Skip subjects with no data
+        if (scores.every(s => s === 0)) return; // Skip subjects where all scores are 0
+
+        const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
+        const highest = Math.max(...scores).toFixed(2);
+        const lowest = Math.min(...scores).toFixed(2);
+        const passedCount = scores.filter(s => s >= 10).length;
+        const failedCount = scores.length - passedCount;
+        const successRate = ((passedCount / scores.length) * 100).toFixed(2);
+
+        // Color coding based on success rate - Darker colors for projector
+        let rowBg = '';
+        let rateColor = '';
+        let rateIcon = '';
+        if (parseFloat(successRate) < 40) {
+            rowBg = 'background-color: #fff5f5;'; // Light red background
+            rateColor = 'color: #922b21; font-weight: 800;';
+            rateIcon = '🔴';
+        } else if (parseFloat(successRate) < 60) {
+            rowBg = 'background-color: #fffbeb;'; // Light yellow
+            rateColor = 'color: #b7500a; font-weight: 800;';
+            rateIcon = '🟠';
+        } else if (parseFloat(successRate) >= 80) {
+            rowBg = 'background-color: #f0fdf4;'; // Light green
+            rateColor = 'color: #196f3d; font-weight: 800;';
+            rateIcon = '🟢';
+        } else {
+            rateColor = 'color: #1a252f; font-weight: 700;';
+            rateIcon = '🔵';
+        }
+
+        // Previous trimester comparison
+        let prevRateCell = '';
+        let trendHtml = '';
+        if (prevTrimesterVal) {
+            const prevScores = data.map(s => getSubjectScore(s, sub, prevTrimesterVal))
+                .filter(m => m !== null && m !== undefined)
+                .map(Number);
+
+            if (prevScores.length > 0) {
+                const prevPassed = prevScores.filter(s => s >= 10).length;
+                const prevRate = ((prevPassed / prevScores.length) * 100).toFixed(2);
+                const diff = (parseFloat(successRate) - parseFloat(prevRate)).toFixed(2);
+                let trendIcon = '';
+                let trendColor = '';
+                if (diff > 0) {
+                    trendIcon = ' ↑';
+                    trendColor = 'color: #27ae60;';
+                } else if (diff < 0) {
+                    trendIcon = ' ↓';
+                    trendColor = 'color: #c0392b;';
+                }
+                prevRateCell = `<td style="text-align:center; font-weight:600;">${prevRate}%</td>`;
+                trendHtml = `&nbsp;<span style="${trendColor} font-size:0.95em; direction: ltr; display: inline-block;">(${diff > 0 ? '+' : ''}${diff}%${trendIcon})</span>`;
+            } else {
+                prevRateCell = '<td style="text-align:center; color:#aaa;">-</td>';
+            }
+        }
+
+        // Average color - Darker for projector
+        let avgStyle = '';
+        if (parseFloat(avg) < 10) {
+            avgStyle = 'color: #922b21; font-weight: 800;';
+        } else if (parseFloat(avg) >= 14) {
+            avgStyle = 'color: #196f3d; font-weight: 800;';
+        } else {
+            avgStyle = 'color: #1a252f; font-weight: 700;';
+        }
+
+        // Test Success Rate from Activity Evaluations
+        let testSuccessCell = '<td style="text-align:center; color:#aaa;">-</td>';
+        const levelSelect = document.getElementById('levelSelect');
+        const classSelect = document.getElementById('classSelect');
+        const currentLevelStr = levelSelect ? levelSelect.value : '';
+        const currentClassStr = classSelect ? classSelect.value : '';
+
+        let normalizedLevel = '1';
+        if (currentLevelStr.includes('1') || currentLevelStr.includes('أولى')) normalizedLevel = '1';
+        else if (currentLevelStr.includes('2') || currentLevelStr.includes('ثانية')) normalizedLevel = '2';
+        else if (currentLevelStr.includes('3') || currentLevelStr.includes('ثالثة')) normalizedLevel = '3';
+        else if (currentLevelStr.includes('4') || currentLevelStr.includes('رابعة')) normalizedLevel = '4';
+
+        if (window.activityEvaluations && Array.isArray(window.activityEvaluations)) {
+            // Map the selected value (1, 2, 3) to the expected string (الأول, الثاني, الثالث)
+            const mapObj = { '1': 'الأول', '2': 'الثاني', '3': 'الثالث' };
+            const storedTrimesterValue = mapObj[selectedTrimesterVal] || 'الأول';
+            const normStoredVal = typeof normalizeArabic === 'function' ? normalizeArabic(storedTrimesterValue) : storedTrimesterValue;
+
+            // Find records matching trimester and level
+            const trimesterRecords = window.activityEvaluations.filter(record => {
+                const trNorm = typeof normalizeArabic === 'function' ? normalizeArabic(record.trimester) : record.trimester;
+                return trNorm === normStoredVal &&
+                    record.stage === 'middle' &&
+                    record.level == normalizedLevel // Use loose equality in case one is number and other is string
+            });
+
+            if (trimesterRecords.length > 0) {
+                let testPassed = 0;
+                let totalEvaluations = 0;
+                const normTargetSub = typeof normalizeArabic === 'function' ? normalizeArabic(sub) : sub;
+
+                // Filter by subject manually to catch variants
+                const subjectRecords = trimesterRecords.filter(record => {
+                    const normStoredSub = typeof normalizeArabic === 'function' ? normalizeArabic(record.subject) : record.subject;
+                    return normTargetSub.includes(normStoredSub) || normStoredSub.includes(normTargetSub);
+                });
+
+                // Compute stats
+                subjectRecords.forEach(record => {
+                    // If a specific class is selected, skip records for other classes
+                    // Convert to integer to handle "01" vs "1"
+                    if (currentClassStr && currentClassStr !== 'all') {
+                        const targetClassNum = parseInt(currentClassStr, 10);
+                        const recordClassNum = parseInt(record.class, 10);
+                        if (!isNaN(targetClassNum) && !isNaN(recordClassNum)) {
+                            if (targetClassNum !== recordClassNum) return; // Not the matched class
+                        } else if (record.class != currentClassStr) {
+                            return; // Fallback if not numbers
+                        }
+                    }
+
+                    if (record.students && Array.isArray(record.students)) {
+                        record.students.forEach(st => {
+                            if (st.testMark !== null && st.testMark !== undefined && st.testMark !== '') {
+                                const numMark = parseFloat(st.testMark);
+                                if (!isNaN(numMark)) {
+                                    totalEvaluations++;
+                                    if (numMark >= 10) testPassed++;
+                                }
+                            }
+                        });
+                    }
+                });
+
+                if (totalEvaluations > 0) {
+                    const testRate = ((testPassed / totalEvaluations) * 100).toFixed(2);
+                    // Color code test rate - Darker for projector
+                    let tColor = '';
+                    if (testRate < 40) tColor = 'color: #922b21;';
+                    else if (testRate < 60) tColor = 'color: #b7500a;';
+                    else tColor = 'color: #196f3d;';
+
+                    testSuccessCell = `<td style="text-align:center; font-weight:800; background: linear-gradient(135deg, #eafaf1, #d5f5e3); border-left: 3px solid #27ae60; border-right: 3px solid #27ae60; ${tColor}">${testRate}%</td>`;
+                }
+            }
+        }
+
+        html += `
+            <tr class="subject-analysis-clickable-row" data-subject="${escapeHtml(sub)}" style="${rowBg}">
+                <td style="font-weight:800; white-space:nowrap; color:#1a252f;">${sub}</td>
+                <td style="text-align:center; ${avgStyle}">${avg}</td>
+                <td style="text-align:center; color:#196f3d; font-weight:700;">${highest}</td>
+                <td style="text-align:center; color:#922b21; font-weight:700;">${lowest}</td>
+                <td style="text-align:center; font-weight:700; color:#1a252f;">${passedCount}</td>
+                <td style="text-align:center; font-weight:700; color:#1a252f;">${failedCount}</td>
+                ${prevRateCell}
+                <td style="text-align:center; ${rateColor}">${rateIcon} ${successRate}% ${trendHtml}</td>
+                ${testSuccessCell}
+            </tr>
+        `;
+    });
+
+    if (!html) {
+        html = '<tr><td colspan="9" style="text-align:center; color:#aaa; padding:20px;">لا توجد بيانات للعرض</td></tr>';
+    }
+
+    tbody.innerHTML = html;
+
+    tbody.querySelectorAll('.subject-analysis-clickable-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const subjectName = row.dataset.subject;
+            if (subjectName) {
+                openSubjectComparisonModal(subjectName);
+            }
+        });
+    });
+
+    // Apply current toggle state
+    applyTestSuccessColumnToggle();
+}
+
+function toggleExamAvgColumn() {
+    const checkbox = document.getElementById('toggleExamAvgCol');
+    const wrapper = document.getElementById('examToggleBtn');
+    if (!checkbox) return;
+
+    // Toggle the hidden checkbox
+    checkbox.checked = !checkbox.checked;
+    const isChecked = checkbox.checked;
+
+    // Toggle the wrapper active class
+    if (wrapper) {
+        if (isChecked) {
+            wrapper.classList.add('active');
+        } else {
+            wrapper.classList.remove('active');
+        }
+    }
+
+    // Show/hide all exam avg columns
+    const cols = document.querySelectorAll('.exam-avg-col');
+    cols.forEach(col => {
+        col.style.display = isChecked ? 'table-cell' : 'none';
+    });
+}
+
+// Keep backward compatibility
+function applyExamAvgColumnToggle() {
+    const checkbox = document.getElementById('toggleExamAvgCol');
+    const wrapper = document.getElementById('examToggleBtn');
+    if (!checkbox) return;
+    const isChecked = checkbox.checked;
+
+    // Sync wrapper state
+    if (wrapper) {
+        if (isChecked) {
+            wrapper.classList.add('active');
+        } else {
+            wrapper.classList.remove('active');
+        }
+    }
+
+    const cols = document.querySelectorAll('.exam-avg-col');
+    cols.forEach(col => {
+        col.style.display = isChecked ? 'table-cell' : 'none';
+    });
+}
+
+function calculateStudentExamAverage(s, selectedTrimesterVal, index) {
+    // 1. Priority: Use stored average from DB (Single Source of Truth)
+    const selectedTrimesterCode = getCouncilsTrimesterCode(selectedTrimesterVal);
+    if (s.activityTestAverages) {
+        const storedAverage = s.activityTestAverages[selectedTrimesterVal] ?? s.activityTestAverages[selectedTrimesterCode];
+        const formattedAverage = formatCouncilsAverageValue(storedAverage);
+        if (formattedAverage !== '-') {
+            return formattedAverage;
+        }
+    }
+
+    // 2. Fallback: Dynamic calculation if DB column is empty (e.g., legacy data)
+    if (window.activityEvaluations && window.activityEvaluations.length > 0) {
+        const trimesterMapLocal = { '1': 'الأول', '2': 'الثاني', '3': 'الثالث' };
+        const trimesterStr = trimesterMapLocal[selectedTrimesterVal] || selectedTrimesterVal;
+
+        const normArabic = (txt) => {
+            if (!txt) return "";
+            return typeof normalizeArabic === 'function'
+                ? normalizeArabic(txt)
+                : txt.toString()
+                    .normalize('NFKC')
+                    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[أإآ]/g, 'ا')
+                    .replace(/ة/g, 'ه')
+                    .replace(/ى/g, 'ي')
+                    .replace(/ﻷ|ﻹ|ﻵ|ﻻ/g, 'لا')
+                    .replace(/لأ|لإ|لآ/g, 'لا')
+                    .replace(/\s+/g, ' ');
+        };
+
+        let studentLevelDigit = getCouncilsLevelCode(s.level) || '1';
+
+        let sClass = s.class ? s.class.toString().replace(/^0+/, '') : '';
+
+        // Find relevant records in activityEvaluations
+        const relevantRecords = window.activityEvaluations.filter(r => {
+            const rClass = r.class ? r.class.toString().replace(/^0+/, '') : '';
+            return councilsTrimesterMatches(r.trimester, selectedTrimesterCode || selectedTrimesterVal) &&
+                getCouncilsLevelCode(r.level) === studentLevelDigit &&
+                rClass == sClass;
+        });
+
+        if (relevantRecords.length === 0) return '-';
+
+        let totalWeighted = 0;
+        let totalCoeff = 0;
+        let hasMarks = false;
+
+        const sNameNorm = normArabic(s.name);
+        const stage = (typeof institutionSettings !== 'undefined' && institutionSettings.educationStage) || 'middle';
+
+        for (const record of relevantRecords) {
+            const studentRecord = record.students.find(st => {
+                return councilsStudentsMatch(s, st);
+            });
+
+            if (studentRecord && studentRecord.testMark !== null && studentRecord.testMark !== undefined && studentRecord.testMark !== '') {
+                const numMark = parseFloat(studentRecord.testMark);
+                if (isNaN(numMark)) continue;
+
+                // Exemption Check
+                const subj = record.subject;
+                if (s.marks) {
+                    const regularScore = typeof getSubjectScore === 'function' ? getSubjectScore(s, subj, selectedTrimesterVal) : null;
+                    if ((regularScore === null || regularScore === undefined || regularScore === '-' || regularScore === '') && numMark === 0) {
+                        continue;
+                    }
+                }
+
+                let coeff = 1;
+                if (typeof SubjectManager !== 'undefined' && typeof SubjectManager.getSubjectCoefficient === 'function') {
+                    coeff = SubjectManager.getSubjectCoefficient(stage, studentLevelDigit, '', subj);
+                }
+
+                totalWeighted += numMark * coeff;
+                totalCoeff += coeff;
+                hasMarks = true;
+            }
+        }
+
+        if (hasMarks && totalCoeff > 0) {
+            return formatCouncilsAverageValue(totalWeighted / totalCoeff);
+        }
+    }
+
+    return '-';
+}
+
+function toggleTestSuccessColumn() {
+    const checkbox = document.getElementById('toggleTestSuccessCol');
+    const wrapper = document.getElementById('testSuccessToggleBtn');
+    if (!checkbox) return;
+
+    // Toggle the hidden checkbox
+    checkbox.checked = !checkbox.checked;
+    const isVisible = checkbox.checked;
+
+    // Toggle the wrapper active class
+    if (wrapper) {
+        if (isVisible) {
+            wrapper.classList.add('active');
+        } else {
+            wrapper.classList.remove('active');
+        }
+    }
+
+    applyTestSuccessColumnVisibility(isVisible);
+}
+
+function applyTestSuccessColumnToggle() {
+    const checkbox = document.getElementById('toggleTestSuccessCol');
+    const wrapper = document.getElementById('testSuccessToggleBtn');
+    if (!checkbox) return;
+    const isVisible = checkbox.checked;
+
+    // Sync wrapper state
+    if (wrapper) {
+        if (isVisible) {
+            wrapper.classList.add('active');
+        } else {
+            wrapper.classList.remove('active');
+        }
+    }
+
+    applyTestSuccessColumnVisibility(isVisible);
+}
+
+function applyTestSuccessColumnVisibility(isVisible) {
+    const table = document.getElementById('subjectAnalysisTable');
+    if (!table) return;
+
+    // Header
+    const header = document.getElementById('subjectTestSuccessRateHeader');
+    if (header) {
+        header.style.display = isVisible ? 'table-cell' : 'none';
+    }
+
+    // Cells are the last child of each row in tbody
+    const tbody = document.getElementById('subjectAnalysisBody');
+    if (tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 8) {
+                const lastCell = cells[cells.length - 1];
+                lastCell.style.display = isVisible ? 'table-cell' : 'none';
+            }
+        });
+    }
+}
+
+/* ==========================================
+   Subject Success Rate Chart
+   ========================================== */
+let subjectSuccessChartInstance = null;
+
+function updateSubjectSuccessChart(data, activeSubjects = subjects) {
+    const canvas = document.getElementById('subjectSuccessChart');
+    if (!canvas) return;
+
+    // Use passed subjects list
+    const rawSubjects = activeSubjects || [];
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const selectedTrimesterVal = trimesterSelect ? trimesterSelect.value : '1';
+
+    // Same filtering as in renderSubjectAnalysis
+    const subjectsList = rawSubjects.filter(sub => {
+        const normSub = typeof normalizeArabic === 'function' ? normalizeArabic(sub) : sub;
+        const otherTrimesters = ['1', '2', '3'].filter(t => t !== selectedTrimesterVal);
+        for (const t of otherTrimesters) {
+            const pattern1 = new RegExp(`ف\\s*${t}(\\s|$)`);
+            const pattern2 = new RegExp(`فصل\\s*${t}(\\s|$)`);
+            if (pattern1.test(normSub) || pattern2.test(normSub)) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    const labels = [];
+    const successRates = [];
+    const backgroundColors = [];
+    const borderColors = [];
+
+    subjectsList.forEach(sub => {
+        // Advanced skip completely empty/NaN/zero subjects
+        const hasValidMarks = data.some(s => {
+            const mark = getSubjectScore(s, sub, selectedTrimesterVal);
+            const numMark = parseFloat(mark);
+            return mark !== null && mark !== undefined && mark !== '-' && !isNaN(numMark) && numMark > 0;
+        });
+
+        if (!hasValidMarks) return;
+
+        const scores = data.map(s => getSubjectScore(s, sub, selectedTrimesterVal))
+            .filter(m => m !== null && m !== undefined && m !== '-')
+            .map(Number);
+
+        const passed = scores.filter(s => s >= 10).length;
+        const rateValue = (passed / scores.length) * 100;
+        const rateLabel = rateValue.toFixed(2);
+
+        const displayName = sub.replace(/ ف\d$/, '').replace(/ ف \d$/, '');
+        labels.push(displayName);
+        successRates.push(rateValue);
+
+        // Color coding
+        if (rateValue >= 80) {
+            backgroundColors.push('rgba(46, 204, 113, 0.85)'); // Green
+            borderColors.push('#27ae60');
+        } else if (rateValue >= 60) {
+            backgroundColors.push('rgba(52, 152, 219, 0.85)'); // Blue
+            borderColors.push('#2980b9');
+        } else if (rateValue >= 40) {
+            backgroundColors.push('rgba(230, 126, 34, 0.85)'); // Orange
+            borderColors.push('#d35400');
+        } else {
+            backgroundColors.push('rgba(231, 76, 60, 0.85)'); // Red
+            borderColors.push('#c0392b');
+        }
+    });
+
+    if (subjectSuccessChartInstance) {
+        subjectSuccessChartInstance.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    subjectSuccessChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'نسبة النجاح (%)',
+                data: successRates,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
+                borderWidth: 2,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'النسبة المئوية (%)',
+                        font: { size: 18, weight: 'bold' }
+                    },
+                    ticks: {
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    grid: {
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 30,
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+            },
+            layout: {
+                padding: {
+                    top: 20
+                }
+            }
+        },
+        plugins: [{
+            id: 'barValueLabels',
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, i) => {
+                    const meta = chart.getDatasetMeta(i);
+                    meta.data.forEach((bar, index) => {
+                        const value = dataset.data[index];
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.font = 'bold 16px sans-serif';
+                        ctx.fillStyle = Chart.defaults.color;
+                        ctx.fillText(value.toFixed(2) + '%', bar.x, bar.y - 4);
+                        ctx.restore();
+                    });
+                });
+            }
+        }]
+    });
+}
+
+// ---- INJECTED PE EXEMPTION WRAPPER ----
+function getSubjectScore(...args) {
+    const student = args[0];
+    const trimesterSelect = document.getElementById('trimesterSelect');
+    const effectiveTrimester = args[2] || (trimesterSelect ? trimesterSelect.value : '1');
+    let targetSub = args[1] ? args[1].toString().trim() : '';
+    // Annual mode: calculate average of all 3 trimesters for this subject
+    if (effectiveTrimester === 'annual') {
+        return getAnnualSubjectScore(student, targetSub);
+    }
+    let score = _orig_getSubjectScore(...args);
+    if (score !== null && score !== undefined && (targetSub === 'رياضة' || targetSub.includes('بدنية') || targetSub.includes('رياضية'))) {
+        let num = typeof score === 'string' ? parseFloat(score.replace(',', '.')) : parseFloat(score);
+        if (num === 0 || isNaN(num)) return null;
+    }
+    return score;
+}
+
+if (typeof _orig_getSubjectScoreByTrimester === 'function') {
+    globalThis.getSubjectScoreByTrimester = function (...args) {
+        let score = _orig_getSubjectScoreByTrimester(...args);
+        let targetSub = args[1] ? args[1].toString().trim() : '';
+        if (score !== null && score !== undefined && (targetSub === 'رياضة' || targetSub.includes('بدنية') || targetSub.includes('رياضية'))) {
+            let num = typeof score === 'string' ? parseFloat(score.replace(',', '.')) : parseFloat(score);
+            if (num === 0 || isNaN(num)) return null;
+        }
+        return score;
+    }
+}
+
+window.showColumnVisibilityModal = () => {
+    if (typeof TableCore === 'undefined' || !window._currentFilteredSubjects) return;
+
+    // Remove any existing modal
+    const existing = document.getElementById('colVisModal');
+    if (existing) existing.remove();
+
+    const vis = window._tanstackTableState ? window._tanstackTableState.columnVisibility : {};
+
+    // Static columns
+    const statics = [
+        { id: 'gender', name: 'الجنس' },
+        { id: 'dob', name: 'تاريخ الميلاد' },
+        { id: 'exam_avg', name: 'معدل الاختبار' },
+        { id: 'decision', name: 'القرار (للفصل الثالث والسنوي)' }
+    ];
+
+    let checkboxesHtml = '';
+
+    statics.forEach(col => {
+        const isChecked = vis[col.id] !== false;
+        checkboxesHtml += `
+            <label class="colvis-item">
+                <input type="checkbox" id="colvis_${col.id}" ${isChecked ? 'checked' : ''}>
+                <span>${col.name}</span>
+            </label>
+        `;
+    });
+
+    window._currentFilteredSubjects.forEach(sub => {
+        const id = 'sub_' + sub;
+        const isChecked = vis[id] !== false;
+        const name = typeof getSubjectAbbreviation === 'function' ? getSubjectAbbreviation(sub) : sub;
+        checkboxesHtml += `
+            <label class="colvis-item">
+                <input type="checkbox" id="colvis_${id}" ${isChecked ? 'checked' : ''}>
+                <span>${name}</span>
+            </label>
+        `;
+    });
+
+    const modalHtml = `
+    <div id="colVisModal" style="position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45);">
+        <div style="background:white; border-radius:12px; padding:24px 28px; min-width:380px; max-width:520px; box-shadow:0 8px 32px rgba(0,0,0,0.25); direction:rtl; font-family:inherit;">
+            <h3 style="margin:0 0 16px; font-size:1.15em; color:#2c3e50; border-bottom:2px solid #3498db; padding-bottom:10px; text-align:center;">👁️ إظهار وإخفاء الأعمدة</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:350px; overflow-y:auto; padding:4px;">
+                ${checkboxesHtml}
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:18px;">
+                <button id="colVisApply" style="padding:8px 24px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.95em; font-weight:bold;">حفظ الإعدادات</button>
+                <button id="colVisCancel" style="padding:8px 24px; background:#95a5a6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.95em;">إلغاء</button>
+                <button id="colVisSelectAll" style="padding:8px 16px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.85em;">تحديد الكل</button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById('colVisModal');
+
+    // Close on backdrop click
+    modal.addEventListener('click', function(ev) {
+        if (ev.target === modal) modal.remove();
+    });
+
+    // Cancel
+    document.getElementById('colVisCancel').addEventListener('click', function() {
+        modal.remove();
+    });
+
+    // Select All
+    document.getElementById('colVisSelectAll').addEventListener('click', function() {
+        modal.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    });
+
+    // Apply
+    document.getElementById('colVisApply').addEventListener('click', function() {
+        const newVis = { ...vis };
+        statics.forEach(col => {
+            newVis[col.id] = document.getElementById('colvis_' + col.id).checked;
+        });
+        window._currentFilteredSubjects.forEach(sub => {
+            const id = 'sub_' + sub;
+            newVis[id] = document.getElementById('colvis_' + id).checked;
+        });
+
+        if (window._tanstackTableState) {
+            window._tanstackTableState.columnVisibility = newVis;
+            localStorage.setItem('classCouncilsColVis', JSON.stringify(newVis));
+            if (typeof applyFilters === 'function') {
+                applyFilters();
+            }
+        }
+        modal.remove();
+    });
+};

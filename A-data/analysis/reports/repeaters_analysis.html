@@ -1,0 +1,838 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحليل نتائج المعيدين - إدارتي+</title>
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: var(--border-color);
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            background-color: var(--slate-50);
+            padding-top: 80px;
+            font-family: "Cairo", sans-serif !important;
+            color: var(--slate-800);
+            margin: 0;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        .tab-btn,
+        .form-control,
+        .btn-premium,
+        label {
+            font-family: "Cairo", sans-serif !important;
+        }
+
+        body.shell-mode {
+            padding-top: 5px !important;
+            margin: 0 !important;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            padding: 32px;
+            border-radius: 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .page-header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-header p {
+            color: #94a3b8;
+            margin: 8px 0 0 0;
+            font-weight: 500;
+        }
+
+        /* Modern Tabs */
+        .tabs-nav {
+            display: flex;
+            background: var(--slate-200);
+            padding: 6px;
+            border-radius: 18px;
+            margin-bottom: 24px;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            color: var(--slate-700);
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Controls Grid */
+        .controls-card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            border: 1px solid var(--slate-200);
+            align-items: end;
+            /* This aligns the button with the inputs */
+        }
+
+        .control-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-weight: 800;
+            color: var(--slate-700);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--slate-200);
+            border-radius: 14px;
+            font-family: inherit;
+            font-size: 1rem;
+            background: var(--slate-50);
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            background: var(--card-bg);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Cards and Tables */
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--slate-200);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--slate-100);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--slate-900);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: var(--slate-50);
+            padding: 16px;
+            text-align: right;
+            font-weight: 800;
+            font-size: 0.85rem;
+            color: var(--slate-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--slate-100);
+        }
+
+        .data-table td {
+            padding: 16px;
+            border-top: 1px solid var(--slate-50);
+            font-size: 1rem;
+            color: var(--slate-800);
+        }
+
+        .data-table tr:hover td {
+            background: #fdfdfd;
+        }
+
+        /* Assignment Search Area */
+        .search-area {
+            background: var(--slate-50);
+            padding: 24px;
+            border-radius: 20px;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .search-filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Badges */
+        .stat-badge {
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid transparent;
+        }
+
+        .badge-success {
+            background: #ecfdf5;
+            color: #059669;
+            border-color: #10b98122;
+        }
+
+        .badge-info {
+            background: #eff6ff;
+            color: #2563eb;
+            border-color: #3b82f622;
+        }
+
+        .btn-premium {
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-print {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-print:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Scrollbar */
+        .scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scroll-container::-webkit-scrollbar-track {
+            background: var(--slate-50);
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: var(--slate-200);
+            border-radius: 10px;
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb:hover {
+            background: var(--slate-300);
+        }
+
+        /* Animations */
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Sorting icons */
+        .sortable {
+            cursor: pointer;
+        }
+
+        .sort-icon {
+            font-size: 0.8rem;
+            margin-right: 4px;
+            opacity: 0.5;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => Auth.checkAuth());
+    </script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+
+        <!-- Header -->
+        <header class="page-header">
+            <div>
+                <h1><i data-lucide="refresh-cw"></i> تحليل نتائج المعيدين والمستدركين</h1>
+                <p>إدارة قوائم التلاميذ المعيدين والمستدركين ومتابعة نسب نجاحهم</p>
+            </div>
+        </header>
+
+        <!-- Tabs -->
+        <nav class="tabs-nav">
+            <button class="tab-btn active" data-tab="repeaters" onclick="switchTab('repeaters')">
+                <i data-lucide="users"></i> المعيدون (السنة الحالية)
+            </button>
+            <button class="tab-btn" data-tab="remedial" onclick="switchTab('remedial')">
+                <i data-lucide="clipboard-list"></i> المستدركون (السنة الماضية)
+            </button>
+            <button class="tab-btn" data-tab="orientation" onclick="switchTab('orientation')">
+                <i data-lucide="trending-up"></i> نتائج >= 16 سنة
+            </button>
+        </nav>
+
+        <!-- ===================== Repeaters Tab ===================== -->
+        <div id="repeatersTab" class="tab-content">
+            <section class="filter-card"
+                style="background: var(--bg-color); padding: 6px 8px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; direction: rtl;">
+                <div class="controls-container"
+                    style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; flex: 1;">
+                    <div class="filter-group" id="birthYearFilterGroup"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📅
+                            السنة:</label>
+                        <select id="yearSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;"></select>
+                    </div>
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🗓️
+                            الفصل:</label>
+                        <select id="trimesterSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 40px;">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="annual">السنوي</option>
+                        </select>
+                    </div>
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">⚡
+                            المستوى:</label>
+                        <select id="levelSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                            <option value="all">كل المستويات</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" id="streamFilterContainer"
+                        style="display:none; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📚
+                            الشعبة:</label>
+                        <select id="streamSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                            <option value="all">كل الشعب</option>
+                        </select>
+                    </div>
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🚪
+                            القسم:</label>
+                        <select id="classSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                            <option value="all">كل الأقسام</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="actions-container" style="display: flex; gap: 6px; align-items: center;">
+                    <button id="printBtn" onclick="printCurrentReport()" class="btn-analyze"
+                        style="background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.75rem; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.15);">
+                        <span>طباعة التقرير</span>
+                        <i data-lucide="printer" style="width: 14px; height: 14px;"></i>
+                    </button>
+                </div>
+            </section>
+
+            <section class="dashboard">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i data-lucide="bar-chart-2"></i> إحصائيات النجاح العامة</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المستوى</th>
+                                <th>التعداد</th>
+                                <th>ذكور</th>
+                                <th>إناث</th>
+                                <th>ناجحون ذكور</th>
+                                <th>ناجحون إناث</th>
+                                <th>المجموع</th>
+                                <th>نسبة النجاح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="repeatStatsBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i data-lucide="list"></i> قائمة التلاميذ المعيدين التفصيلية</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th width="5%">#</th>
+                                <th>الاسم واللقب</th>
+                                <th class="sortable" data-sort="level" onclick="sortRepeatersTable('level')">المستوى
+                                    <span class="sort-icon">⇅</span></th>
+                                <th id="repeatersStreamHeader" style="display:none;" class="sortable" data-sort="stream"
+                                    onclick="sortRepeatersTable('stream')">الشعبة <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" data-sort="class" onclick="sortRepeatersTable('class')">القسم <span
+                                        class="sort-icon">⇅</span></th>
+                                <th class="sortable" data-sort="avg" onclick="sortRepeatersTable('avg')">المعدل <span
+                                        class="sort-icon">⇅</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="repeatListBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===================== Remedial Tab ===================== -->
+        <div id="remedialTab" class="tab-content" style="display: none;">
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i data-lucide="user-plus"></i> تعيين التلاميذ المستدركين للسنة الماضية</h3>
+                </div>
+
+                <div class="search-area" style="background: transparent; padding: 0 20px 15px; margin: 0;">
+                    <section class="filter-card"
+                        style="background: var(--bg-color); padding: 6px 8px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; direction: rtl;">
+                        <div class="controls-container"
+                            style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; flex: 1;">
+
+                            <div class="filter-group"
+                                style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                <label
+                                    style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📅
+                                    السنة:</label>
+                                <select id="remedialAssignmentYearSelect" onchange="filterStudentsForRemedial()"
+                                    style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;"></select>
+                            </div>
+
+                            <div class="filter-group"
+                                style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                <label
+                                    style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">⚡
+                                    المستوى:</label>
+                                <select id="remedialLevelFilter" onchange="filterStudentsForRemedial()"
+                                    style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                                    <option value="all">كل المستويات</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group" id="remedialStreamFilterGroup"
+                                style="display:none; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                <label
+                                    style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📚
+                                    الشعبة:</label>
+                                <select id="remedialStreamFilter" onchange="filterStudentsForRemedial()"
+                                    style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                                    <option value="all">كل الشعب</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group"
+                                style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                                <label
+                                    style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🚪
+                                    القسم:</label>
+                                <select id="remedialClassFilter" onchange="filterStudentsForRemedial()"
+                                    style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                                    <option value="all">كل الأقسام</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group"
+                                style="display: flex; align-items: center; gap: 6px; background: var(--card-bg); padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02); flex: 0 1 200px; position: relative;">
+                                <label
+                                    style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🔍
+                                    بحث:</label>
+                                <input type="text" id="remedialSearchInput" placeholder="بحث بالاسم أو اللقب..."
+                                    style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; outline: none; width: 100%; font-family: 'Cairo', sans-serif;"
+                                    oninput="searchStudentsForRemedial(this.value)">
+                            </div>
+                        </div>
+                    </section>
+
+                    <div style="display: flex; gap: 12px;">
+                        <div class="stat-badge badge-success">
+                            <i data-lucide="check-circle-2"></i> المستدركون المعيّنون: <strong id="assignedCount"
+                                style="margin-right: 5px;">0</strong>
+                        </div>
+                        <div class="stat-badge badge-info">
+                            <i data-lucide="users"></i> إجمالي التلاميذ: <strong id="totalStudentsCount"
+                                style="margin-right: 5px;">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scroll-container"
+                    style="max-height: 400px; overflow-y: auto; margin: 0 20px 20px 20px; border: 1px solid var(--slate-200); border-radius: 16px;">
+                    <table class="data-table">
+                        <thead style="position: sticky; top: 0; z-index: 10;">
+                            <tr>
+                                <th width="5%">#</th>
+                                <th>الاسم واللقب</th>
+                                <th>المستوى</th>
+                                <th id="remedialStreamHeader" style="display:none;">الشعبة</th>
+                                <th>القسم</th>
+                                <th width="15%" style="text-align: center;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignmentTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <section id="remedialResultsSection">
+                <section class="filter-card"
+                    style="background: var(--bg-color); padding: 6px 8px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; direction: rtl;">
+                    <div class="controls-container"
+                        style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; flex: 1;">
+                        <div class="filter-group"
+                            style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <label
+                                style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📅
+                                السنة:</label>
+                            <select id="remedialYearSelect"
+                                style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;"></select>
+                        </div>
+                        <div class="filter-group"
+                            style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <label
+                                style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🗓️
+                                الفصل:</label>
+                            <select id="remedialTrimesterSelect"
+                                style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 40px;">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </div>
+                        <div class="filter-group"
+                            style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <label
+                                style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">⚡
+                                المستوى:</label>
+                            <select id="remedialLevelSelect"
+                                style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                                <option value="all">كل المستويات</option>
+                            </select>
+                        </div>
+                        <div class="filter-group" id="remedialResultsStreamGroup"
+                            style="display:none; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <label
+                                style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📚
+                                الشعبة:</label>
+                            <select id="remedialResultsStreamSelect"
+                                style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                                <option value="all">كل الشعب</option>
+                            </select>
+                        </div>
+                        <div class="filter-group"
+                            style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                            <label
+                                style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🚪
+                                القسم:</label>
+                            <select id="remedialClassSelect"
+                                style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                                <option value="all">كل الأقسام</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="actions-container" style="display: flex; gap: 6px; align-items: center;">
+                        <button id="remedialPrintBtn" onclick="printCurrentReport()" class="btn-analyze"
+                            style="background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.75rem; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.15);">
+                            <span>طباعة التقرير</span>
+                            <i data-lucide="printer" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <div id="noRemedialMessage" class="card" style="text-align: center; padding: 60px; display: none;">
+                    <div style="color: #94a3b8; margin-bottom: 20px;"><i data-lucide="alert-circle"
+                            style="width: 48px; height: 48px;"></i></div>
+                    <h3 style="color: var(--slate-800);">لا يوجد تلاميذ مستدركون للسنة الماضية</h3>
+                    <p style="color: #64748b;">يرجى تعيين التلاميذ المستدركين من القائمة أعلاه أولاً لبدء التحليل</p>
+                </div>
+
+                <div class="card" id="remedialStatsCard">
+                    <div class="card-header">
+                        <h3><i data-lucide="bar-chart-2"></i> إحصائيات المستدركين</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المستوى</th>
+                                <th>التعداد</th>
+                                <th>ذكور</th>
+                                <th>إناث</th>
+                                <th>ناجحون ذكور</th>
+                                <th>ناجحون إناث</th>
+                                <th>المجموع</th>
+                                <th>نسبة النجاح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="remedialStatsBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="card" id="remedialListCard">
+                    <div class="card-header">
+                        <h3><i data-lucide="list"></i> قائمة التلاميذ المستدركين التفصيلية</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th width="5%">#</th>
+                                <th>الاسم واللقب</th>
+                                <th>المستوى</th>
+                                <th id="remedialResultsStreamHeader" style="display:none;">الشعبة</th>
+                                <th>القسم</th>
+                                <th>المعدل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="remedialListBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===================== Orientation Tab ===================== -->
+        <div id="orientationTab" class="tab-content" style="display: none;">
+            <section class="filter-card"
+                style="background: var(--bg-color); padding: 6px 8px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; direction: rtl;">
+                <div class="controls-container"
+                    style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; flex: 1;">
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📅
+                            السنة:</label>
+                        <select id="orientationYearSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;"></select>
+                    </div>
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🗓️
+                            الفصل:</label>
+                        <select id="orientationTrimesterSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 40px;">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="annual">السنوي</option>
+                        </select>
+                    </div>
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">👶
+                            ميلاد:</label>
+                        <select id="birthYearSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 55px;">
+                            <option value="2009">2009</option>
+                        </select>
+                    </div>
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">⚡
+                            المستوى:</label>
+                        <select id="orientationLevelSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                            <option value="all">كل المستويات</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" id="orientationStreamFilterContainer"
+                        style="display:none; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📚
+                            الشعبة:</label>
+                        <select id="orientationStreamSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                            <option value="all">كل الشعب</option>
+                        </select>
+                    </div>
+                    <div class="filter-group"
+                        style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <label
+                            style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🚪
+                            القسم:</label>
+                        <select id="orientationClassSelect"
+                            style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;">
+                            <option value="all">كل الأقسام</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="actions-container" style="display: flex; gap: 6px; align-items: center;">
+                    <button id="orientationPrintBtn" onclick="printCurrentReport()" class="btn-analyze"
+                        style="background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.75rem; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.15);">
+                        <span>طباعة التقرير</span>
+                        <i data-lucide="printer" style="width: 14px; height: 14px;"></i>
+                    </button>
+                </div>
+            </section>
+
+            <div id="orientationSecondaryNote"
+                style="display:none; margin: -8px 0 18px 0; padding: 12px 16px; border-radius: 14px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; font-weight: 700;">
+                في الطور الثانوي، قرار يوجّه لا يعتمد على سنة الميلاد هنا، بل يحدده المستخدم يدويًا من عمود القرار ويتم حفظه.
+            </div>
+
+            <section class="dashboard">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 id="orientationStatsTitle"><i data-lucide="bar-chart-2"></i> إحصائيات النتائج (>= 16 سنة)</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المستوى</th>
+                                <th>التعداد</th>
+                                <th>ذكور</th>
+                                <th>إناث</th>
+                                <th id="orientationStatsHead5">ناجحون ذكور</th>
+                                <th id="orientationStatsHead6">ناجحون إناث</th>
+                                <th id="orientationStatsHead7">المجموع</th>
+                                <th id="orientationStatsHead8">نسبة النجاح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orientationStatsBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 id="orientationListTitle"><i data-lucide="list"></i> قائمة التلاميذ (>= 16 سنة)</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th width="5%">#</th>
+                                <th>الاسم واللقب</th>
+                                <th>تاريخ الميلاد</th>
+                                <th class="sortable" data-sort="level" onclick="sortOrientationTable('level')">المستوى
+                                    <span class="sort-icon">⇅</span></th>
+                                <th id="orientationStreamHeader" style="display:none;" class="sortable" data-sort="stream"
+                                    onclick="sortOrientationTable('stream')">الشعبة <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" data-sort="class" onclick="sortOrientationTable('class')">القسم <span
+                                        class="sort-icon">⇅</span></th>
+                                <th class="sortable" data-sort="avg" onclick="sortOrientationTable('avg')">المعدل <span
+                                        class="sort-icon">⇅</span></th>
+                                <th id="orientationDecisionHeader" style="display:none;">القرار</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orientationListBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="../../assets/js/sweetalert2.all.min.js"></script>
+    <script src="repeaters_analysis.js?v=20260529-annual-trimester"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+</body>
+
+</html>

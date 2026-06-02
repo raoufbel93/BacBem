@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استيراد البيانات - تحليل النتائج</title>
+    <!-- SheetJS for Excel processing -->
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../assets/js/xlsx.full.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script>
+        // Check authentication on page load
+
+        // Check activation and disable import if not activated
+        document.addEventListener('DOMContentLoaded', function () {
+            // Updated to check date expiration too via _0x8b2 check helper or manually
+            // We use performStartupChecks to show modal if needed
+            Auth.performStartupChecks();
+
+            // Explicitly disable import UI if not valid
+            const isActive = Auth.checkAuth();
+            const daysLeft = Auth.calculateDaysRemaining();
+            const isValid = isActive && daysLeft > 0;
+
+            if (!isValid) {
+                // Disable file input and show warning
+                const fileInput = document.getElementById('fileInput');
+                const uploadArea = document.querySelector('.file-upload-area');
+
+                if (fileInput) fileInput.disabled = true;
+                if (uploadArea) {
+                    uploadArea.style.opacity = '0.5';
+                    uploadArea.style.cursor = 'not-allowed';
+                    uploadArea.onclick = function (e) {
+                        Auth.checkAuth(); // Trigger modal
+                    };
+                }
+
+                // Show activation warning at top
+                const container = document.querySelector('.import-container');
+                if (container) {
+                    // Check if warning already exists to avoid dupes
+                    if (!container.querySelector('.auth-warning-box')) {
+                        container.insertAdjacentHTML('afterbegin', `
+                            <div class="auth-warning-box" style="background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                                <strong><span data-icon="lock"></span> الخدمة غير متاحة</strong><br>
+                                اشتراكك منتهي أو غير مفعل. يرجى تجديد الاشتراك لاستخدام ميزة الاستيراد.
+                            </div>
+                        `);
+                    }
+                }
+            }
+        });
+    </script>
+    <style>
+        .import-container {
+            max-width: 800px;
+            margin: 5px auto;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--secondary-color);
+            padding: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-area:hover {
+            background-color: #f0f8ff;
+        }
+
+        .delete-all-section {
+            margin-top: 25px;
+            padding: 20px;
+            border-top: 2px dashed #e0e0e0;
+        }
+
+        .btn-delete-all {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.25);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-delete-all:hover {
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(231, 76, 60, 0.35);
+        }
+
+        .btn-delete-all:active {
+            transform: translateY(0);
+        }
+
+        .file-upload-area p {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        #fileInput, #jsonFileInput {
+            display: none;
+        }
+
+        .btn-select {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: inline-block;
+        }
+
+        .import-actions {
+            display: none;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn-import-replace {
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(39, 174, 96, 0.2);
+        }
+
+        .btn-import-replace:hover {
+            background-color: #219a52;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-import-update {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn-import-update:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            text-align: right;
+            white-space: pre-line;
+        }
+
+        .status-box.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-box.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-box.info {
+            background-color: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+
+        .log-area {
+            text-align: right;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            font-size: 0.9rem;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            margin-top: 10px;
+            height: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--secondary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+            color: var(--secondary-color);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .modal-message {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn-modal {
+            padding: 10px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-confirm {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background-color: #2471a3;
+            transform: translateY(-2px);
+        }
+
+        .btn-cancel {
+            background-color: #ecf0f1;
+            color: #7f8c8d;
+        }
+
+        .btn-cancel:hover {
+            background-color: #bdc3c7;
+            transform: translateY(-2px);
+        }
+
+        /* File List Styles */
+        .file-list-container {
+            margin-top: 15px;
+            text-align: right;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            background: #fafafa;
+            display: none;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg);
+            margin-bottom: 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background: #fdfdfd;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: var(--primary-color);
+        }
+
+        .file-remove-btn {
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-remove-btn:hover {
+            background: #fdeded;
+        }
+
+        .file-count-badge {
+            background: var(--secondary-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+
+        /* ===== Import Tabs ===== */
+        .import-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 0;
+            border-bottom: 2px solid var(--border-color);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .import-tab-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: 600;
+            font-family: 'Cairo', sans-serif;
+            color: #999;
+            position: relative;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .import-tab-btn:hover {
+            color: var(--secondary-color);
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .import-tab-btn.active {
+            color: var(--secondary-color);
+            border-bottom-color: var(--secondary-color);
+        }
+
+        .import-tab-btn .tab-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .import-tab-btn.active .tab-badge {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .import-tab-panel {
+            display: none;
+        }
+
+        .import-tab-panel.active {
+            display: block;
+        }
+
+        /* JSON Preview Area */
+        .json-preview-area {
+            margin-top: 15px;
+            text-align: right;
+            display: none;
+        }
+
+        /* Dark mode overrides */
+        html[data-theme="dark"] .file-upload-area:hover {
+            background-color: rgba(52, 152, 219, 0.08);
+        }
+        html[data-theme="dark"] .file-list-container,
+        html[data-theme="dark"] .log-area {
+            background: #020617 !important;
+            border-color: #1e293b !important;
+            color: #94a3b8 !important;
+        }
+        html[data-theme="dark"] .file-item {
+            background: rgba(30, 41, 59, 0.5) !important;
+            border-color: #1e293b !important;
+        }
+        html[data-theme="dark"] .file-item:hover {
+            background: rgba(255,255,255,0.03) !important;
+        }
+        html[data-theme="dark"] .import-tab-btn:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+        html[data-theme="dark"] .import-container {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+            color: #e2e8f0 !important;
+        }
+
+        html[data-theme="dark"] .status-box.success {
+            background-color: rgba(39, 174, 96, 0.15);
+            border-color: rgba(39, 174, 96, 0.3);
+            color: #6fcf97;
+        }
+        html[data-theme="dark"] .status-box.error {
+            background-color: rgba(231, 76, 60, 0.15);
+            border-color: rgba(231, 76, 60, 0.3);
+            color: #f5a0a0;
+        }
+        html[data-theme="dark"] .status-box.info {
+            background-color: rgba(52, 152, 219, 0.15);
+            border-color: rgba(52, 152, 219, 0.3);
+            color: #7ec8e3;
+        }
+
+        /* Info Note Bar Styles */
+        .info-note-bar {
+            padding: 12px 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: var(--primary-color);
+            text-align: right;
+            border-right: 4px solid var(--secondary-color);
+            background: #e8f4fd;
+        }
+
+        .info-note-bar.purple {
+            background: linear-gradient(135deg, #e8f4fd, #f0e6ff);
+            border-right-color: #8e44ad;
+            margin-bottom: 20px;
+            margin-top: 0;
+        }
+
+        html[data-theme="dark"] .info-note-bar {
+            background: rgba(30, 41, 59, 0.7);
+            color: #94a3b8;
+            border-right-color: #3b82f6;
+        }
+
+        html[data-theme="dark"] .info-note-bar.purple {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(88, 28, 135, 0.2));
+            border-right-color: #a855f7;
+            color: #d8b4fe;
+        }
+
+        html[data-theme="dark"] .delete-all-section {
+            border-top-color: #1e293b;
+        }
+        
+        html[data-theme="dark"] .file-upload-area {
+            background: rgba(15, 23, 42, 0.5);
+            border-color: #334155;
+        }
+        
+        html[data-theme="dark"] .file-upload-area p {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <header>
+            <h1><span data-icon="download"></span> استيراد البيانات</h1>
+            <p>رفع ملفات النتائج والتلاميذ لتحديث قاعدة البيانات</p>
+        </header>
+
+        <!-- ===== Tab Navigation ===== -->
+        <div class="import-tabs">
+            <button class="import-tab-btn active" onclick="switchImportTab('excel')" id="tabBtnExcel">
+                <span data-icon="file-excel"></span> استيراد Excel
+            </button>
+            <button class="import-tab-btn" onclick="switchImportTab('json')" id="tabBtnJson" style="display: none;">
+                <span data-icon="file-code"></span> استيراد JSON <span class="tab-badge">جديد</span>
+            </button>
+        </div>
+
+        <!-- ===== Tab 1: Excel Import (Existing) ===== -->
+        <div class="import-tab-panel active" id="tabExcel">
+            <section class="import-container">
+            <p style="margin-bottom: 15px;">
+                <a href="#"
+                    onclick="window.shell ? window.shell.openExternal('https://youtu.be/MPwn6Cj85RY') : window.open('https://youtu.be/MPwn6Cj85RY', '_blank'); return false;"
+                    style="color: #c4302b; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
+                        </svg>
+                        شرح طريقة استيراد نتائج التلاميذ
+                    </a>
+                </p>
+
+                <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                    <p>قم بسحب وإفلات الملفات هنا أو اضغط للاختيار</p>
+                    <p style="font-size: 0.9rem; color: #888;">يمكنك اختيار ملفات متعددة أو مجلد كامل</p>
+                    <span class="btn-select">اختيار الملفات</span>
+                    <input type="file" id="fileInput" multiple accept=".xls,.xlsx" onchange="handleFileSelect(event)">
+                </div>
+
+                <div id="fileListContainer" class="file-list-container"></div>
+
+                <div class="info-note-bar">
+                    <strong><span data-icon="info-circle"></span> ملاحظة:</strong>
+                    عند الاستيراد، يجب تحديد جميع الملفات أولاً ثم الضغط على زر "استيراد النتائج".
+                </div>
+
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <div id="statusBox" class="status-box"></div>
+
+                <div class="log-area" id="logArea"></div>
+
+                <div class="import-actions" id="importActions">
+                    <button id="btnUpdate" class="btn-import-update" onclick="processFiles('update')" style="background-color: #27ae60;">
+                        <span data-icon="sync-alt"></span> استيراد وتحديث النتائج
+                    </button>
+                </div>
+
+                <div class="delete-all-section">
+                    <p style="color: #7f8c8d; margin-bottom: 12px; font-size: 0.95rem;">
+                        <span data-icon="info-circle"></span> لحذف جميع النتائج المخزنة في قاعدة البيانات دون استيراد ملفات جديدة:
+                    </p>
+                    <button id="btnDeleteAll" class="btn-delete-all" onclick="deleteAllResults()">
+                        <span data-icon="trash-alt"></span> حذف جميع النتائج
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===== Tab 2: JSON Import (New) ===== -->
+        <div class="import-tab-panel" id="tabJson">
+            <section class="import-container">
+                <div class="info-note-bar purple">
+                    <strong><span data-icon="info-circle" style="color:#8e44ad;"></span> استيراد من موقع الرقمنة:</strong>
+                    يتم الكشف التلقائي عن نوع الملف (قائمة تلاميذ، كشف نقاط، أرشيف، بيانات شاملة) ومعالجته وفقاً لذلك.
+                </div>
+
+                <div class="file-upload-area" onclick="document.getElementById('jsonFileInput').click()" style="border-color: #8e44ad;">
+                    <p><span data-icon="file-code" style="font-size:2rem;color:#8e44ad;"></span></p>
+                    <p>قم بسحب وإفلات ملفات JSON هنا أو اضغط للاختيار</p>
+                    <p style="font-size: 0.9rem; color: #888;">ملفات مصدرة من موقع الرقمنة (.json)</p>
+                    <span class="btn-select" style="background-color: #8e44ad;">اختيار ملفات JSON</span>
+                    <input type="file" id="jsonFileInput" multiple accept=".json,application/json" onchange="handleJsonFileSelect(event)">
+                </div>
+
+                <div id="jsonFileListContainer" class="file-list-container"></div>
+
+                <!-- Auto-detection preview -->
+                <div id="jsonPreviewArea" class="json-preview-area" style="display:none;"></div>
+
+                <div class="progress-bar" id="jsonProgressBar">
+                    <div class="progress-fill" id="jsonProgressFill"></div>
+                </div>
+
+                <div id="jsonStatusBox" class="status-box"></div>
+
+                <div class="log-area" id="jsonLogArea" style="display:none;"></div>
+
+                <div class="import-actions" id="jsonImportActions">
+                    <button id="btnJsonImport" class="btn-import-update" onclick="processJsonImport()" style="background: linear-gradient(135deg, #8e44ad, #6c3483);">
+                        <span data-icon="database"></span> بدء الاستيراد
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-content animate-pop-in">
+            <div class="modal-icon"><span data-icon="recycle"></span></div>
+            <div class="modal-title">تحديث البيانات</div>
+            <div class="modal-message">
+                هل أنت متأكد من رغبتك في تحديث قاعدة البيانات بالملفات المختارة؟
+                <br>
+                <small style="color:#27ae60;">سيتم إضافة أو تحديث بيانات الأقسام المحددة فقط. لن يتم حذف الأقسام
+                    الأخرى.</small>
+            </div>
+            <div class="modal-buttons">
+                <button id="modalConfirm" class="btn-modal btn-confirm">نعم، ابدأ التحديث</button>
+                <button id="modalCancel" class="btn-modal btn-cancel">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal-overlay">
+        <div class="modal-content animate-pop-in">
+            <div class="modal-icon"><span data-icon="check-circle"></span></div>
+            <div class="modal-title">تم التحديث بنجاح</div>
+            <div class="modal-message" id="successMessage">
+                تم استيراد البيانات وتحديث قاعدة البيانات بنجاح.
+            </div>
+            <div class="modal-buttons">
+                <button id="modalSuccessOk" class="btn-modal btn-confirm">حسناً</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete All Confirmation Modal -->
+    <div id="deleteAllModal" class="modal-overlay">
+        <div class="modal-content animate-pop-in">
+            <div class="modal-icon" style="color: #e74c3c;"><span data-icon="exclamation-triangle"></span></div>
+            <div class="modal-title" style="color: #e74c3c;">تأكيد حذف جميع النتائج</div>
+            <div class="modal-message">
+                هل أنت متأكد من رغبتك في حذف <strong>جميع النتائج</strong> المخزنة في قاعدة البيانات؟
+                <br>
+                <small style="color:#e74c3c; font-weight: bold;">⚠️ تحذير: هذا الإجراء لا يمكن التراجع عنه!</small>
+            </div>
+            <div class="modal-buttons">
+                <button id="deleteAllConfirm" class="btn-modal btn-confirm" style="background-color: #e74c3c;">نعم، احذف الكل</button>
+                <button id="deleteAllCancel" class="btn-modal btn-cancel">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab Switching Logic
+        function switchImportTab(tab) {
+            // Update buttons
+            document.getElementById('tabBtnExcel').classList.toggle('active', tab === 'excel');
+            document.getElementById('tabBtnJson').classList.toggle('active', tab === 'json');
+            // Update panels
+            document.getElementById('tabExcel').classList.toggle('active', tab === 'excel');
+            document.getElementById('tabJson').classList.toggle('active', tab === 'json');
+            // Show JSON log area when switching to JSON tab
+            if (tab === 'json') {
+                var logArea = document.getElementById('jsonLogArea');
+                if (logArea && logArea.children.length > 0) logArea.style.display = 'block';
+            }
+            // Re-render icons
+            if (window.IconManager) IconManager.render();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.checkAuth()) {
+                document.getElementById('fileInput').disabled = true;
+                var jsonInput = document.getElementById('jsonFileInput');
+                if (jsonInput) jsonInput.disabled = true;
+            }
+        });
+    </script>
+    <script src="import_data.js"></script>
+    <script src="../_dev_archive/import_json.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script src="../assets/js/fullscreen_toggle.js"></script>
+</body>
+
+</html>

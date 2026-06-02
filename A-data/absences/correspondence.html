@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المراسلات والشطب - نظام إدارة المؤسسة</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <!-- Shared Auth -->
+        <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script>
+        Auth.checkAuth();
+    </script>
+    <style>
+        /* Shared Styles (Keep relevant parts) */
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            letter-spacing: 0.5px;
+        }
+
+        .status-notice1 {
+            background-color: rgba(241, 196, 15, 0.15);
+            color: #d35400;
+            border: 1px solid rgba(241, 196, 15, 0.3);
+        }
+
+        .status-notice2 {
+            background-color: rgba(230, 126, 34, 0.15);
+            color: #d35400;
+            border: 1px solid rgba(230, 126, 34, 0.3);
+        }
+
+        .status-warning {
+            background-color: rgba(231, 76, 60, 0.15);
+            color: #c0392b;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .status-strikeoff {
+            background-color: #c0392b;
+            color: #fff;
+            box-shadow: 0 2px 4px rgba(192, 57, 43, 0.4);
+        }
+
+        .status-ok {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: #27ae60;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-print {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            filter: brightness(1.1);
+        }
+
+        .history-log {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            max-height: 60px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        
+        .history-log::-webkit-scrollbar {
+            width: 4px;
+        }
+        .history-log::-webkit-scrollbar-thumb {
+            background: #bdc3c7;
+            border-radius: 4px;
+        }
+
+        .data-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .data-table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.05) !important;
+        }
+
+        /* Filter Section Override */
+        .filter-section {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--bg-color);
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            flex: 1;
+            min-width: 200px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+        }
+
+        .search-box .search-icon {
+            font-size: 1.1rem;
+            margin-left: 8px;
+            color: #888;
+        }
+
+        .search-box input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 1rem;
+            width: 100%;
+            color: var(--primary-color);
+        }
+
+        .search-box input::placeholder {
+            color: #999;
+        }
+
+        .filter-select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: var(--bg-color);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .filter-select:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/subject_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+
+    <div class="container fade-in">
+        <header class="page-header">
+            <div class="header-content">
+                <h1><span data-icon="email"></span> المراسلات والشطب الآلي</h1>
+                <p>متابعة الغيابات المتكررة وإصدار الإشعارات والاعذارات</p>
+            </div>
+        </header>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <div class="search-box">
+                <span class="search-icon" data-icon="search"></span>
+                <input type="text" id="studentSearch" placeholder="بحث عن تلميذ..." onkeyup="filterTable()">
+            </div>
+
+            <select id="levelSelect" class="filter-select" onchange="populateStreams(); loadClasses()">
+                <option value="">كل المستويات</option>
+                <!-- Populated by JS -->
+            </select>
+
+            <select id="streamSelect" class="filter-select" style="display:none;" onchange="loadClasses()">
+                <option value="">كل الشعب</option>
+            </select>
+
+            <select id="classSelect" class="filter-select" onchange="filterTable()">
+                <option value="">كل الأقسام</option>
+                <!-- Populated by JS -->
+            </select>
+
+            <select id="statusFilter" class="filter-select" onchange="filterTable()">
+                <option value="">كل الحالات</option>
+                <option value="notice1">يستوجب إشعار أول</option>
+                <option value="notice2">يستوجب إشعار ثاني</option>
+                <option value="warning">يستوجب إعذار (تنبيه)</option>
+                <option value="strikeoff">يستوجب الشطب</option>
+            </select>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table" id="correspondenceTable" style="width:100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: var(--bg-color); border-bottom: 1px solid var(--border-color);">
+                        <th style="padding:10px;">#</th>
+                        <th style="padding:10px;">التلميذ</th>
+                        <th style="padding:10px;">القسم</th>
+                        <th style="padding:10px;">الغياب المتواصل</th>
+                        <th style="padding:10px;">تاريخ البداية</th>
+                        <th style="padding:10px;">الحالة المستحقة</th>
+                        <th style="padding:10px;">الإجراء</th>
+                        <th style="padding:10px;">سجل المراسلات</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="8" class="empty-state" style="text-align:center; padding:20px;">جاري تحميل
+                            البيانات...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script src="correspondence.js"></script>
+</body>
+
+</html>

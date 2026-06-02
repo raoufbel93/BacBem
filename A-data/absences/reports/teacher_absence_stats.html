@@ -1,0 +1,369 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إحصائيات غيابات الأساتذة والمشرفين</title>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <style>
+        .filter-section {
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            /* Force Single Line */
+            gap: 15px;
+            align-items: flex-end;
+            border: 1px solid #eef2f7;
+        }
+
+        /* Remove Media Query that was previously added for Grid */
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            /* Allow growth */
+            min-width: 180px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.95rem;
+        }
+
+        .filter-group input {
+            padding: 10px 15px;
+            border: 1px solid #dfe6e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: var(--bg-color);
+        }
+
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex: 0 0 auto;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            font-size: 0.95rem;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn-secondary {
+            background: var(--card-bg);
+            color: var(--primary-color);
+            border: 1px solid #dfe6e9;
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-color);
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 14px 20px;
+            text-align: center;
+            border-bottom: 1px solid #f1f2f6;
+        }
+
+        .stats-table th {
+            background: var(--bg-color);
+            color: #7f8c8d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        .stats-table tr:hover {
+            background: #fbfbfb;
+        }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+
+        .no-print {
+            display: block;
+        }
+
+        .view-toggle {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .view-toggle .btn.active-view {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+            border: none;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            border: 1px solid #eef2f7;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        }
+
+        .summary-card .label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .value {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            .filter-section,
+            .navbar {
+                display: none !important;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            .stats-table {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+
+            .stats-table th,
+            .stats-table td {
+                border: 1px solid #000;
+                color: var(--primary-color);
+            }
+
+            .stats-table th {
+                background: #f0f0f0 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container" class="no-print"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <script>Auth.checkAuth();</script>
+
+    <div class="container animate-fade-in-up">
+        <header class="no-print" style="margin-bottom: 30px;">
+            <h1><span data-icon="chart"></span> إحصائيات غيابات الأساتذة والمشرفين</h1>
+            <p style="color: #7f8c8d; margin-top: 5px;">عرض وتحليل الغيابات والتأخرات خلال فترة زمنية محددة</p>
+        </header>
+
+        <style>
+            .filter-row-forced {
+                background: var(--card-bg);
+                padding: 20px 25px;
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+                margin-bottom: 25px;
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                align-items: flex-end !important;
+                gap: 20px;
+                border: 1px solid #eef2f7;
+                width: 100%;
+            }
+
+            .filter-item-forced {
+                flex: 1 1 auto;
+                min-width: 0;
+                /* allows shrinking below content size if needed */
+            }
+
+            .filter-item-forced label {
+                display: block;
+                font-weight: 600;
+                color: var(--primary-color);
+                font-size: 0.95rem;
+                margin-bottom: 8px;
+            }
+
+            .filter-item-forced input {
+                width: 100%;
+                padding: 10px 15px;
+                border: 1px solid #dfe6e9;
+                border-radius: 8px;
+                font-size: 1rem;
+                background: var(--bg-color);
+            }
+
+            .btn-group-forced {
+                flex: 0 0 auto;
+                display: flex;
+                gap: 10px;
+            }
+        </style>
+
+        <div class="filter-row-forced no-print">
+            <div class="filter-item-forced">
+                <label><span data-icon="calendar"></span> من تاريخ:</label>
+                <input type="date" id="startDate">
+            </div>
+            <div class="filter-item-forced">
+                <label><span data-icon="calendar"></span> إلى تاريخ:</label>
+                <input type="date" id="endDate">
+            </div>
+            <div class="filter-item-forced">
+                <label><i class="fas fa-user-tag"></i> نوع الموظف:</label>
+                <select id="staffTypeFilter" style="width: 100%; padding: 10px 15px; border: 1px solid #dfe6e9; border-radius: 8px; font-size: 1rem; background: var(--bg-color);">
+                    <option value="all">الكل (أساتذة ومشرفين)</option>
+                    <option value="teachers">الأساتذة فقط</option>
+                    <option value="supervisors">المشرفين والإداريين فقط</option>
+                </select>
+            </div>
+            <div class="btn-group-forced">
+                <button class="btn btn-primary" onclick="loadStats()">
+                    <span data-icon="search"></span> بحث
+                </button>
+                <button class="btn btn-secondary" onclick="generatePrintReport()">
+                    <span data-icon="print"></span> طباعة التقرير
+                </button>
+            </div>
+        </div>
+
+        <div class="view-toggle no-print">
+            <span style="font-weight: 600; color: var(--primary-color);">طريقة العرض:</span>
+            <button id="btnSummaryView" class="btn active-view" onclick="switchView('summary')"
+                style="padding: 8px 18px; font-size: 0.9rem;">
+                <i class="fas fa-table"></i> ملخص
+            </button>
+            <button id="btnDetailedView" class="btn btn-secondary" onclick="switchView('detailed')"
+                style="padding: 8px 18px; font-size: 0.9rem;">
+                <i class="fas fa-list-alt"></i> تفصيلي
+            </button>
+        </div>
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="label">عدد الموظفين المتأثرين</div>
+                <div class="value" id="staffCountCard">-</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">أيام الغياب</div>
+                <div class="value" id="absenceDaysCard">-</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">عدد التأخرات</div>
+                <div class="value" id="delayCountCard">-</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">مجموع الساعات</div>
+                <div class="value" id="hoursTotalCard">-</div>
+            </div>
+        </div>
+
+        <div id="resultsArea">
+            <div style="text-align: center; color: #7f8c8d; padding: 40px;">
+                الرجاء تحديد الفترة والضغط على "بحث"
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Print Area -->
+    <div id="printArea" style="display: none;"></div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="teacher_absence_stats.js"></script>
+    <script>
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast show toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

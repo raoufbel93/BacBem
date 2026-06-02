@@ -1,0 +1,2506 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مجالس الأقسام - تحليل النتائج v1.1</title>
+    <style>
+        .exam-avg-col {
+            transition: all 0.3s ease;
+        }
+
+        /* === Toggle Exam Avg Button === */
+        .exam-toggle-wrapper {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.35s ease;
+            border: 2px solid #e0e0e0;
+            background: var(--card-bg);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            user-select: none;
+        }
+
+        .exam-toggle-wrapper:hover {
+            border-color: #f39c12;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .exam-toggle-wrapper.active {
+            border-color: #f39c12;
+            background: linear-gradient(135deg, #fef9e7, #fdebd0);
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.25);
+        }
+
+        .exam-toggle-wrapper .toggle-icon {
+            font-size: 1.0em;
+            transition: transform 0.3s ease;
+        }
+
+        .exam-toggle-wrapper.active .toggle-icon {
+            transform: scale(1.15);
+        }
+
+        .exam-toggle-wrapper .toggle-track {
+            width: 30px;
+            height: 16px;
+            border-radius: 8px;
+            background: #ccc;
+            position: relative;
+            transition: background 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .exam-toggle-wrapper.active .toggle-track {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .exam-toggle-wrapper .toggle-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .exam-toggle-wrapper.active .toggle-thumb {
+            right: 16px;
+        }
+
+        .exam-toggle-wrapper .toggle-label {
+            font-weight: 600;
+            font-size: 0.8em;
+            color: #7f8c8d;
+            transition: color 0.3s ease;
+        }
+
+        .exam-toggle-wrapper.active .toggle-label {
+            color: #e67e22;
+        }
+
+        /* === Exam Avg Column Styling === */
+        .exam-avg-col-cell {
+            background: linear-gradient(135deg, #fef9e7, #fdebd0) !important;
+            color: #b7500a !important;
+            font-weight: 800 !important;
+            border-left: 3px solid #f39c12 !important;
+            border-right: 3px solid #f39c12 !important;
+            font-size: 1.05em;
+        }
+
+        .exam-avg-col-header {
+            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+            color: white !important;
+            font-weight: 800 !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            border-left: 2px solid #d35400 !important;
+            border-right: 2px solid #d35400 !important;
+        }
+
+        /* === Test Success Column Styling === */
+        .test-success-toggle-wrapper {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.35s ease;
+            border: 2px solid #e0e0e0;
+            background: var(--card-bg);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            user-select: none;
+        }
+
+        .test-success-toggle-wrapper:hover {
+            border-color: #27ae60;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .test-success-toggle-wrapper.active {
+            border-color: #27ae60;
+            background: linear-gradient(135deg, #eafaf1, #d5f5e3);
+            box-shadow: 0 44px 15px rgba(39, 174, 96, 0.25);
+        }
+
+        .test-success-toggle-wrapper .toggle-icon {
+            font-size: 1.0em;
+            transition: transform 0.3s ease;
+        }
+
+        .test-success-toggle-wrapper.active .toggle-icon {
+            transform: scale(1.15);
+        }
+
+        .test-success-toggle-wrapper .toggle-track {
+            width: 30px;
+            height: 16px;
+            border-radius: 8px;
+            background: #ccc;
+            position: relative;
+            transition: background 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .test-success-toggle-wrapper.active .toggle-track {
+            background: linear-gradient(135deg, #27ae60, #1e8449);
+        }
+
+        .test-success-toggle-wrapper .toggle-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .test-success-toggle-wrapper.active .toggle-thumb {
+            right: 16px;
+        }
+
+        .test-success-toggle-wrapper .toggle-label {
+            font-weight: 600;
+            font-size: 0.8em;
+            color: #7f8c8d;
+            transition: color 0.3s ease;
+        }
+
+        .test-success-toggle-wrapper.active .toggle-label {
+            color: #1e8449;
+        }
+
+        /* Test success column header */
+        .test-success-col-header {
+            background: linear-gradient(135deg, #27ae60, #1e8449) !important;
+            color: white !important;
+            font-weight: 800 !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            border-left: 2px solid #196f3d !important;
+            border-right: 2px solid #196f3d !important;
+        }
+
+        /* === Darker Text Colors for Projector Visibility === */
+        .subject-analysis-section .data-table td {
+            font-weight: 700 !important;
+            font-size: 1em;
+        }
+
+        .subject-analysis-section .data-table th {
+            font-weight: 800 !important;
+            font-size: 1.05em;
+        }
+
+        [data-theme="dark"] .test-success-toggle-wrapper {
+            border-color: #555;
+            background: linear-gradient(135deg, #2d2d2d, #333);
+        }
+
+        [data-theme="dark"] .test-success-toggle-wrapper.active {
+            border-color: #27ae60;
+            background: linear-gradient(135deg, #1a3a25, #1d4a2d);
+        }
+
+        [data-theme="dark"] .test-success-toggle-wrapper .toggle-label {
+            color: #aaa;
+        }
+
+        [data-theme="dark"] .test-success-toggle-wrapper.active .toggle-label {
+            color: #2ecc71;
+        }
+
+        [data-theme="dark"] .exam-toggle-wrapper {
+            border-color: #555;
+            background: linear-gradient(135deg, #2d2d2d, #333);
+        }
+
+        [data-theme="dark"] .exam-toggle-wrapper.active {
+            border-color: #f39c12;
+            background: linear-gradient(135deg, #3d3520, #4a3a1a);
+        }
+
+        [data-theme="dark"] .exam-toggle-wrapper .toggle-label {
+            color: #aaa;
+        }
+
+        [data-theme="dark"] .exam-toggle-wrapper.active .toggle-label {
+            color: #f1c40f;
+        }
+
+        [data-theme="dark"] .exam-avg-col-cell {
+            background: linear-gradient(135deg, #3d3520, #4a3a1a) !important;
+            color: #f1c40f !important;
+        }
+
+        @media print {
+            #navbar-container, .page-header, .filter-card, .student-tools-bar, button, .theme-toggle-btn, .student-list-header {
+                display: none !important;
+            }
+            #printHeader {
+                display: block !important;
+                margin-bottom: 20px;
+            }
+            body, .container, .card, .student-list, .subject-analysis-section, .distribution-chart-section, .subject-chart-section {
+                background: var(--card-bg) !important;
+                color: var(--primary-color) !important;
+                box-shadow: none !important;
+                border: none !important;
+                margin-bottom: 20px !important;
+            }
+            .kpi-grid { page-break-inside: avoid; }
+            .kpi-card { background: var(--card-bg) !important; color: var(--primary-color) !important; border: 1px solid #000 !important; box-shadow: none !important; }
+            .kpi-icon { background: var(--card-bg) !important; color: var(--primary-color) !important; box-shadow: none !important; border: 1px solid #000 !important; }
+            .kpi-title, .kpi-value { color: var(--primary-color) !important; }
+            .data-table, .data-table th, .data-table td { border: 1px solid #000 !important; background: var(--card-bg) !important; color: var(--primary-color) !important; box-shadow: none !important; padding: 4px !important; }
+            .data-table th { background-color: #f1f1f1 !important; color: var(--primary-color) !important; }
+            .mark-bad, .mark-good, .mark-excellent, .high-score, .low-score { background: transparent !important; color: var(--primary-color) !important; font-weight: normal !important; }
+            .exam-avg-col-header, .test-success-col-header, .exam-avg-col-cell { background: transparent !important; color: var(--primary-color) !important; border: 1px solid #000 !important; }
+            .test-success-toggle-wrapper { display: none !important; }
+            .student-table-scroll { border: none !important; box-shadow: none !important; overflow: visible !important; }
+            .student-table-container { overflow: visible !important; max-height: none !important; }
+            .student-table-container thead th { position: static !important; }
+            .chart-container, canvas { page-break-inside: avoid; }
+            .student-list { page-break-before: always; margin-top: 0 !important; padding: 0 !important; }
+            .dashboard { display: none !important; }
+        }
+    </style>
+
+    <script src="../../assets/js/chart.js" defer></script>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="class_councils_react.css">
+    <link rel="stylesheet" href="../../style.css">
+
+    <style>
+        :root {
+            --bg-page: #f4f7f6;
+            --bg-card: #ffffff;
+            --text-main: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --text-muted: #bdc3c7;
+            --border-color: var(--border-color);
+            --table-border: #ddd;
+            --table-header-bg: linear-gradient(135deg, #2c3e50, #34495e);
+            --table-row-even: #f8f9fa;
+            --table-row-hover: #e8ecf1;
+            --comparison-header-bg: #bdc3c7;
+            --comparison-header-color: #111827;
+            --comparison-cell-bg: #ecf0f1;
+            --comparison-cell-border: #cbd5e1;
+            --primary-blue: #3498db;
+            --bg-mark-bad: #fee2e2;
+            --text-mark-bad: #991b1b;
+            --bg-mark-good: #dcfce7;
+            --text-mark-good: #166534;
+            --bg-mark-excellent: #dbeafe;
+            --text-mark-excellent: #1e40af;
+            --text-high-score: #166534;
+            --text-low-score: #991b1b;
+            --text-encouragement: #2980b9;
+            --text-honor: #f39c12;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-page: #07101a;
+            --bg-card: #101a27;
+            --text-main: #ffffff;
+            --text-secondary: #f3f7ff;
+            --text-muted: #d4deeb;
+            --border-color: #2d4058;
+            --table-border: #35506f;
+            --table-header-bg: linear-gradient(135deg, #16304f, #244b76);
+            --table-row-even: #0d1622;
+            --table-row-hover: #152131;
+            --comparison-header-bg: #24364f;
+            --comparison-header-color: #f7fbff;
+            --comparison-cell-bg: #172435;
+            --comparison-cell-border: #4b6582;
+            --bg-mark-bad: #4a1d24;
+            --text-mark-bad: #ffd6dc;
+            --bg-mark-good: #173726;
+            --text-mark-good: #d8ffe8;
+            --bg-mark-excellent: #182b47;
+            --text-mark-excellent: #e0f0ff;
+            --text-high-score: #c8ffd9;
+            --text-low-score: #ffd0d6;
+            --text-encouragement: #9fd8ff;
+            --text-honor: #ffe38c;
+            --shadow: 0 12px 30px rgba(0, 0, 0, 0.42);
+        }
+
+        /* Data Show Presentation Optimizations */
+        body {
+            font-size: 1.15rem;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 10px 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 8px;
+            font-size: 1.15rem;
+        }
+
+        .data-table th.vertical-col div.vertical-header {
+            font-size: 1.1rem;
+            width: 35px;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            height: 120px;
+            text-align: right;
+            padding-right: 5px;
+        }
+
+        .header-title h1 {
+            font-size: 2.2rem !important;
+        }
+
+        .dashboard {
+            display: none !important;
+        }
+
+        /* Hide charts & extra panels */
+        .student-list {
+            margin-top: 15px !important;
+        }
+
+        /* Grade Highlighting - Darker/Higher Contrast for Data-Show */
+        .mark-bad {
+            background-color: var(--bg-mark-bad) !important;
+            color: var(--text-mark-bad) !important;
+            font-weight: 800;
+        }
+
+        .mark-good {
+            background-color: var(--bg-mark-good) !important;
+            color: var(--text-mark-good) !important;
+            font-weight: 800;
+        }
+
+        .mark-excellent {
+            background-color: var(--bg-mark-excellent) !important;
+            color: var(--text-mark-excellent) !important;
+            font-weight: 900;
+        }
+
+        .high-score {
+            color: var(--text-high-score) !important;
+            font-weight: bold;
+        }
+
+        .low-score {
+            color: var(--text-low-score) !important;
+            font-weight: bold;
+        }
+
+        .mark-average {
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        /* KPI Cards Styles */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, background-color 0.3s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .kpi-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .kpi-content {
+            flex: 1;
+            text-align: right;
+        }
+
+        .kpi-title {
+            margin: 0;
+            font-size: 1.55rem;
+            color: var(--text-main);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .kpi-value {
+            margin: 0;
+            font-size: 2.8rem;
+            color: var(--text-main);
+            font-weight: 900;
+        }
+
+        /* KPI Colors */
+        .bg-blue {
+            background-color: #3498db;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .bg-lightblue {
+            background-color: #5dade2;
+            box-shadow: 0 4px 10px rgba(93, 173, 226, 0.3);
+        }
+
+        .bg-pink {
+            background-color: #ff7675;
+            box-shadow: 0 4px 10px rgba(255, 118, 117, 0.3);
+        }
+
+        .bg-purple {
+            background-color: #9b59b6;
+            box-shadow: 0 4px 10px rgba(155, 89, 182, 0.3);
+        }
+
+        .bg-gold {
+            background-color: #f1c40f;
+            box-shadow: 0 4px 10px rgba(241, 196, 15, 0.3);
+        }
+
+        .bg-orange {
+            background-color: #e67e22;
+            box-shadow: 0 4px 10px rgba(230, 126, 34, 0.3);
+        }
+
+        .bg-green {
+            background-color: #2ecc71;
+            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+        }
+
+        .bg-red {
+            background-color: #e74c3c;
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+        }
+
+        /* Subject Analysis Table Font Size */
+        #subjectAnalysisTable {
+            font-size: 1.35rem !important;
+        }
+
+        #subjectAnalysisTable th {
+            font-size: 1.25rem !important;
+            padding: 15px 5px !important;
+        }
+
+        #subjectAnalysisTable td {
+            padding: 12px 5px !important;
+        }
+
+        .subject-analysis-hint {
+            margin: -2px 0 14px;
+            color: #64748b;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .subject-analysis-clickable-row {
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+        }
+
+        .subject-analysis-clickable-row:hover {
+            transform: translateY(-1px);
+            box-shadow: inset 0 0 0 9999px rgba(52, 152, 219, 0.08);
+        }
+
+        .subject-analysis-clickable-row td:first-child {
+            position: relative;
+            padding-inline-start: 18px !important;
+        }
+
+        .subject-analysis-clickable-row td:first-child::before {
+            content: "";
+            position: absolute;
+            inset-inline-start: 8px;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #6c5ce7);
+            transform: translateY(-50%);
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.12);
+        }
+
+        .subject-comparison-modal-content {
+            background: #fdfefe;
+            padding: 0;
+            border-radius: 22px;
+            width: min(1100px, 95vw);
+            max-height: 92vh;
+            overflow: hidden;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 32px 70px rgba(15, 23, 42, 0.26);
+        }
+
+        .subject-comparison-modal-header {
+            background: linear-gradient(135deg, #162033 0%, #1f4f82 50%, #3690d8 100%);
+            color: #fff;
+            padding: 24px 28px 20px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .subject-comparison-modal-title-wrap h3 {
+            margin: 0 0 8px;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .subject-comparison-modal-subtitle {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 0.98rem;
+            font-weight: 500;
+        }
+
+        .subject-comparison-close {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+            font-size: 1.45rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .subject-comparison-modal-body {
+            padding: 22px 26px 28px;
+            overflow-y: auto;
+            background:
+                radial-gradient(circle at top left, rgba(52, 152, 219, 0.08), transparent 24%),
+                linear-gradient(180deg, #f8fbff 0%, #f3f7fb 100%);
+        }
+
+        .subject-comparison-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subject-comparison-meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 0.93rem;
+        }
+
+        .subject-comparison-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 18px;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .subject-comparison-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subject-comparison-legend i {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .subject-comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+        }
+
+        .subject-comparison-card {
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(203, 213, 225, 0.62);
+            border-radius: 20px;
+            padding: 18px 16px 16px;
+            box-shadow: 0 16px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .subject-comparison-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .subject-comparison-class {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .subject-comparison-count {
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .subject-comparison-columns {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            align-items: end;
+            min-height: 210px;
+        }
+
+        .subject-comparison-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subject-comparison-column-value {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .subject-comparison-column-track {
+            width: 100%;
+            max-width: 62px;
+            height: 140px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(226, 232, 240, 0.7), rgba(203, 213, 225, 0.92));
+            padding: 5px;
+            display: flex;
+            align-items: flex-end;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.65);
+        }
+
+        .subject-comparison-column-fill {
+            width: 100%;
+            border-radius: 16px;
+            min-height: 14px;
+            box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18);
+        }
+
+        .subject-comparison-column.success .subject-comparison-column-fill {
+            background: linear-gradient(180deg, #50c878 0%, #1f9d61 100%);
+        }
+
+        .subject-comparison-column.average .subject-comparison-column-fill {
+            background: linear-gradient(180deg, #5dade2 0%, #2563eb 100%);
+        }
+
+        .subject-comparison-column-label {
+            color: var(--primary-color);
+            font-size: 0.86rem;
+            font-weight: 800;
+        }
+
+        .subject-comparison-empty {
+            text-align: center;
+            padding: 34px 20px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px dashed rgba(148, 163, 184, 0.55);
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        /* Presentation Mode Tweaks */
+        body.presentation-mode .kpi-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        body.presentation-mode .kpi-card {
+            flex: 1 1 20%;
+            min-width: 220px;
+            padding: 15px;
+        }
+
+        body.presentation-mode .kpi-icon {
+            width: 50px;
+            height: 50px;
+            font-size: 1.6rem;
+        }
+
+        body.presentation-mode .kpi-value {
+            font-size: 2.8rem;
+        }
+
+        body.presentation-mode #navbar-container {
+            display: none !important;
+        }
+
+        body.presentation-mode .page-header {
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        body.presentation-mode .filter-card {
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: none;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        /* Table styles with variables */
+        .data-table {
+            background-color: var(--bg-card) !important;
+            border-color: var(--table-border) !important;
+        }
+
+        .data-table th {
+            background: var(--table-header-bg) !important;
+            border-color: var(--table-border) !important;
+        }
+
+        .data-table td {
+            color: var(--text-main) !important;
+            background-color: var(--bg-card) !important;
+            border-color: var(--table-border) !important;
+        }
+
+        .data-table tr:nth-child(even) td {
+            background-color: var(--table-row-even) !important;
+        }
+
+        .data-table tr:hover td {
+            background-color: var(--table-row-hover) !important;
+        }
+
+        .student-list {
+            margin-top: 15px !important;
+            background:
+                radial-gradient(circle at top right, rgba(52, 152, 219, 0.12), transparent 28%),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 250, 252, 0.98));
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+        }
+
+        .student-list-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .student-list-title h2 {
+            margin: 0;
+            font-size: 1.35rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .student-list-title p {
+            margin: 6px 0 0;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+
+        .student-list-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .student-tools-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .student-table-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .table-stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(241, 245, 249, 0.95);
+            border: 1px solid rgba(203, 213, 225, 0.9);
+            color: var(--text-main);
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .table-stat-pill strong {
+            color: #1d4ed8;
+            font-size: 0.95rem;
+        }
+
+        .student-tools-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .table-search-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            min-width: 300px;
+            border-radius: 14px;
+            background: rgba(248, 250, 252, 0.95);
+            border: 1px solid rgba(203, 213, 225, 0.95);
+            color: var(--text-secondary);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+
+        .table-search-box:focus-within {
+            border-color: rgba(52, 152, 219, 0.9);
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.12);
+            background: rgba(255, 255, 255, 0.98);
+        }
+
+        .table-search-box input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: var(--text-main);
+            outline: none;
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .table-search-box input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .student-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 14px;
+            background: rgba(248, 250, 252, 0.95);
+            border: 1px solid rgba(203, 213, 225, 0.95);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .student-filter-chip input {
+            accent-color: #e67e22;
+        }
+
+        .student-density-btn {
+            border: 1px solid rgba(52, 152, 219, 0.28);
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.14), rgba(41, 128, 185, 0.08));
+            color: #1f4f82;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .student-density-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(52, 152, 219, 0.14);
+            border-color: rgba(52, 152, 219, 0.5);
+        }
+
+        .student-list-hint {
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .student-table-container {
+            position: relative;
+            overflow: visible;
+            max-height: none;
+        }
+
+        .student-table-scroll {
+            overflow-x: auto;
+            overflow-y: visible;
+            border-radius: 18px;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        .student-table-container .data-table {
+            width: 100%;
+            min-width: max-content;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .student-table-container thead th {
+            position: sticky !important;
+            top: 0;
+            inset-block-start: 0;
+            z-index: 20;
+            vertical-align: bottom;
+            background: var(--table-header-bg) !important;
+            background-clip: padding-box;
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+        }
+
+        .student-table-container thead th .vertical-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            min-height: 96px;
+        }
+
+        .student-table-container tbody tr {
+            position: relative;
+            z-index: 1;
+            transition: box-shadow 0.16s ease, background-color 0.16s ease;
+        }
+
+        .student-table-container tbody tr:hover {
+            transform: none;
+            box-shadow: inset 0 0 0 9999px rgba(148, 163, 184, 0.04);
+        }
+
+        .student-table-container .sticky-col {
+            position: sticky;
+            z-index: 3;
+            background-color: var(--bg-card) !important;
+        }
+
+        .student-table-container thead .sticky-col {
+            z-index: 24;
+        }
+
+        .student-table-container .sticky-index {
+            right: 0;
+            min-width: 58px;
+        }
+
+        .student-table-container .sticky-name {
+            right: 58px;
+            min-width: 220px;
+            max-width: 220px;
+            box-shadow: -12px 0 18px rgba(15, 23, 42, 0.06);
+        }
+
+        .student-table-container tbody tr:nth-child(even) .sticky-col {
+            background-color: var(--table-row-even) !important;
+        }
+
+        .student-table-container tbody tr:hover .sticky-col {
+            background-color: var(--table-row-hover) !important;
+        }
+
+        .student-name-cell {
+            text-align: right;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sortable-score-header {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .sortable-score-header .sort-arrow {
+            display: inline-block;
+            margin-inline-start: 4px;
+            font-size: 0.9em;
+            opacity: 0.92;
+        }
+
+        .student-empty-state {
+            text-align: center;
+            padding: 28px 18px !important;
+            color: var(--text-secondary) !important;
+            font-size: 1rem !important;
+            font-weight: 800 !important;
+        }
+
+        .student-table-compact .student-table-container .data-table th,
+        .student-table-compact .student-table-container .data-table td {
+            padding: 7px 5px !important;
+            font-size: 0.96rem !important;
+        }
+
+        .student-table-compact .student-table-container .vertical-header {
+            height: 88px !important;
+            font-size: 0.88rem !important;
+        }
+
+        [data-theme="dark"] .student-list {
+            background:
+                radial-gradient(circle at top right, rgba(93, 173, 226, 0.12), transparent 28%),
+                linear-gradient(180deg, rgba(36, 36, 36, 0.94), rgba(24, 24, 24, 0.98));
+            border-color: rgba(71, 85, 105, 0.45);
+        }
+
+        [data-theme="dark"] .student-tools-bar,
+        [data-theme="dark"] .student-table-scroll {
+            background: rgba(34, 34, 34, 0.96);
+            border-color: rgba(71, 85, 105, 0.55);
+        }
+
+        [data-theme="dark"] .student-table-container thead th {
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .table-stat-pill,
+        [data-theme="dark"] .table-search-box,
+        [data-theme="dark"] .student-filter-chip {
+            background: rgba(24, 24, 24, 0.96);
+            border-color: rgba(71, 85, 105, 0.58);
+        }
+
+        [data-theme="dark"] .student-density-btn {
+            color: #9bd0ff;
+            border-color: rgba(93, 173, 226, 0.35);
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.2), rgba(41, 128, 185, 0.14));
+        }
+
+        [data-theme="dark"] body {
+            background:
+                radial-gradient(circle at top center, rgba(52, 152, 219, 0.12), transparent 26%),
+                linear-gradient(180deg, #0f1116 0%, #131720 42%, #171b24 100%);
+        }
+
+        [data-theme="dark"] .page-header {
+            background: linear-gradient(135deg, rgba(21, 27, 38, 0.96), rgba(31, 42, 61, 0.92)) !important;
+            border: 1px solid rgba(93, 173, 226, 0.16) !important;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.32) !important;
+        }
+
+        [data-theme="dark"] .page-header .header-title h1,
+        [data-theme="dark"] .page-header .header-title p {
+            color: #e9eef8 !important;
+        }
+
+        [data-theme="dark"] .page-header [data-icon="users"] {
+            background: rgba(93, 173, 226, 0.14) !important;
+            color: #8fd3ff;
+        }
+
+        [data-theme="dark"] .filter-card {
+            background: linear-gradient(180deg, rgba(18, 23, 32, 0.94), rgba(22, 28, 38, 0.98)) !important;
+            border-color: rgba(93, 173, 226, 0.14) !important;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28) !important;
+        }
+
+        [data-theme="dark"] .filter-group {
+            background: rgba(10, 14, 20, 0.78) !important;
+            border-color: rgba(71, 85, 105, 0.78) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+        }
+
+        [data-theme="dark"] .filter-group label,
+        [data-theme="dark"] .filter-group select {
+            color: #e6edf8 !important;
+        }
+
+        [data-theme="dark"] .controls-container {
+            background: transparent !important;
+        }
+
+        [data-theme="dark"] .filter-group {
+            background: linear-gradient(180deg, rgba(37, 45, 58, 0.96), rgba(28, 35, 47, 0.98)) !important;
+            border-color: rgba(120, 144, 175, 0.38) !important;
+        }
+
+        [data-theme="dark"] .filter-group label {
+            color: #dce7f7 !important;
+        }
+
+        [data-theme="dark"] .filter-group select,
+        [data-theme="dark"] #yearSelect,
+        [data-theme="dark"] #trimesterSelect,
+        [data-theme="dark"] #levelSelect,
+        [data-theme="dark"] #streamSelect,
+        [data-theme="dark"] #classSelect {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background: linear-gradient(180deg, rgba(14, 19, 28, 0.98), rgba(19, 25, 35, 0.98)) !important;
+            color: #f3f7ff !important;
+            border: 1px solid rgba(103, 125, 156, 0.55) !important;
+            border-radius: 10px !important;
+            padding: 6px 12px !important;
+            min-height: 36px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .filter-group select:focus,
+        [data-theme="dark"] #yearSelect:focus,
+        [data-theme="dark"] #trimesterSelect:focus,
+        [data-theme="dark"] #levelSelect:focus,
+        [data-theme="dark"] #streamSelect:focus,
+        [data-theme="dark"] #classSelect:focus {
+            border-color: rgba(93, 173, 226, 0.75) !important;
+            box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+            outline: none !important;
+        }
+
+        [data-theme="dark"] .filter-group select option,
+        [data-theme="dark"] #yearSelect option,
+        [data-theme="dark"] #trimesterSelect option,
+        [data-theme="dark"] #levelSelect option,
+        [data-theme="dark"] #streamSelect option,
+        [data-theme="dark"] #classSelect option {
+            background: #151c27;
+            color: #eef4ff;
+        }
+
+        [data-theme="dark"] #classResponsibleContainer {
+            border-top-color: rgba(71, 85, 105, 0.7) !important;
+            color: #7ee0b5 !important;
+        }
+
+        [data-theme="dark"] .theme-toggle-btn {
+            background: linear-gradient(135deg, rgba(16, 20, 30, 0.96), rgba(26, 33, 46, 0.92));
+            border-color: rgba(93, 173, 226, 0.18);
+            color: #edf4ff;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+        }
+
+        [data-theme="dark"] .theme-toggle-btn:hover {
+            background: linear-gradient(135deg, rgba(25, 33, 45, 0.98), rgba(31, 42, 61, 0.96));
+        }
+
+        [data-theme="dark"] body,
+        [data-theme="dark"] .container,
+        [data-theme="dark"] .page-header,
+        [data-theme="dark"] .filter-card,
+        [data-theme="dark"] .distribution-chart-section,
+        [data-theme="dark"] .subject-analysis-section,
+        [data-theme="dark"] .subject-chart-section,
+        [data-theme="dark"] .student-list,
+        [data-theme="dark"] .card,
+        [data-theme="dark"] .card-body,
+        [data-theme="dark"] .modal-content {
+            color: var(--text-main) !important;
+        }
+
+        [data-theme="dark"] .page-header .header-title h1,
+        [data-theme="dark"] .student-list-title h2,
+        [data-theme="dark"] .kpi-value,
+        [data-theme="dark"] .card-header h2,
+        [data-theme="dark"] .data-table th,
+        [data-theme="dark"] .student-table-container thead th,
+        [data-theme="dark"] .student-table-container .sticky-col {
+            color: #ffffff !important;
+            text-shadow: 0 0 1px rgba(255, 255, 255, 0.16);
+        }
+
+        [data-theme="dark"] .page-header .header-title p,
+        [data-theme="dark"] .student-list-title p,
+        [data-theme="dark"] .student-list-hint,
+        [data-theme="dark"] .kpi-title,
+        [data-theme="dark"] .table-search-box,
+        [data-theme="dark"] .table-search-box input,
+        [data-theme="dark"] .table-search-box input::placeholder,
+        [data-theme="dark"] .table-stat-pill,
+        [data-theme="dark"] .student-filter-chip,
+        [data-theme="dark"] .form-label,
+        [data-theme="dark"] .form-select,
+        [data-theme="dark"] .form-control {
+            color: var(--text-secondary) !important;
+        }
+
+        [data-theme="dark"] .data-table td,
+        [data-theme="dark"] .student-table-container tbody td,
+        [data-theme="dark"] .student-table-container tbody th,
+        [data-theme="dark"] .student-empty-state,
+        [data-theme="dark"] #generalStatsBody td,
+        [data-theme="dark"] #subjectStatsBody td,
+        [data-theme="dark"] #gradeDistributionBody td {
+            color: #ffffff !important;
+            border-color: var(--table-border) !important;
+        }
+
+        [data-theme="dark"] .data-table tbody tr:nth-child(even) td {
+            background: var(--table-row-even) !important;
+        }
+
+        [data-theme="dark"] .data-table tbody tr:hover td {
+            background: var(--table-row-hover) !important;
+        }
+
+        [data-theme="dark"] .kpi-card {
+            background: linear-gradient(180deg, rgba(20, 25, 35, 0.98), rgba(16, 20, 29, 0.98)) !important;
+            border-color: rgba(71, 85, 105, 0.52) !important;
+            box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24) !important;
+        }
+
+        [data-theme="dark"] .subject-analysis-clickable-row:hover {
+            box-shadow: inset 0 0 0 9999px rgba(93, 173, 226, 0.08);
+        }
+
+        [data-theme="dark"] .subject-comparison-modal-content {
+            background: linear-gradient(180deg, #151b24 0%, #0f141d 100%);
+            border-color: rgba(93, 173, 226, 0.18);
+            box-shadow: 0 28px 64px rgba(0, 0, 0, 0.45);
+        }
+
+        [data-theme="dark"] .subject-comparison-modal-body {
+            background:
+                radial-gradient(circle at top left, rgba(93, 173, 226, 0.13), transparent 24%),
+                linear-gradient(180deg, #10161f 0%, #0b1118 100%);
+        }
+
+        [data-theme="dark"] .subject-comparison-meta-chip,
+        [data-theme="dark"] .subject-comparison-card,
+        [data-theme="dark"] .subject-comparison-empty {
+            background: rgba(19, 26, 37, 0.94);
+            border-color: rgba(71, 85, 105, 0.55);
+            box-shadow: 0 16px 28px rgba(0, 0, 0, 0.22);
+        }
+
+        [data-theme="dark"] .subject-comparison-meta-chip,
+        [data-theme="dark"] .subject-comparison-legend,
+        [data-theme="dark"] .subject-comparison-count,
+        [data-theme="dark"] .subject-comparison-column-label,
+        [data-theme="dark"] .subject-comparison-empty {
+            color: #cbd5e1;
+        }
+
+        [data-theme="dark"] .subject-comparison-class,
+        [data-theme="dark"] .subject-comparison-column-value {
+            color: #f8fafc;
+        }
+
+        [data-theme="dark"] .subject-comparison-column-track {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.96));
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.03);
+        }
+
+        [data-theme="dark"] .distribution-chart-section,
+        [data-theme="dark"] .subject-analysis-section,
+        [data-theme="dark"] .subject-chart-section,
+        [data-theme="dark"] .student-list,
+        [data-theme="dark"] .card {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28) !important;
+        }
+
+        [data-theme="dark"] .student-table-scroll {
+            background: linear-gradient(180deg, rgba(20, 24, 34, 0.98), rgba(16, 20, 29, 0.98)) !important;
+        }
+
+        [data-theme="dark"] .student-table-container tbody tr:hover {
+            box-shadow: inset 0 0 0 9999px rgba(93, 173, 226, 0.06);
+        }
+
+        [data-theme="dark"] .student-list-hint {
+            color: #c6d3e5;
+        }
+
+        [data-theme="dark"] #studentModal .modal-content,
+        [data-theme="dark"] #councilSettingsModal .modal-content {
+            background: linear-gradient(180deg, #151b24 0%, #0f141d 100%) !important;
+            border-color: rgba(93, 173, 226, 0.18) !important;
+            box-shadow: 0 24px 54px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        [data-theme="dark"] #studentModal .modal-body,
+        [data-theme="dark"] #councilSettingsModal .modal-body,
+        [data-theme="dark"] #councilSettingsModal .modal-footer {
+            background: transparent !important;
+            color: #e8eef8 !important;
+        }
+
+        [data-theme="dark"] #councilSettingsModal input,
+        [data-theme="dark"] #councilSettingsModal textarea {
+            background: rgba(10, 14, 20, 0.86) !important;
+            color: #eef4ff !important;
+            border-color: rgba(71, 85, 105, 0.8) !important;
+        }
+
+        [data-theme="dark"] #councilSettingsModal label,
+        [data-theme="dark"] #councilSettingsModal small,
+        [data-theme="dark"] #councilSettingsModal h4 {
+            color: #f3f7ff !important;
+        }
+
+        /* Selects and inputs */
+        .form-select,
+        .form-control {
+            background-color: var(--bg-page) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        [data-theme="dark"] .form-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23e0e0e0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+        }
+
+        .page-header,
+        .filter-card,
+        .distribution-chart-section,
+        .subject-analysis-section,
+        .subject-chart-section,
+        .card {
+            background-color: var(--bg-card) !important;
+            border-color: var(--border-color) !important;
+            box-shadow: var(--shadow) !important;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            color: var(--text-main) !important;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary) !important;
+        }
+
+        /* Dark mode toggle button styles */
+        .theme-toggle-btn {
+            background: var(--bg-page);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle-btn:hover {
+            background: var(--table-row-hover);
+        }
+
+        /* ===== Responsive: FHD (1920px) ===== */
+        @media (min-width: 1600px) {
+            .kpi-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 18px;
+            }
+
+            .kpi-value {
+                font-size: 2rem;
+            }
+
+            .kpi-icon {
+                width: 65px;
+                height: 65px;
+                font-size: 2.2rem;
+            }
+        }
+
+        /* ===== Responsive: HD (1280px - 1599px) ===== */
+        @media (max-width: 1599px) {
+            .kpi-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+            }
+
+            .kpi-card {
+                padding: 15px;
+                gap: 10px;
+            }
+
+            .kpi-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.6rem;
+            }
+
+            .kpi-title {
+                font-size: 1.2rem;
+            }
+
+            .kpi-value {
+                font-size: 2rem;
+            }
+        }
+
+        /* ===== Responsive: Below HD (1024px - 1279px) ===== */
+        @media (max-width: 1279px) {
+            .kpi-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .kpi-card {
+                padding: 12px;
+                gap: 8px;
+            }
+
+            .kpi-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 1.4rem;
+            }
+
+            .kpi-title {
+                font-size: 1.05rem;
+            }
+
+            .kpi-value {
+                font-size: 1.75rem;
+            }
+
+            body {
+                font-size: 1rem;
+            }
+
+            .header-title h1 {
+                font-size: 1.6rem !important;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px 5px;
+                font-size: 1rem;
+            }
+        }
+
+        /* ===== Responsive: Small screens (<1024px) ===== */
+        @media (max-width: 1023px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .kpi-card {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .kpi-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+
+            .kpi-title {
+                font-size: 1rem;
+            }
+
+            .kpi-value {
+                font-size: 1.55rem;
+            }
+
+            body {
+                font-size: 0.95rem;
+            }
+
+            .header-title h1 {
+                font-size: 1.4rem !important;
+            }
+
+            .data-table th.vertical-col div.vertical-header {
+                height: 90px;
+                font-size: 0.9rem;
+            }
+
+            .student-list-header,
+            .student-tools-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .student-tools-controls,
+            .student-table-meta {
+                width: 100%;
+            }
+
+            .table-search-box {
+                min-width: 100%;
+            }
+
+            .student-table-container .sticky-col {
+                position: static;
+                box-shadow: none;
+            }
+        }
+
+        /* ===== Responsive: Compact / Old Monitors (800x600) ===== */
+        @media (max-width: 850px) {
+            .container {
+                padding: 5px 10px;
+            }
+
+            .page-header {
+                padding: 8px 12px !important;
+                margin-bottom: 10px !important;
+            }
+
+            .header-title h1 {
+                font-size: 1.15rem !important;
+            }
+
+            .theme-toggle-btn {
+                padding: 4px 8px;
+                font-size: 0.85rem;
+            }
+
+            .filter-card {
+                padding: 12px !important;
+                margin-bottom: 15px !important;
+            }
+
+            .controls-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 8px !important;
+            }
+
+            .form-label {
+                font-size: 0.8rem;
+                margin-bottom: 2px !important;
+            }
+
+            .form-select-lg {
+                padding: 4px 8px !important;
+                font-size: 0.85rem !important;
+                height: 32px;
+            }
+
+            #classResponsibleContainer {
+                margin-top: 8px !important;
+                padding-top: 8px !important;
+                font-size: 0.9rem !important;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 6px !important;
+                margin-bottom: 15px !important;
+            }
+
+            .kpi-card {
+                padding: 8px !important;
+                gap: 6px !important;
+                border-radius: 8px !important;
+            }
+
+            .kpi-icon {
+                width: 32px !important;
+                height: 32px !important;
+                font-size: 1.1rem !important;
+                border-radius: 8px !important;
+            }
+
+            .kpi-title {
+                font-size: 0.70rem !important;
+                margin-bottom: 1px !important;
+            }
+
+            .kpi-value {
+                font-size: 1.05rem !important;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 4px !important;
+                font-size: 0.85rem !important;
+            }
+
+            .data-table th.vertical-col div.vertical-header {
+                height: 60px !important;
+                font-size: 0.75rem !important;
+            }
+
+            #subjectAnalysisTable {
+                font-size: 0.9rem !important;
+            }
+
+            #subjectAnalysisTable th,
+            #subjectAnalysisTable td {
+                padding: 4px 2px !important;
+                font-size: 0.85rem !important;
+            }
+
+            .card-header h2 {
+                font-size: 1rem !important;
+            }
+
+            .card-body {
+                padding: 10px !important;
+            }
+        }
+    </style>
+
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => Auth.checkAuth());
+    </script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/tanstack-table-core.production.min.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <!-- Print Header -->
+        <div id="printHeader" style="display: none;"></div>
+
+        <!-- Modern Page Header -->
+        <div class="page-header"
+            style="background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="header-title">
+                <h1
+                    style="margin: 0; font-size: 1.8rem; color: var(--primary-color); display: flex; align-items: center; gap: 10px;">
+                    <span style="background: #e8f6f3; padding: 8px; border-radius: 8px;" data-icon="users">👥</span>
+                    مجالس الأقسام
+                </h1>
+                <p style="margin: 5px 0 0 0; color: #7f8c8d; font-size: 0.95rem;">عرض مخصص لشاشة العرض (Data Show)</p>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button onclick="printClassCouncilReport()" class="theme-toggle-btn" style="background: linear-gradient(135deg, #27ae60, #1e8449); color: white; border: none; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.2);">
+                    <span data-icon="print">🖨️</span>
+                    <span style="font-weight: bold;">طباعة</span>
+                </button>
+                <button id="themeToggle" type="button" class="theme-toggle-btn">
+                    <span data-icon="moon">🌙</span>
+                    <span id="themeToggleText">الوضع الداكن</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Card -->
+        <section class="filter-card"
+            style="background: var(--bg-color); padding: 6px 8px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+            <div class="controls-container"
+                style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: flex-start; direction: rtl;">
+
+                <!-- Year Filter Group -->
+                <div class="filter-group"
+                    style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">📅
+                        السنة:</label>
+                    <select id="yearSelect"
+                        style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 65px;"></select>
+                </div>
+
+                <!-- Trimester Filter Group -->
+                <div class="filter-group"
+                    style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🗓️
+                        الفصل:</label>
+                    <select id="trimesterSelect"
+                        style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none;">
+                        <option value="" selected disabled>--</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="annual">سنوي</option>
+                    </select>
+                </div>
+
+                <!-- Level Filter Group -->
+                <div class="filter-group"
+                    style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🎓
+                        المستوى:</label>
+                    <select id="levelSelect"
+                        style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 45px;"></select>
+                </div>
+
+                <!-- Stream Filter Group -->
+                <div class="filter-group" id="streamGroup"
+                    style="display: none; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">🌿
+                        الشعبة:</label>
+                    <select id="streamSelect"
+                        style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 55px;">
+                        <option value="">-- كل الشعب --</option>
+                    </select>
+                </div>
+
+                <!-- Class Filter Group -->
+                <div class="filter-group"
+                    style="display: flex; align-items: center; gap: 3px; background: var(--card-bg); padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <label
+                        style="font-weight: 700; color: var(--primary-color); font-size: 0.72rem; margin: 0; white-space: nowrap;">👥
+                        القسم:</label>
+                    <select id="classSelect"
+                        style="border: none; background: transparent; font-size: 0.8rem; color: var(--primary-color); padding: 0; font-weight: 600; cursor: pointer; outline: none; min-width: 45px;"></select>
+                </div>
+
+            </div>
+
+            <!-- Class Advisor Info Inline -->
+            <div id="classResponsibleContainer"
+                style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; display: flex; align-items: center; gap: 10px; color: #27ae60;">
+                <span style="font-size: 1.1rem;" data-icon="teacher">👨‍🏫</span>
+                <span style="font-weight: 700; font-size: 0.85rem;">مسؤول القسم:</span>
+                <span id="classResponsibleDisplay" style="font-weight: bold; font-size: 0.95rem;">-</span>
+            </div>
+            <div id="directedBirthYearQuickPanel"
+                style="display: none; margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid #d8b4fe; background: linear-gradient(135deg, #faf5ff, #f5f3ff);">
+                <div
+                    style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; min-width: 220px; flex: 1 1 220px;">
+                        <strong id="directedBirthYearQuickTitle" style="color: #6b21a8; font-size: 0.92rem;">سنة ميلاد الموجَّهين</strong>
+                        <span id="directedBirthYearQuickNote"
+                            style="color: #7c3aed; font-size: 0.78rem;">تُستخدم لتحديد قرار يوجَّه بدل يعيد.</span>
+                    </div>
+                    <div id="directedBirthYearQuickControls" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span id="directedBirthYearQuickCurrent"
+                            style="padding: 6px 10px; border-radius: 999px; background: rgba(124, 58, 237, 0.12); color: #6b21a8; font-weight: 700; font-size: 0.82rem;">الحالية: -</span>
+                        <input type="number" id="directedBirthYearQuickInput" min="1900" max="2100" step="1"
+                            placeholder="مثال: 2010"
+                            style="width: 96px; padding: 8px 10px; border: 1px solid #c4b5fd; border-radius: 8px; background: white; color: #4c1d95; font-weight: 700; outline: none;">
+                        <button type="button" onclick="saveDirectedBirthYearQuickSetting()"
+                            style="padding: 8px 14px; border: none; border-radius: 8px; background: #7c3aed; color: white; font-weight: 700; cursor: pointer;">حفظ</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- KPI Cards Section -->
+        <section class="kpi-cards animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="kpi-grid">
+                <!-- Row 1 -->
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-blue" data-icon="users">👥</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">العدد الكلي</h4>
+                        <p class="kpi-value" id="kpi-total">0</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-lightblue" data-icon="male">👦</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">الذكور</h4>
+                        <p class="kpi-value" id="kpi-male">0</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-pink" data-icon="female">👧</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">الإناث</h4>
+                        <p class="kpi-value" id="kpi-female">0</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-purple" data-icon="chart">📈</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">معدل القسم</h4>
+                        <p class="kpi-value" id="kpi-class-avg">0.00</p>
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-gold" data-icon="trophy">🏆</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">أعلى معدل</h4>
+                        <p class="kpi-value" id="kpi-highest">0.00</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-orange" data-icon="notice1">⚠️</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">أدنى معدل</h4>
+                        <p class="kpi-value" id="kpi-lowest">0.00</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-green" data-icon="success">✅</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">نسبة النجاح (≥ 10)</h4>
+                        <p class="kpi-value" id="kpi-success">0%</p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-red" data-icon="close">❌</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">نسبة الإخفاق (< 10)</h4>
+                                <p class="kpi-value" id="kpi-fail">0%</p>
+                    </div>
+                </div>
+
+                <!-- Row 3: Honor Awards -->
+                <div class="kpi-card" style="border-right: 3px solid #e74c3c;">
+                    <div class="kpi-icon"
+                        style="background: linear-gradient(135deg, #e74c3c, #c0392b); box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);"
+                        data-icon="trophy">🏅</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">امتياز</h4>
+                        <p class="kpi-value" id="kpi-excellence" style="color:#e74c3c;">0</p>
+                    </div>
+                </div>
+                <div class="kpi-card" style="border-right: 3px solid #8e44ad;">
+                    <div class="kpi-icon"
+                        style="background: linear-gradient(135deg, #9b59b6, #8e44ad); box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3);"
+                        data-icon="star">⭐</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">تهنئة</h4>
+                        <p class="kpi-value" id="kpi-congratulations" style="color:#8e44ad;">0</p>
+                    </div>
+                </div>
+                <div class="kpi-card" style="border-right: 3px solid #2980b9;">
+                    <div class="kpi-icon"
+                        style="background: linear-gradient(135deg, #3498db, #2980b9); box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3);"
+                        data-icon="sparkles">✨</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">تشجيع</h4>
+                        <p class="kpi-value" id="kpi-encouragement" style="color:#2980b9;">0</p>
+                    </div>
+                </div>
+                <div class="kpi-card" style="border-right: 3px solid #f39c12;">
+                    <div class="kpi-icon"
+                        style="background: linear-gradient(135deg, #f1c40f, #f39c12); box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);"
+                        data-icon="award">🎖️</div>
+                    <div class="kpi-content">
+                        <h4 class="kpi-title">لوحة شرف</h4>
+                        <p class="kpi-value" id="kpi-honor" style="color:#f39c12;">0</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Averages Distribution Chart Section -->
+        <section class="distribution-chart-section animate-fade-in-up"
+            style="animation-delay: 0.2s; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); margin-bottom: 25px;">
+            <h3
+                style="margin-top: 0; color: var(--primary-color); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span data-icon="chart">📊</span> توزيع معدلات القسم
+            </h3>
+            <div style="position: relative; height: 100%; min-height: 250px; width: 100%;">
+                <canvas id="averageDistributionChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Subject Analysis Section -->
+        <section class="subject-analysis-section animate-fade-in-up"
+            style="animation-delay: 0.3s; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); margin-bottom: 25px;">
+            <h3
+                style="margin-top: 0; color: var(--primary-color); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span data-icon="book">📚</span> تحليل حسب المواد
+                </div>
+                <input type="checkbox" id="toggleTestSuccessCol" style="display:none;" checked>
+                <div class="test-success-toggle-wrapper active" id="testSuccessToggleBtn"
+                    onclick="toggleTestSuccessColumn()">
+                    <span class="toggle-icon">📊</span>
+                    <span class="toggle-label">نسبة نجاح الاختبار</span>
+                    <div class="toggle-track">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                </div>
+            </h3>
+            <div class="subject-analysis-hint">اضغط على أي مادة لعرض مقارنة الأقسام في المستوى الحالي حسب نسبة النجاح ومعدل المادة.</div>
+            <div class="data-table-container">
+                <table class="data-table" id="subjectAnalysisTable">
+                    <thead>
+                        <tr>
+                            <th>المادة</th>
+                            <th>معدل المادة</th>
+                            <th>أعلى علامة</th>
+                            <th>أدنى علامة</th>
+                            <th>ناجحون (≥10)</th>
+                            <th>راسبون (&lt;10)</th>
+                            <th id="subjectPrevRateHeader" style="display:none;">نسبة الفصل السابق</th>
+                            <th>نسبة النجاح</th>
+                            <th id="subjectTestSuccessRateHeader" class="test-success-col-header">الإختبار</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subjectAnalysisBody">
+                        <!-- JS will populate -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="subject-chart-section animate-fade-in-up"
+            style="animation-delay: 0.4s; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); margin-bottom: 25px;">
+            <h3
+                style="margin-top: 0; color: var(--primary-color); border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <span data-icon="chart-bar">📊</span> مخطط نسب النجاح حسب المواد
+            </h3>
+            <div style="position: relative; height: 400px; width: 100%;">
+                <canvas id="subjectSuccessChart"></canvas>
+            </div>
+        </section>
+
+        <section class="dashboard">
+
+            <div class="dashboard-grid">
+                <!-- جدول التعداد العام -->
+                <div class="card">
+                    <h3>التعداد العام</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>الفئة</th>
+                                <th>العدد</th>
+                                <th>ناجحون</th>
+                                <th>راسبون</th>
+                                <th>نسبة النجاح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="generalStatsBody">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+
+                    <!-- جدول إحصائيات القرار (الفصل الثالث فقط) -->
+                    <div id="decisionStatsContainer"
+                        style="display: none; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                        <h4 style="margin-bottom: 5px; color: #8e44ad;">إحصائيات القرارات</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="background-color: #27ae60;">ينتقل</th>
+                                    <th style="background-color: #d35400;">يستدرك</th>
+                                    <th style="background-color: #c0392b;">يعيد</th>
+                                    <th style="background-color: #7f8c8d;">يوجه</th>
+                                </tr>
+                            </thead>
+                            <tbody id="decisionStatsBody">
+                                <!-- JS will populate -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- جدول التعداد حسب المعدل -->
+                <div class="card">
+                    <h3>توزيع المعدلات</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المجال</th>
+                                <th>العدد</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gradeDistributionBody">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- جدول نسبة النجاح حسب المواد -->
+                <div class="card" style="grid-column: span 2;">
+                    <h3>نتائج المواد</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المادة</th>
+                                <th>ناجحون</th>
+                                <th>راسبون</th>
+                                <th>معدل المادة</th>
+                                <th id="prevRateHeader" style="display: none;">نسبة ف1</th>
+                                <th id="currentRateHeader">نسبة النجاح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subjectStatsBody">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- الرسم البياني -->
+            <div class="chart-container" style="margin-top: 20px;">
+                <canvas id="subjectsChart"></canvas>
+            </div>
+
+        </section>
+
+        <div id="classCouncilsStudentSectionRoot"></div>
+
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div id="classCouncilsStudentModalMount"></div>
+
+    <div id="subjectComparisonModal" class="modal-overlay"
+        style="display:none; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.62); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(6px);">
+        <div class="modal-content animate-pop-in subject-comparison-modal-content">
+            <div class="subject-comparison-modal-header">
+                <div class="subject-comparison-modal-title-wrap">
+                    <h3 id="subjectComparisonTitle">مقارنة المادة بين الأقسام</h3>
+                    <p class="subject-comparison-modal-subtitle" id="subjectComparisonSubtitle">المستوى الحالي</p>
+                </div>
+                <button type="button" class="subject-comparison-close" onclick="closeSubjectComparisonModal()">&times;</button>
+            </div>
+            <div class="subject-comparison-modal-body">
+                <div class="subject-comparison-meta" id="subjectComparisonMeta"></div>
+                <div class="subject-comparison-legend">
+                    <span><i style="background: linear-gradient(180deg, #50c878 0%, #1f9d61 100%);"></i> نسبة النجاح</span>
+                    <span><i style="background: linear-gradient(180deg, #5dade2 0%, #2563eb 100%);"></i> معدل المادة / 20</span>
+                </div>
+                <div id="subjectComparisonBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Council Settings Modal -->
+    <div id="councilSettingsModal" class="modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div class="modal-content animate-pop-in"
+            style="background: #fdfdfd; padding: 0; border-radius: 16px; width: 95%; max-width: 650px; max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.25); border: 1px solid var(--border-color);">
+            <!-- Modal Header -->
+            <div class="modal-header"
+                style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 20px 25px; display: flex; justify-content: space-between; align-items: center;">
+                <h3
+                    style="margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 12px; font-weight: 700; color: white !important;">
+                    <span style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 10px;"
+                        data-icon="settings">⚙️</span>
+                    إعدادات محضر مجلس الأقسام
+                </h3>
+                <button onclick="closeCouncilSettings()"
+                    style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">&times;</button>
+            </div>
+
+            <div class="modal-body" style="padding: 25px; overflow-y: auto; max-height: calc(90vh - 140px);">
+
+                <!-- Section 1: Staff & Timing -->
+                <div style="margin-bottom: 25px;">
+                    <h4
+                        style="margin: 0 0 15px 0; color: #34495e; font-size: 1.05rem; display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #3498db;">👤</span> الطاقم الإداري والتوقيت
+                    </h4>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label
+                                style="display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: var(--primary-color);">المدير:</label>
+                            <input type="text" id="councilDirectorInput" placeholder="اسم المدير..."
+                                style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; background: var(--card-bg); transition: all 0.3s; outline: none; border-left: 3px solid #3498db;">
+                        </div>
+                        <div class="form-group">
+                            <label
+                                style="display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: var(--primary-color);">الناظر:</label>
+                            <input type="text" id="councilCensorInput" placeholder="اسم الناظر..."
+                                style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; background: var(--card-bg); transition: all 0.3s; outline: none; border-left: 3px solid #3498db;">
+                        </div>
+                        <div class="form-group">
+                            <label
+                                style="display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: var(--primary-color);">مستشار
+                                التوجيه:</label>
+                            <input type="text" id="councilCounselorInput" placeholder="اسم مستشار التوجيه..."
+                                style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; background: var(--card-bg); transition: all 0.3s; outline: none; border-left: 3px solid #3498db;">
+                        </div>
+                        <div class="form-group">
+                            <label
+                                style="display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: var(--primary-color);">📅
+                                تاريخ الانعقاد:</label>
+                            <input type="text" id="councilDateInput" placeholder="الاثنين 12 مارس 2026"
+                                style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; background: var(--bg-color); transition: all 0.3s; outline: none;">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label
+                                style="display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: var(--primary-color);">🕒
+                                ساعة الانعقاد:</label>
+                            <input type="text" id="councilTimeInput" placeholder="مثال: 10:00 صباحا"
+                                style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; background: var(--bg-color); transition: all 0.3s; outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Agenda -->
+                <div
+                    style="margin-bottom: 25px; background: var(--bg-color); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h4
+                        style="margin: 0 0 12px 0; color: #34495e; font-size: 1.05rem; display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #2980b9;">📝</span> جدول الأعمال
+                    </h4>
+                    <textarea id="councilAgendaInput" rows="4" placeholder="أدخل عناصر جدول الأعمال (عنصر في كل سطر)..."
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.95rem; background: var(--card-bg); resize: vertical; outline: none; line-height: 1.6; transition: border-color 0.2s;"></textarea>
+                    <small style="color: #64748b; display: block; margin-top: 8px; font-style: italic;">* اترك الخانة
+                        فارغة لاستخدام جدول الأعمال الافتراضي.</small>
+                </div>
+
+                <!-- Section 3: Deliberations (المداولات) -->
+                <div>
+                    <h4
+                        style="margin: 0 0 15px 0; color: #34495e; font-size: 1.05rem; display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #27ae60;">✍️</span> نصوص المداولات المخصصة
+                    </h4>
+
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div class="form-group">
+                            <label
+                                style="display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: var(--primary-color);">2
+                                - تشخيص وضعية الانضباط:</label>
+                            <textarea id="councilDelib2Input" rows="2"
+                                style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: var(--card-bg); resize: vertical; outline: none;"></textarea>
+                        </div>
+
+                        <div class="form-group"
+                            style="background: #fffafa; padding: 12px; border-radius: 8px; border: 1px solid #ffebeb;">
+                            <label
+                                style="display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: #b91c1c;">5
+                                - الملاحظات المستخلصة:</label>
+                            <textarea id="councilDelib5Input" rows="3"
+                                style="width: 100%; padding: 10px; border: 1px solid #fecaca; border-radius: 8px; font-size: 0.9rem; background: var(--card-bg); resize: vertical; outline: none;"></textarea>
+                            <small style="color: #991b1b; display: block; margin-top: 5px; font-size: 11px;">* يتم تضيق
+                                النطاق الرقمي آليا (مثل 0-9.99).</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                style="display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; color: var(--primary-color);">6
+                                - دراسة التوجيه التدريجي:</label>
+                            <textarea id="councilDelib6Input" rows="2"
+                                style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: var(--card-bg); resize: vertical; outline: none;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer"
+                style="padding: 20px 25px; background: var(--bg-color); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; border-radius: 0 0 16px 16px; flex-shrink: 0;">
+                <button onclick="closeCouncilSettings()"
+                    style="padding: 10px 20px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--card-bg); color: var(--primary-color); cursor: pointer; transition: all 0.2s; font-weight: 600;">إلغاء</button>
+                <button onclick="saveCouncilSettings()"
+                    style="padding: 10px 30px; border: none; border-radius: 10px; background: #27ae60; color: white; cursor: pointer; font-weight: bold; transition: all 0.2s; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.25);">حفظ
+                    التغييرات ✅</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../assets/js/signature_helper.js"></script>
+<script src="../../assets/js/subject_manager.js"></script>
+<script src="../../assets/js/exempt_subjects_helper.js"></script>
+    <script src="../../assets/js/darkify.js"></script>
+    <script src="class_councils_sections.js"></script>
+    <script src="class_councils_photo_service.js"></script>
+    <script src="class_councils_student_modal.js"></script>
+    <script src="class_councils_globals.js"></script>
+    <script src="class_councils.js?v=20260530-load-fast"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+    <script src="../../assets/js/fullscreen_toggle.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof IconManager !== 'undefined') IconManager.render();
+        });
+
+        // Trial Mode - Disable level and class selection
+        document.addEventListener('DOMContentLoaded', function () {
+            const user = (typeof Auth !== 'undefined' && Auth.getUser) ? ((typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null) : null;
+            if (typeof Auth !== 'undefined' && Auth.isTrialRestricted && Auth.isTrialRestricted()) {
+                const levelSelect = document.getElementById('levelSelect');
+                const classSelect = document.getElementById('classSelect');
+
+                if (levelSelect) {
+                    levelSelect.disabled = true;
+                    levelSelect.style.opacity = '0.6';
+                    levelSelect.title = 'غير متاح في النسخة التجريبية';
+                }
+                if (classSelect) {
+                    classSelect.disabled = true;
+                    classSelect.style.opacity = '0.6';
+                    classSelect.title = 'غير متاح في النسخة التجريبية';
+                }
+
+                const filterCard = document.querySelector('.filter-card');
+                if (filterCard && !filterCard.querySelector('.trial-warning-box')) {
+                    const w = document.createElement('div');
+                    w.className = 'trial-warning-box';
+                    w.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px;border-radius:8px;margin-bottom:15px;text-align:center;';
+                    w.innerHTML = '🔒 <strong>النسخة التجريبية:</strong> يمكنك عرض نتائج قسم واحد فقط. <a href="subscription.html" style="color:#856404;font-weight:bold;">تفعيل الاشتراك</a>';
+                    filterCard.insertBefore(w, filterCard.firstChild);
+                }
+            }
+        });
+        async function printClassCouncilReport() {
+            const printWindow = window.open('', '_blank');
+            const settings = (typeof DB !== 'undefined' && DB.getSettings) ? await DB.getSettings() : {};
+            const wilaya = settings.wilaya || '.......';
+            const institution = settings.institutionName || '.......';
+            const municipality = settings.municipality || '.......';
+            const schoolYear = settings.schoolYear || '2025/2026';
+            
+            const trimesterSelect = document.getElementById('trimesterSelect');
+            const classSelect = document.getElementById('classSelect');
+            const levelSelect = document.getElementById('levelSelect');
+            const streamSelect = document.getElementById('streamSelect');
+
+            const selectedTrimester = (trimesterSelect && trimesterSelect.selectedIndex >= 0) ? trimesterSelect.options[trimesterSelect.selectedIndex].text : '';
+            const selectedClass = (classSelect && classSelect.selectedIndex >= 0) ? classSelect.options[classSelect.selectedIndex].text : '';
+            const selectedLevel = (levelSelect && levelSelect.selectedIndex >= 0) ? levelSelect.options[levelSelect.selectedIndex].text : '';
+            const selectedStreamVal = (streamSelect) ? streamSelect.value : null;
+            const isSecondary = settings.educationStage === 'secondary';
+            
+            let selectedStreamName = '';
+            if (isSecondary && selectedStreamVal && typeof getStreamName === 'function') {
+                selectedStreamName = getStreamName(selectedStreamVal);
+            }
+
+            // Get Class Supervisor
+            let responsibleName = '..................';
+            if (typeof getClassResponsibleName === 'function') {
+                responsibleName = getClassResponsibleName(levelSelect.value, classSelect.value, selectedStreamVal) || '..................';
+            }
+
+            const today = new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            const headerHtml = `
+                <div class="report-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; font-size: 11pt; font-weight: bold;">
+                    <div style="text-align: right;">
+                        <div>مديرية التربية لولاية ${wilaya}</div>
+                        <div>المؤسسة: ${institution}</div>
+                        <div style="margin-top: 10px; font-size: 10pt;">مسؤول القسم: <span style="font-weight: normal;">${responsibleName}</span></div>
+                    </div>
+                    <div style="text-align: center;">
+                        <h3 style="margin: 1px 0; font-size: 9pt;">الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+                        <h3 style="margin: 1px 0; font-size: 9pt;">وزارة التربية الوطنية</h3>
+                        <div style="margin-top: 5px;">
+                            <h2 style="margin: 0; border: 2px solid #000; padding: 4px 15px; display: inline-block; border-radius: 5px; font-size: 13pt;">
+                                ${selectedLevel} ${selectedStreamName ? ' - ' + selectedStreamName : ''} - قسم: ${selectedClass}
+                            </h2>
+                            <div style="margin-top: 5px; font-size: 11pt;">نتائج الفصل: ${selectedTrimester}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: left;">
+                        <div>البلدية: ${municipality}</div>
+                        <div>السنة الدراسية: ${schoolYear}</div>
+                    </div>
+                </div>
+                <div style="border-bottom: 2px solid #000; margin-bottom: 15px;"></div>
+            `;
+
+            // Extract table 1: Students Detailed Table
+            const detailedTable = document.getElementById('studentsDetailedTable');
+            let detailedHtml = detailedTable ? detailedTable.outerHTML : '';
+            detailedHtml = detailedHtml.replace(/<th(.*?)class="sticky-col(.*?)">/g, '<th$1>');
+            detailedHtml = detailedHtml.replace(/<td(.*?)class="sticky-col(.*?)">/g, '<td$1>');
+
+            // Extract table 2: Subject Analysis Table
+            const subjectTable = document.getElementById('subjectAnalysisTable');
+            let subjectHtml = subjectTable ? subjectTable.outerHTML : '';
+
+            // Extract KPI Dashboard as tables
+            const total = document.getElementById('kpi-total')?.innerText || '0';
+            const male = document.getElementById('kpi-male')?.innerText || '0';
+            const female = document.getElementById('kpi-female')?.innerText || '0';
+            const classAvg = document.getElementById('kpi-class-avg')?.innerText || '0';
+            const successRate = document.getElementById('kpi-success')?.innerText || '0';
+            const failRate = document.getElementById('kpi-fail')?.innerText || '0';
+
+            const highest = document.getElementById('kpi-highest')?.innerText || '0';
+            const lowest = document.getElementById('kpi-lowest')?.innerText || '0';
+            const excellence = document.getElementById('kpi-excellence')?.innerText || '0';
+            const congratulations = document.getElementById('kpi-congratulations')?.innerText || '0';
+            const encouragement = document.getElementById('kpi-encouragement')?.innerText || '0';
+            const honor = document.getElementById('kpi-honor')?.innerText || '0';
+
+            const kpiTableHtml = `
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <table style="margin-bottom: 0;">
+                        <thead>
+                            <tr>
+                                <th>العدد الكلي</th>
+                                <th>الذكور</th>
+                                <th>الإناث</th>
+                                <th>معدل القسم</th>
+                                <th>نسبة النجاح</th>
+                                <th>نسبة الإخفاق</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${total}</td>
+                                <td>${male}</td>
+                                <td>${female}</td>
+                                <td>${classAvg}</td>
+                                <td>${successRate}</td>
+                                <td>${failRate}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table style="margin-bottom: 0;">
+                        <thead>
+                            <tr>
+                                <th>أعلى معدل</th>
+                                <th>أدنى معدل</th>
+                                <th>الامتياز</th>
+                                <th>التهنئة</th>
+                                <th>التشجيع</th>
+                                <th>لوحة شرف</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${highest}</td>
+                                <td>${lowest}</td>
+                                <td>${excellence}</td>
+                                <td>${congratulations}</td>
+                                <td>${encouragement}</td>
+                                <td>${honor}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+             const footerHtml = `
+                <div class="report-footer" style="margin-top: 30px; display: flex; justify-content: space-between; font-weight: bold; page-break-inside: avoid;">
+                    <div class="footer-left">
+                        <div style="margin-bottom: 8px; font-weight: normal;">حرر بـ: ${municipality} في: ${today}</div>
+                        <div style="font-weight: normal; font-size: 14pt;">المدير</div>
+                    </div>
+                </div>
+            `;
+
+            // Toolbar Components
+            const toolbarHead = (typeof PrintToolbarHelper !== 'undefined') ? PrintToolbarHelper.getHeadContent() : '';
+            const toolbarHtml = (typeof PrintToolbarHelper !== 'undefined') ? PrintToolbarHelper.getToolbarHtml() : '';
+            const toolbarScript = (typeof PrintToolbarHelper !== 'undefined') ? PrintToolbarHelper.getScriptHtml() : '';
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>طباعة محضر مجلس القسم</title>
+                    ${toolbarHead}
+                    <style>
+                        @page { size: A4 landscape; margin: 0.8cm; }
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { font-family: 'Tajawal', sans-serif; background: var(--card-bg); -webkit-print-color-adjust: exact; margin: 0; }
+                        .print-page { width: 100%; display: block; padding: 1cm; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9pt; }
+                        th, td { border: 1px solid black !important; padding: 4px; text-align: center; color: var(--primary-color) !important; background: transparent !important; font-weight: normal; }
+                        th { background-color: #f0f0f0 !important; font-weight: bold !important; }
+                        .section-title { font-size: 12pt; font-weight: bold; margin-bottom: 5px; border-right: 5px solid #000; padding-right: 10px; margin-top: 20px; text-align: right; }
+                        
+                        /* Clean up any inline styles on extracted tables */
+                        table [style] { color: var(--primary-color) !important; background: transparent !important; }
+                        .exam-avg-col, .exam-avg-col-cell { display: table-cell; background: transparent !important; color: var(--primary-color) !important; border: 1px solid black !important; }
+                        .vertical-header { writing-mode: vertical-rl; transform: rotate(180deg); height: 90px; text-align: center; margin: auto; }
+                        .sticky-col { position: static !important; box-shadow: none !important; }
+                        .mark-bad, .mark-good, .mark-excellent, .high-score, .low-score { background: transparent !important; color: var(--primary-color) !important; }
+
+                        @media print {
+                            .no-print { display: none !important; }
+                            body { margin: 0; }
+                            .print-page { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${toolbarHtml}
+                    <div class="print-page">
+                        ${headerHtml}
+                        
+                        <div class="section-title">التعداد العام وإحصائيات القسم</div>
+                        ${kpiTableHtml}
+
+                        <div class="section-title">تحليل حسب المواد</div>
+                        ${subjectHtml}
+
+                        <div style="page-break-before: always;"></div>
+                        <div class="section-title">القائمة التفصيلية للتلاميذ</div>
+                        ${detailedHtml}
+                        
+                        ${footerHtml}
+                    </div>
+                    ${toolbarScript}
+                </body>
+                </html>
+            `);
+
+            printWindow.document.close();
+        }
+    </script>
+</body>
+
+</html>
