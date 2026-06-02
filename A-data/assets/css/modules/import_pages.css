@@ -1,0 +1,161 @@
+/* Import Page Styles (Shared) */
+.import-container {
+    max-width: 1200px;
+    width: 95%;
+    margin: 5px auto;
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.file-upload-area {
+    border: 2px dashed var(--secondary-color);
+    padding: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-bottom: 20px;
+}
+
+.file-upload-area:hover {
+    background-color: rgba(var(--secondary-rgb), 0.08);
+}
+
+.file-upload-area p {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+}
+
+#fileInput {
+    display: none;
+}
+
+.btn-select {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: inline-block;
+}
+
+.status-box {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 5px;
+    display: none;
+    text-align: right;
+}
+
+.status-box.success {
+    background-color: rgba(5, 150, 105, 0.1);
+    color: var(--color-success);
+    border: 1px solid rgba(5, 150, 105, 0.22);
+}
+
+.status-box.error {
+    background-color: rgba(var(--accent-rgb), 0.1);
+    color: var(--accent-color);
+    border: 1px solid rgba(var(--accent-rgb), 0.22);
+}
+
+.status-box.info {
+    background-color: rgba(var(--secondary-rgb), 0.1);
+    color: var(--secondary-color);
+    border: 1px solid rgba(var(--secondary-rgb), 0.22);
+}
+
+.log-area {
+    text-align: right;
+    margin-top: 20px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    font-size: 0.9rem;
+    background: var(--surface-3);
+    color: var(--text-color);
+}
+
+.progress-bar {
+    width: 100%;
+    background-color: var(--surface-muted);
+    border-radius: 5px;
+    margin-top: 10px;
+    height: 20px;
+    overflow: hidden;
+    display: none;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--secondary-color);
+    width: 0%;
+    transition: width 0.3s;
+}
+
+/* Modal Inner Styles */
+.modal-icon {
+    font-size: 50px;
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+    text-align: center;
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: var(--heading-color);
+    text-align: center;
+}
+
+.modal-message {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 25px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.btn-modal {
+    padding: 10px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-confirm {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-confirm:hover {
+    background: var(--button-primary-hover-bg);
+    transform: translateY(-2px);
+}
+
+.btn-cancel {
+    background-color: var(--button-soft-bg);
+    color: var(--button-soft-text);
+}
+
+.btn-cancel:hover {
+    background-color: var(--button-soft-hover-bg);
+    transform: translateY(-2px);
+}
+

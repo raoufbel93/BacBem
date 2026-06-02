@@ -1,0 +1,271 @@
+/* Form Styles */
+.form-group {
+    margin-bottom: 10px;
+    text-align: right;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 700;
+    color: var(--heading-color);
+}
+
+.form-input,
+.form-control,
+.form-select,
+input[type="text"],
+input[type="date"],
+input[type="number"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-family: inherit;
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.form-input:focus,
+.form-control:focus,
+.form-select:focus,
+input[type="text"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+    border-color: var(--input-focus) !important;
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    margin: 0 5px;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.btn-icon:hover {
+    transform: scale(1.12);
+}
+
+.btn-icon.edit {
+    color: #f39c12;
+}
+
+.btn-icon.delete {
+    color: #e74c3c;
+}
+
+@media print {
+    @page {
+        margin: 0.5cm;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .print-header {
+        display: block !important;
+    }
+
+    .data-table th,
+    .data-table td {
+        border: 0.5pt solid black !important;
+        font-size: 10pt !important;
+    }
+
+    .data-table-container {
+        overflow: visible !important;
+    }
+
+    .container {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* Legacy and Windows-compatible selectors now tied to theme tokens */
+.controls {
+    background-color: var(--surface-1);
+}
+
+.navbar,
+.dropdown-content {
+    background-color: var(--navbar-bg);
+}
+
+label {
+    color: var(--heading-color);
+    font-weight: 600;
+}
+
+button,
+.btn {
+    border: 1px solid transparent;
+    font-family: inherit;
+}
+
+button:not(.btn-icon),
+.btn:not(.btn-icon) {
+    font-weight: 600;
+}
+
+.card,
+.stat-card,
+.stats-card {
+    border: 1px solid var(--border-color);
+}
+
+.search-filter-row select,
+.search-filter-row input,
+.filter-select,
+.controls-container,
+.filter-container,
+.search-box,
+.filters-section,
+.filter-card,
+.filter-row {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.modal-content,
+.modal-body {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.toast {
+    background: var(--button-primary-bg);
+    color: var(--button-primary-text);
+}
+
+.toast.error {
+    background: linear-gradient(135deg, var(--accent-color), #b91c1c);
+}
+
+thead tr,
+.data-table thead th {
+    background: var(--table-head-bg);
+}
+
+.student-list select,
+.student-list input {
+    min-height: 38px;
+}
+
+::placeholder,
+:-ms-input-placeholder,
+::-ms-input-placeholder {
+    color: var(--input-placeholder);
+    opacity: 1;
+}
+
+details summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 10px;
+    background: var(--surface-3);
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+input[type="date"] {
+    min-width: 150px;
+    padding: 8px 12px !important;
+}
+
+select[style*="border: 1px solid #ddd"],
+input[style*="border: 1px solid #ddd"],
+textarea[style*="border: 1px solid #ddd"],
+div[style*="border: 1px solid #ddd"] {
+    border-color: var(--input-border) !important;
+    border-width: 1px !important;
+}
+
+.filters-section select,
+.filters-section input,
+.filter-card select,
+.filter-card input,
+.control-group select,
+.control-group input {
+    background-color: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--text-color) !important;
+}
+
+select:not([multiple]) {
+    background-color: var(--input-bg);
+}
+
+.btn-primary,
+.btn-success,
+.btn-confirm,
+.btn-select,
+button.btn-primary,
+a.btn-primary {
+    background: var(--button-primary-bg) !important;
+    color: var(--button-primary-text) !important;
+    border-color: transparent !important;
+    box-shadow: var(--button-primary-shadow);
+}
+
+.btn-primary:hover,
+.btn-success:hover,
+.btn-confirm:hover,
+.btn-select:hover,
+button.btn-primary:hover,
+a.btn-primary:hover {
+    background: var(--button-primary-hover-bg) !important;
+    color: var(--button-primary-text) !important;
+}
+
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-cancel,
+.btn-outline,
+.btn-light {
+    background: var(--button-soft-bg) !important;
+    color: var(--button-soft-text) !important;
+    border-color: var(--button-soft-border) !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-cancel:hover,
+.btn-outline:hover,
+.btn-light:hover {
+    background: var(--button-soft-hover-bg) !important;
+    color: var(--heading-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+.btn-danger,
+.btn-reset,
+.btn-outline-danger:hover {
+    background: linear-gradient(135deg, var(--accent-color), #b91c1c) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+}

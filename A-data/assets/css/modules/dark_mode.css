@@ -1,0 +1,475 @@
+/* Central dark mode compatibility layer */
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] body {
+    background: var(--page-gradient) !important;
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+}
+
+html[data-theme="dark"] .container,
+html[data-theme="dark"] .content-wrapper,
+html[data-theme="dark"] .main-content,
+html[data-theme="dark"] .page-content,
+html[data-theme="dark"] .page-container,
+html[data-theme="dark"] .dashboard,
+html[data-theme="dark"] main {
+    color: inherit;
+}
+
+html[data-theme="dark"] .controls,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .stats-card,
+html[data-theme="dark"] .chart-container,
+html[data-theme="dark"] .filters-section,
+html[data-theme="dark"] .filter-card,
+html[data-theme="dark"] .filter-row,
+html[data-theme="dark"] .controls-container,
+html[data-theme="dark"] .filter-container,
+html[data-theme="dark"] .search-box,
+html[data-theme="dark"] .reception-tab,
+html[data-theme="dark"] .tab-content,
+html[data-theme="dark"] .tab-panel,
+html[data-theme="dark"] .form-container,
+html[data-theme="dark"] .dashboard-card,
+html[data-theme="dark"] .gridjs-container.student-table-shell,
+html[data-theme="dark"] .gridjs-wrapper.student-table-wrapper,
+html[data-theme="dark"] .premium-filter-card,
+html[data-theme="dark"] .student-table-summary,
+html[data-theme="dark"] .premium-stats-widget,
+html[data-theme="dark"] .notif-dropdown,
+html[data-theme="dark"] .about-modal-content,
+html[data-theme="dark"] .about-info-card,
+html[data-theme="dark"] .about-body,
+html[data-theme="dark"] .print-toolbar,
+html[data-theme="dark"] .print-toolbar input,
+html[data-theme="dark"] .print-toolbar select,
+html[data-theme="dark"] .main-card,
+html[data-theme="dark"] .table-card,
+html[data-theme="dark"] .data-table-wrapper,
+html[data-theme="dark"] .search-filter-row,
+html[data-theme="dark"] .top-bar,
+html[data-theme="dark"] .tab-pane,
+html[data-theme="dark"] .page-header,
+html[data-theme="dark"] .filters-zone,
+html[data-theme="dark"] .trimester-panel,
+html[data-theme="dark"] .room-inputs-container,
+html[data-theme="dark"] .action-panel,
+html[data-theme="dark"] .list-summary-pill,
+html[data-theme="dark"] .assessment-table,
+html[data-theme="dark"] .teachers-table,
+html[data-theme="dark"] .reception-card,
+html[data-theme="dark"] .responsibility-item,
+html[data-theme="dark"] .nav-tabs-custom {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5,
+html[data-theme="dark"] h6,
+html[data-theme="dark"] .section-title,
+html[data-theme="dark"] .modal-title,
+html[data-theme="dark"] .notif-dropdown-title,
+html[data-theme="dark"] .notif-item-title {
+    color: var(--heading-color) !important;
+}
+
+html[data-theme="dark"] p,
+html[data-theme="dark"] label,
+html[data-theme="dark"] .form-group label,
+html[data-theme="dark"] .control-group label,
+html[data-theme="dark"] .notif-item-body,
+html[data-theme="dark"] .info-text,
+html[data-theme="dark"] .about-desc,
+html[data-theme="dark"] .toolbar-right,
+html[data-theme="dark"] .total-pages,
+html[data-theme="dark"] .trimester-panel-note,
+html[data-theme="dark"] .stat-row {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] .form-input,
+html[data-theme="dark"] .input-group-text,
+html[data-theme="dark"] .search-filter-row input,
+html[data-theme="dark"] .search-filter-row select,
+html[data-theme="dark"] .student-list select,
+html[data-theme="dark"] .student-list input,
+html[data-theme="dark"] .gridjs-search-input,
+html[data-theme="dark"] .search-box input,
+html[data-theme="dark"] .filter-select,
+html[data-theme="dark"] .config-group input,
+html[data-theme="dark"] .config-group select,
+html[data-theme="dark"] .table-toolbar input,
+html[data-theme="dark"] .table-toolbar select,
+html[data-theme="dark"] .trimester-select-wrap select,
+html[data-theme="dark"] .room-input-group input,
+html[data-theme="dark"] .room-select,
+html[data-theme="dark"] .note-input {
+    background: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--input-border) !important;
+}
+
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] select:focus,
+html[data-theme="dark"] textarea:focus,
+html[data-theme="dark"] .form-control:focus,
+html[data-theme="dark"] .form-select:focus,
+html[data-theme="dark"] .form-input:focus {
+    border-color: var(--input-focus) !important;
+    box-shadow: var(--focus-ring) !important;
+}
+
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .bg-light,
+html[data-theme="dark"] .card-header,
+html[data-theme="dark"] .card-header.bg-white,
+html[data-theme="dark"] .card-header.bg-light,
+html[data-theme="dark"] .card-footer.bg-white,
+html[data-theme="dark"] .modal-footer.bg-white,
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .modal-footer,
+html[data-theme="dark"] .dropdown-menu,
+html[data-theme="dark"] .dropdown-content,
+html[data-theme="dark"] .list-group-item,
+html[data-theme="dark"] .notif-dropdown-header,
+html[data-theme="dark"] .notif-item,
+html[data-theme="dark"] .gridjs-pagination,
+html[data-theme="dark"] .gridjs-pages button,
+html[data-theme="dark"] .table-responsive,
+html[data-theme="dark"] .badge.bg-light,
+html[data-theme="dark"] .gridjs-wrapper .dropdown-menu.show,
+html[data-theme="dark"] .swal2-popup,
+html[data-theme="dark"] .swal2-html-container,
+html[data-theme="dark"] .modal-buttons {
+    background: var(--surface-3) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] .notif-item.is-read {
+    opacity: 0.65;
+    background: transparent !important;
+}
+
+html[data-theme="dark"] .text-dark,
+html[data-theme="dark"] .text-body,
+html[data-theme="dark"] .text-black {
+    color: var(--text-color) !important;
+}
+
+html[data-theme="dark"] .text-muted,
+html[data-theme="dark"] .gridjs-summary,
+html[data-theme="dark"] .notif-empty-text,
+html[data-theme="dark"] .notif-item-time {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme="dark"] .border,
+html[data-theme="dark"] .border-top,
+html[data-theme="dark"] .border-bottom,
+html[data-theme="dark"] .border-start,
+html[data-theme="dark"] .border-end,
+html[data-theme="dark"] .table,
+html[data-theme="dark"] .table > :not(caption) > * > *,
+html[data-theme="dark"] .input-group-text,
+html[data-theme="dark"] .dropdown-divider {
+    border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] table,
+html[data-theme="dark"] .data-table,
+html[data-theme="dark"] .gridjs-table,
+html[data-theme="dark"] .assessment-table,
+html[data-theme="dark"] .teachers-table {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-color);
+    --bs-table-border-color: var(--border-color);
+    --bs-table-striped-bg: transparent;
+    --bs-table-striped-color: var(--text-color);
+    --bs-table-hover-bg: transparent;
+    --bs-table-hover-color: var(--text-color);
+    --bs-table-accent-bg: transparent;
+    --bs-card-bg: var(--card-bg);
+    --bs-card-cap-bg: var(--surface-3);
+    --bs-card-border-color: var(--border-color);
+    --bs-body-bg: var(--bg-color);
+    --bs-body-color: var(--text-color);
+}
+
+html[data-theme="dark"] thead tr,
+html[data-theme="dark"] .data-table thead th,
+html[data-theme="dark"] .gridjs-th,
+html[data-theme="dark"] th,
+html[data-theme="dark"] .assessment-table th,
+html[data-theme="dark"] .teachers-table th,
+html[data-theme="dark"] .gridjs-thead th {
+    background: var(--table-head-bg) !important;
+    color: var(--table-head-text) !important;
+    border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] td,
+html[data-theme="dark"] .data-table tbody td,
+html[data-theme="dark"] .gridjs-td,
+html[data-theme="dark"] .assessment-table td,
+html[data-theme="dark"] .teachers-table td,
+html[data-theme="dark"] .gridjs-tbody td {
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+    background-color: transparent !important;
+}
+
+html[data-theme="dark"] tbody tr:nth-child(even),
+html[data-theme="dark"] .data-table tbody tr:nth-child(even),
+html[data-theme="dark"] .gridjs-tr:nth-child(even) .gridjs-td,
+html[data-theme="dark"] .teachers-table tbody tr:nth-child(even),
+html[data-theme="dark"] .assessment-table tbody tr:nth-child(even) {
+    background-color: var(--table-row-alt) !important;
+}
+
+html[data-theme="dark"] .data-table tbody tr:nth-child(odd),
+html[data-theme="dark"] .gridjs-tr:nth-child(odd) .gridjs-td,
+html[data-theme="dark"] .teachers-table tbody tr:nth-child(odd),
+html[data-theme="dark"] .assessment-table tbody tr:nth-child(odd) {
+    background-color: rgba(15, 23, 42, 0.96) !important;
+}
+
+html[data-theme="dark"] tbody tr:hover,
+html[data-theme="dark"] tbody tr:hover td,
+html[data-theme="dark"] .data-table tbody tr:hover,
+html[data-theme="dark"] .data-table tbody tr:hover td,
+html[data-theme="dark"] .gridjs-tr:hover .gridjs-td,
+html[data-theme="dark"] .teachers-table tbody tr:hover,
+html[data-theme="dark"] .teachers-table tbody tr:hover td,
+html[data-theme="dark"] .assessment-table tbody tr:hover,
+html[data-theme="dark"] .assessment-table tbody tr:hover td {
+    background-color: var(--table-row-hover) !important;
+}
+
+html[data-theme="dark"] .reserve-row,
+html[data-theme="dark"] .reserve-row td,
+html[data-theme="dark"] .gridjs-tr.reserve-row .gridjs-td {
+    background-color: rgba(245, 158, 11, 0.18) !important;
+}
+
+html[data-theme="dark"] td:first-child,
+html[data-theme="dark"] .gridjs-td:first-child {
+    background-color: var(--table-cell-highlight) !important;
+}
+
+html[data-theme="dark"] .btn-outline-secondary,
+html[data-theme="dark"] .btn-outline-info,
+html[data-theme="dark"] .btn-outline-warning,
+html[data-theme="dark"] .btn-outline-danger,
+html[data-theme="dark"] .btn-outline-primary,
+html[data-theme="dark"] .btn-outline-success {
+    background: var(--surface-3) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] .btn-outline-secondary:hover,
+html[data-theme="dark"] .btn-outline-info:hover,
+html[data-theme="dark"] .btn-outline-warning:hover,
+html[data-theme="dark"] .btn-outline-danger:hover,
+html[data-theme="dark"] .btn-outline-primary:hover,
+html[data-theme="dark"] .btn-outline-success:hover {
+    background: var(--card-hover-bg) !important;
+    color: var(--heading-color) !important;
+}
+
+html[data-theme="dark"] .notif-item:hover,
+html[data-theme="dark"] .notif-item.is-read:hover,
+html[data-theme="dark"] .dropdown-item:hover,
+html[data-theme="dark"] .dropdown-content a:hover {
+    background: var(--card-hover-bg) !important;
+}
+
+html[data-theme="dark"] .swal2-title,
+html[data-theme="dark"] .modal-header h2,
+html[data-theme="dark"] .modal-header h3 {
+    color: var(--heading-color) !important;
+}
+
+html[data-theme="dark"] ::placeholder,
+html[data-theme="dark"] :-ms-input-placeholder,
+html[data-theme="dark"] ::-ms-input-placeholder {
+    color: var(--input-placeholder) !important;
+    opacity: 0.8;
+}
+
+html[data-theme="dark"] details summary {
+    background-color: var(--surface-3) !important;
+    color: var(--text-color) !important;
+}
+
+html[data-theme="dark"] .gridjs-container,
+html[data-theme="dark"] .data-table-wrapper {
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+html[data-theme="dark"] .gridjs-wrapper {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(11, 18, 32, 0.95)) !important;
+    border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] .gridjs-search,
+html[data-theme="dark"] .search-box,
+html[data-theme="dark"] .student-table-search {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)) !important;
+    border: 1px solid rgba(96, 165, 250, 0.22) !important;
+    color: var(--text-color) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 12px 24px rgba(2, 6, 23, 0.24) !important;
+}
+
+html[data-theme="dark"] .gridjs-search input,
+html[data-theme="dark"] .search-box input,
+html[data-theme="dark"] .student-table-search input {
+    background: transparent !important;
+    color: var(--text-color) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+html[data-theme="dark"] .gridjs-search input::placeholder,
+html[data-theme="dark"] .search-box input::placeholder,
+html[data-theme="dark"] .student-table-search input::placeholder {
+    color: var(--text-soft) !important;
+}
+
+html[data-theme="dark"] .page-header,
+html[data-theme="dark"] .dashboard-header {
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="dark"] .nav-tabs-custom .nav-link {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme="dark"] .nav-tabs-custom .nav-link.active {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    color: #ffffff !important;
+}
+
+/* Inline-style compatibility for legacy pages */
+html[data-theme="dark"] [style*="background: white"],
+html[data-theme="dark"] [style*="background:white"],
+html[data-theme="dark"] [style*="background: #fff"],
+html[data-theme="dark"] [style*="background:#fff"],
+html[data-theme="dark"] [style*="background: #ffffff"],
+html[data-theme="dark"] [style*="background:#ffffff"],
+html[data-theme="dark"] [style*="background-color: white"],
+html[data-theme="dark"] [style*="background-color:white"],
+html[data-theme="dark"] [style*="background-color: #fff"],
+html[data-theme="dark"] [style*="background-color:#fff"],
+html[data-theme="dark"] [style*="background-color: #ffffff"],
+html[data-theme="dark"] [style*="background-color:#ffffff"],
+html[data-theme="dark"] [style*="background: #f8fafc"],
+html[data-theme="dark"] [style*="background:#f8fafc"],
+html[data-theme="dark"] [style*="background-color: #f8fafc"],
+html[data-theme="dark"] [style*="background: #fbfcfe"],
+html[data-theme="dark"] [style*="background:#fbfcfe"],
+html[data-theme="dark"] [style*="background: #fdfdff"],
+html[data-theme="dark"] [style*="background:#fdfdff"],
+html[data-theme="dark"] [style*="background: #f1f5f9"],
+html[data-theme="dark"] [style*="background:#f1f5f9"],
+html[data-theme="dark"] [style*="background: #edf2f7"],
+html[data-theme="dark"] [style*="background:#edf2f7"],
+html[data-theme="dark"] [style*="background: #ecf0f1"],
+html[data-theme="dark"] [style*="background:#ecf0f1"],
+html[data-theme="dark"] [style*="background: #f2f4f4"],
+html[data-theme="dark"] [style*="background:#f2f4f4"] {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+html[data-theme="dark"] [style*="background: #eff6ff"],
+html[data-theme="dark"] [style*="background:#eff6ff"],
+html[data-theme="dark"] [style*="background: #dbeafe"],
+html[data-theme="dark"] [style*="background:#dbeafe"],
+html[data-theme="dark"] [style*="background-color: #eff6ff"],
+html[data-theme="dark"] [style*="background-color:#eff6ff"] {
+    background: var(--surface-info) !important;
+    border-color: rgba(96, 165, 250, 0.24) !important;
+}
+
+html[data-theme="dark"] [style*="background: #fffbeb"],
+html[data-theme="dark"] [style*="background:#fffbeb"],
+html[data-theme="dark"] [style*="background: #fff8f0"],
+html[data-theme="dark"] [style*="background:#fff8f0"],
+html[data-theme="dark"] [style*="background: #fde68a"],
+html[data-theme="dark"] [style*="background:#fde68a"] {
+    background: var(--surface-warning) !important;
+    border-color: rgba(245, 158, 11, 0.24) !important;
+}
+
+html[data-theme="dark"] [style*="background: #f0fdf4"],
+html[data-theme="dark"] [style*="background:#f0fdf4"],
+html[data-theme="dark"] [style*="background: #dcfce7"],
+html[data-theme="dark"] [style*="background:#dcfce7"] {
+    background: var(--surface-success) !important;
+    border-color: rgba(16, 185, 129, 0.24) !important;
+}
+
+html[data-theme="dark"] [style*="color: #333"],
+html[data-theme="dark"] [style*="color:#333"],
+html[data-theme="dark"] [style*="color: #1e293b"],
+html[data-theme="dark"] [style*="color:#1e293b"],
+html[data-theme="dark"] [style*="color: #2c3e50"],
+html[data-theme="dark"] [style*="color:#2c3e50"],
+html[data-theme="dark"] [style*="color: #2d3748"],
+html[data-theme="dark"] [style*="color:#2d3748"],
+html[data-theme="dark"] [style*="color: #334155"],
+html[data-theme="dark"] [style*="color:#334155"],
+html[data-theme="dark"] [style*="color: #374151"],
+html[data-theme="dark"] [style*="color:#374151"],
+html[data-theme="dark"] [style*="color: #475569"],
+html[data-theme="dark"] [style*="color:#475569"],
+html[data-theme="dark"] [style*="color: #4a5568"],
+html[data-theme="dark"] [style*="color:#4a5568"] {
+    color: var(--text-color) !important;
+}
+
+html[data-theme="dark"] [style*="color: #64748b"],
+html[data-theme="dark"] [style*="color:#64748b"],
+html[data-theme="dark"] [style*="color: #6b7280"],
+html[data-theme="dark"] [style*="color:#6b7280"],
+html[data-theme="dark"] [style*="color: #94a3b8"],
+html[data-theme="dark"] [style*="color:#94a3b8"] {
+    color: var(--text-muted) !important;
+}
+
+html[data-theme="dark"] [style*="border: 1px solid #cbd5e1"],
+html[data-theme="dark"] [style*="border:1px solid #cbd5e1"],
+html[data-theme="dark"] [style*="border: 1px solid #dbeafe"],
+html[data-theme="dark"] [style*="border:1px solid #dbeafe"],
+html[data-theme="dark"] [style*="border: 1px solid #edf2f7"],
+html[data-theme="dark"] [style*="border:1px solid #edf2f7"],
+html[data-theme="dark"] [style*="border: 1px solid #e2e8f0"],
+html[data-theme="dark"] [style*="border:1px solid #e2e8f0"],
+html[data-theme="dark"] [style*="border-color: #cbd5e1"],
+html[data-theme="dark"] [style*="border-color:#cbd5e1"],
+html[data-theme="dark"] [style*="border-color: #e2e8f0"],
+html[data-theme="dark"] [style*="border-color:#e2e8f0"],
+html[data-theme="dark"] [style*="border-color: #edf2f7"],
+html[data-theme="dark"] [style*="border-color:#edf2f7"] {
+    border-color: var(--border-color) !important;
+}

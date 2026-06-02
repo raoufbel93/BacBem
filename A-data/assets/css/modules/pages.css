@@ -1,0 +1,171 @@
+/* Class Analysis Page Styles */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.honor-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.honor-card {
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+    border-top: 3px solid var(--secondary-color);
+    border-right: 1px solid var(--border-color);
+    border-left: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    transition: transform 0.2s;
+}
+
+.honor-card:hover {
+    transform: translateY(-5px);
+}
+
+.honor-card.excellence {
+    border-color: #f1c40f;
+}
+
+/* Gold */
+.honor-card.congrats {
+    border-color: #bdc3c7;
+}
+
+/* Silver */
+.honor-card.encouragement {
+    border-color: #cd7f32;
+}
+
+/* Bronze */
+
+.low-score {
+    color: #991b1b;
+    font-weight: bold;
+}
+
+.high-score {
+    color: #166534;
+    font-weight: bold;
+}
+
+.data-table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9rem;
+    background: var(--card-bg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.data-table th,
+.data-table td {
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.dashboard .data-table th,
+.dashboard .data-table td {
+    font-size: 1.3rem;
+}
+
+.data-table thead th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-clip: padding-box;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Standardized width used across all data tables */
+.data-table-container {
+    overflow-x: auto;
+}
+
+.student-list .data-table thead th {
+    background-color: var(--primary-color);
+}
+
+.student-list .data-table td {
+    font-size: 0.9rem !important;
+    padding: 5px 6px;
+}
+
+.data-table tr:nth-child(even) {
+    background-color: var(--table-row-alt);
+}
+
+.data-table tr:hover {
+    background-color: var(--table-row-hover);
+}
+
+/* Specific hover scaling for Detailed Student List */
+.student-list .data-table tr {
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.student-list .data-table tr:hover {
+    transform: scale(1.005);
+    background-color: var(--table-row-hover);
+    z-index: 10;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+}
+
+.student-list .data-table th {
+    font-size: 0.8rem !important;
+    /* Reduced header font size */
+    padding: 8px 4px;
+}
+
+.student-list .data-table td {
+    padding: 6px 4px !important;
+    /* Reduced padding for compact rows */
+    font-size: 0.75rem;
+    /* Slightly smaller font */
+}
+
+/* Vertical Headers for Subjects */
+.vertical-header {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    padding: 5px 2px;
+    font-size: 13px;
+    margin: 0 auto;
+    width: 25px;
+    /* Fixed width for the vertical container helps align */
+}
+
+.data-table th.vertical-col {
+    padding: 2px;
+    vertical-align: bottom;
+    min-height: 80px;
+    height: 80px;
+    width: 35px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure tbody starts below header and first row is visible */
+.data-table tbody tr:first-child td {
+    padding-top: 10px;
+}
+

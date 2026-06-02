@@ -1,0 +1,115 @@
+/* --- Grid.js Custom Overrides --- */
+.gridjs-container {
+    font-family: 'Cairo', sans-serif !important;
+    color: var(--text-color);
+    width: 100%;
+}
+
+.gridjs-search {
+    width: 100%;
+    margin-bottom: 15px;
+    float: right;
+}
+
+.gridjs-search-input {
+    width: 100% !important;
+    max-width: 400px;
+    padding: 12px 15px !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--input-border) !important;
+    font-size: 1rem !important;
+    font-family: inherit !important;
+    background: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    text-align: right;
+    direction: rtl;
+}
+
+.gridjs-search-input:focus {
+    outline: none !important;
+    border-color: var(--input-focus) !important;
+    box-shadow: var(--focus-ring) !important;
+}
+
+.gridjs-th {
+    background: var(--table-head-bg) !important;
+    color: var(--table-head-text) !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    padding: 12px 8px !important;
+    border: none !important;
+}
+
+.gridjs-wrapper,
+.gridjs-table,
+.gridjs-thead,
+.gridjs-th {
+    z-index: 1 !important;
+    position: relative;
+}
+
+.gridjs-th-content {
+    display: inline-block;
+    width: 100%;
+}
+
+.gridjs-td {
+    text-align: center !important;
+    padding: 12px 8px !important;
+    vertical-align: middle !important;
+    border: 1px solid var(--border-color) !important;
+    background-color: transparent !important;
+    color: var(--text-color) !important;
+}
+
+.gridjs-tr {
+    transition: background-color 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+.gridjs-tr:hover .gridjs-td {
+    background-color: var(--table-row-hover) !important;
+    transform: scale(1.002);
+}
+
+.gridjs-pagination {
+    background: var(--card-bg);
+    padding: 15px !important;
+    border-top: 1px solid var(--border-color);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    direction: ltr;
+}
+
+.gridjs-pages button {
+    border-radius: var(--radius-sm) !important;
+    margin: 0 3px !important;
+    font-weight: 600 !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-color) !important;
+    transition: all 0.2s ease;
+    background-color: var(--surface-2) !important;
+}
+
+.gridjs-pages button:hover {
+    background-color: var(--secondary-color) !important;
+    color: #ffffff !important;
+    border-color: var(--secondary-color) !important;
+}
+
+.gridjs-pages button.gridjs-currentPage {
+    background-color: var(--primary-color) !important;
+    color: #ffffff !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: var(--shadow-sm);
+}
+
+.gridjs-summary {
+    color: var(--text-muted) !important;
+    font-weight: 600;
+}

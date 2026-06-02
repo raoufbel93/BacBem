@@ -1,0 +1,217 @@
+:root[data-theme-preset] #navbar-container .navbar,
+:root[data-theme-preset] .navbar {
+    background: var(--navbar-bg-gradient) !important;
+    background-color: var(--navbar-bg) !important;
+    border-color: var(--navbar-hover-border) !important;
+}
+
+:root[data-theme-preset] .navbar .nav-links li a:hover,
+:root[data-theme-preset] .theme-toggle-nav:hover,
+:root[data-theme-preset] .dropdown-submenu-toggle:hover {
+    background: var(--navbar-hover-bg) !important;
+    border-color: var(--navbar-hover-border) !important;
+    color: var(--navbar-hover-color) !important;
+}
+
+:root[data-theme-preset] .navbar .nav-links li a.active,
+:root[data-theme-preset] .navbar .nav-links li a.active:hover {
+    background: var(--navbar-active-bg) !important;
+    border-color: var(--navbar-active-border) !important;
+    box-shadow: var(--navbar-active-shadow) !important;
+}
+
+:root[data-theme-preset] .navbar .nav-links .dropdown-content,
+:root[data-theme-preset] .dropdown-submenu-content,
+:root[data-theme-preset] .dropdown-menu,
+:root[data-theme-preset] .swal2-popup,
+:root[data-theme-preset] .modal-content,
+:root[data-theme-preset] .modal-header,
+:root[data-theme-preset] .modal-footer,
+:root[data-theme-preset] .card,
+:root[data-theme-preset] .settings-card,
+:root[data-theme-preset] .stats-card,
+:root[data-theme-preset] .stat-card,
+:root[data-theme-preset] .chart-container,
+:root[data-theme-preset] .chart-box,
+:root[data-theme-preset] .filter-card,
+:root[data-theme-preset] .filters-section,
+:root[data-theme-preset] .filter-row,
+:root[data-theme-preset] .controls-container,
+:root[data-theme-preset] .search-box,
+:root[data-theme-preset] .import-container,
+:root[data-theme-preset] .log-area,
+:root[data-theme-preset] .status-box,
+:root[data-theme-preset] .student-table-summary,
+:root[data-theme-preset] .premium-filter-card,
+:root[data-theme-preset] .premium-stats-widget,
+:root[data-theme-preset] .list-group-item,
+:root[data-theme-preset] .notif-dropdown,
+:root[data-theme-preset] .notif-item,
+:root[data-theme-preset] .about-modal-content,
+:root[data-theme-preset] .about-info-card,
+:root[data-theme-preset] .about-body {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+:root[data-theme-preset] .navbar .nav-links .dropdown-content,
+:root[data-theme-preset] .dropdown-submenu-content {
+    background: var(--navbar-dropdown-bg) !important;
+}
+
+:root[data-theme-preset] .navbar .nav-links .dropdown-content a,
+:root[data-theme-preset] .dropdown-submenu-toggle,
+:root[data-theme-preset] .dropdown-submenu-content a {
+    color: var(--navbar-dropdown-link) !important;
+}
+
+:root[data-theme-preset] .navbar .nav-links .dropdown-content a:hover,
+:root[data-theme-preset] .dropdown-submenu-content a:hover,
+:root[data-theme-preset] .dropdown-submenu-toggle.active {
+    background: var(--navbar-dropdown-hover-bg) !important;
+    color: var(--navbar-dropdown-hover-color) !important;
+}
+
+:root[data-theme-preset] .dropdown-content a.active,
+:root[data-theme-preset] .dropdown-submenu-content a.active {
+    background: var(--navbar-dropdown-active-bg) !important;
+    color: var(--navbar-dropdown-active-color) !important;
+}
+
+:root[data-theme-preset] .btn-primary,
+:root[data-theme-preset] .btn-success,
+:root[data-theme-preset] .btn-confirm,
+:root[data-theme-preset] .btn-select,
+:root[data-theme-preset] .btn-analyze,
+:root[data-theme-preset] button.btn-primary,
+:root[data-theme-preset] a.btn-primary {
+    background: var(--button-primary-bg) !important;
+    color: var(--button-primary-text) !important;
+    border-color: transparent !important;
+    box-shadow: var(--button-primary-shadow) !important;
+}
+
+:root[data-theme-preset] .btn-primary:hover,
+:root[data-theme-preset] .btn-success:hover,
+:root[data-theme-preset] .btn-confirm:hover,
+:root[data-theme-preset] .btn-select:hover,
+:root[data-theme-preset] .btn-analyze:hover,
+:root[data-theme-preset] button.btn-primary:hover,
+:root[data-theme-preset] a.btn-primary:hover {
+    background: var(--button-primary-hover-bg) !important;
+    color: var(--button-primary-text) !important;
+}
+
+:root[data-theme-preset] .btn-outline,
+:root[data-theme-preset] .btn-outline-primary,
+:root[data-theme-preset] .btn-outline-secondary,
+:root[data-theme-preset] .btn-light,
+:root[data-theme-preset] .btn-cancel {
+    background: var(--button-soft-bg) !important;
+    color: var(--button-soft-text) !important;
+    border-color: var(--button-soft-border) !important;
+}
+
+:root[data-theme-preset] .btn-outline:hover,
+:root[data-theme-preset] .btn-outline-primary:hover,
+:root[data-theme-preset] .btn-outline-secondary:hover,
+:root[data-theme-preset] .btn-light:hover,
+:root[data-theme-preset] .btn-cancel:hover {
+    background: var(--button-soft-hover-bg) !important;
+    color: var(--heading-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+:root[data-theme-preset] .btn-danger,
+:root[data-theme-preset] .btn-reset,
+:root[data-theme-preset] .toast.error {
+    background: linear-gradient(135deg, var(--accent-color), #b91c1c) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+}
+
+:root[data-theme-preset] .toast {
+    background: var(--button-primary-bg) !important;
+    color: var(--button-primary-text) !important;
+}
+
+:root[data-theme-preset] table,
+:root[data-theme-preset] .table,
+:root[data-theme-preset] .data-table,
+:root[data-theme-preset] .gridjs-table,
+:root[data-theme-preset] .assessment-table,
+:root[data-theme-preset] .teachers-table {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+:root[data-theme-preset] table thead tr,
+:root[data-theme-preset] .table thead tr,
+:root[data-theme-preset] .data-table thead tr,
+:root[data-theme-preset] table thead th,
+:root[data-theme-preset] .table thead th,
+:root[data-theme-preset] .data-table thead th,
+:root[data-theme-preset] .gridjs-th,
+:root[data-theme-preset] th {
+    background: var(--table-head-bg) !important;
+    color: var(--table-head-text) !important;
+    border-color: var(--border-color) !important;
+}
+
+:root[data-theme-preset] table td,
+:root[data-theme-preset] .table td,
+:root[data-theme-preset] .data-table td,
+:root[data-theme-preset] .gridjs-td,
+:root[data-theme-preset] td {
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+    background-color: transparent !important;
+}
+
+:root[data-theme-preset] table tbody tr:nth-child(even),
+:root[data-theme-preset] .table tbody tr:nth-child(even),
+:root[data-theme-preset] .data-table tbody tr:nth-child(even),
+:root[data-theme-preset] .gridjs-tr:nth-child(even) .gridjs-td {
+    background: var(--table-row-alt) !important;
+}
+
+:root[data-theme-preset] table tbody tr:hover,
+:root[data-theme-preset] table tbody tr:hover td,
+:root[data-theme-preset] .table tbody tr:hover,
+:root[data-theme-preset] .table tbody tr:hover td,
+:root[data-theme-preset] .data-table tbody tr:hover,
+:root[data-theme-preset] .data-table tbody tr:hover td,
+:root[data-theme-preset] .gridjs-tr:hover .gridjs-td {
+    background: var(--table-row-hover) !important;
+}
+
+:root[data-theme-preset] table td:first-child,
+:root[data-theme-preset] .table td:first-child,
+:root[data-theme-preset] .data-table td:first-child,
+:root[data-theme-preset] .gridjs-td:first-child {
+    color: var(--primary-color) !important;
+    background: var(--table-cell-highlight) !important;
+}
+
+:root[data-theme-preset] input,
+:root[data-theme-preset] select,
+:root[data-theme-preset] textarea,
+:root[data-theme-preset] .form-control,
+:root[data-theme-preset] .form-select,
+:root[data-theme-preset] .form-input {
+    background: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--input-border) !important;
+}
+
+:root[data-theme-preset] input:focus,
+:root[data-theme-preset] select:focus,
+:root[data-theme-preset] textarea:focus,
+:root[data-theme-preset] .form-control:focus,
+:root[data-theme-preset] .form-select:focus,
+:root[data-theme-preset] .form-input:focus {
+    border-color: var(--input-focus) !important;
+    box-shadow: var(--focus-ring) !important;
+}

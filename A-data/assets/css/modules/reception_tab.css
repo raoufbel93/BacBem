@@ -1,0 +1,96 @@
+/* --- Premium Reception Tab Styles --- */
+.reception-grid-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.reception-card-premium {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.reception-card-premium:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.day-pill {
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-align: center;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Day specific colors */
+.day-sunday {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+/* Amber */
+.day-monday {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+/* Blue */
+.day-tuesday {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Red */
+.day-wednesday {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Green */
+.day-thursday {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+/* Purple */
+
+.time-slot-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s;
+}
+
+.time-slot-box:hover {
+    border-color: #3b82f6;
+    background: white;
+}
+
+.reception-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 30px;
+    border: 2px dashed #cbd5e1;
+}
+
+.reception-empty-state .icon {
+    font-size: 3rem;
+    color: #94a3b8;
+    margin-bottom: 15px;
+}
+

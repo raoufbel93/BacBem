@@ -1,0 +1,116 @@
+/* Print Styles */
+@media print {
+    @page {
+        margin: 0.5cm;
+    }
+
+    .navbar,
+    .controls,
+    .toast-container,
+    .btn-analyze {
+        display: none !important;
+    }
+
+    body {
+        background-color: white !important;
+        padding: 0;
+        margin: 0;
+        font-size: 8pt;
+        /* Global smaller font for print */
+    }
+
+    .container {
+        max-width: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    h1,
+    h2,
+    h3 {
+        margin: 2px 0 !important;
+        font-size: 12pt !important;
+    }
+
+    /* Page 1: Dashboard */
+    .dashboard {
+        page-break-after: always;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        /* Force 2 columns even in print */
+        gap: 5px;
+        margin-bottom: 5px;
+    }
+
+    /* Page 2: Student List */
+    .student-list {
+        page-break-before: always;
+        margin-top: 0 !important;
+    }
+
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #eee !important;
+        margin-bottom: 5px;
+        padding: 5px !important;
+    }
+
+    .data-table {
+        font-size: 8pt !important;
+        /* Smaller text */
+        border: 0.5pt solid black !important;
+        width: 100%;
+        margin-bottom: 5px !important;
+    }
+
+    .data-table th,
+    .data-table td {
+        border: 0.5pt solid black !important;
+        padding: 1px 1px !important;
+        /* Minimum padding */
+    }
+
+    .data-table th {
+        background-color: white !important;
+        color: black !important;
+    }
+
+    .dashboard .data-table th,
+    .dashboard .data-table td {
+        font-size: 8.5pt !important;
+    }
+
+    .chart-container {
+        box-shadow: none !important;
+        height: 180px !important;
+        /* Extremely small chart */
+        border: 1px solid #eee;
+        margin-top: 5px !important;
+        margin-bottom: 5px !important;
+    }
+
+    /* Ensure vertical headers print correctly and compactly */
+    .vertical-header {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        height: 50px;
+        /* Even shorter */
+        font-size: 7pt !important;
+        width: 15px !important;
+    }
+
+    /* Disable sticky headers for print */
+    .data-table thead th {
+        position: static !important;
+        overflow: visible !important;
+    }
+
+    header {
+        margin-bottom: 5px !important;
+    }
+}
+

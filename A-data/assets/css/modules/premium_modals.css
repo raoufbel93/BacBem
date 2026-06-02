@@ -1,0 +1,168 @@
+/* Standardized Premium Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--overlay-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    z-index: 9999 !important;
+    padding: 50px 20px 20px;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    display: flex !important;
+}
+
+.modal-content {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-radius: 24px !important;
+    width: 100%;
+    max-width: 600px;
+    margin: 40px auto;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-float) !important;
+    border: 1px solid var(--border-color) !important;
+    position: relative;
+    padding: 0 !important;
+    z-index: 10000 !important;
+    animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.dropdown-menu,
+.dropdown-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.dropdown-content a {
+    color: var(--text-color) !important;
+}
+
+.dropdown-content a:hover {
+    background-color: var(--surface-3) !important;
+    color: var(--secondary-color) !important;
+}
+
+.stat-card,
+.card,
+.stats-card,
+.tab-content,
+.tab-panel {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.btn,
+button {
+    font-weight: 500;
+}
+
+.input-group select,
+.input-group input,
+.form-control,
+.form-input {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+}
+
+.time-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+    width: 85px;
+}
+
+.time-input-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--input-bg);
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--input-border);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.time-input-group:hover {
+    border-color: var(--input-focus);
+}
+
+.time-label {
+    font-size: 9px;
+    color: var(--text-soft);
+    font-weight: 500;
+    margin-left: 3px;
+}
+
+.time-select {
+    flex: 1;
+    font-size: 11px;
+    color: var(--text-color);
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    direction: ltr;
+}
+
+.time-select::-ms-expand {
+    display: none;
+}
+
+.form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: left 0.75rem center !important;
+    background-size: 16px 12px !important;
+    padding-left: 2.5rem !important;
+    padding-right: 0.75rem !important;
+    text-align: right;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.form-select:hover {
+    border-color: var(--input-focus);
+    background-color: var(--surface-3);
+}
+
+.form-select:focus {
+    border-color: var(--input-focus);
+    box-shadow: var(--focus-ring);
+    background-color: var(--card-bg);
+}
+
+.modal-header .btn-close {
+    margin-left: -0.5rem !important;
+    margin-right: auto !important;
+}
