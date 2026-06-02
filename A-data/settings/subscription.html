@@ -1,0 +1,601 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الاشتراك - نظام إدارة المؤسسة</title>
+    <!-- Bootstrap & FontAwesome (Local) -->
+    <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Outfit:wght@400;600;800&display=swap');
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Cairo', sans-serif !important;
+            padding-top: 80px;
+        }
+
+        .subscription-container {
+            max-width: 1050px;
+            margin: 40px auto;
+            perspective: 1000px;
+        }
+
+        .main-card {
+            background: var(--card-bg);
+            border: none;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.05);
+            overflow: hidden;
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card-header-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            position: relative;
+            color: white;
+            padding: 30px 20px 40px;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .card-header-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+            animation: pulseGlow 8s infinite alternate ease-in-out;
+        }
+
+        .premium-icon {
+            color: #fbbf24;
+            filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.4));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 35px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            margin-top: -25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            background: var(--card-bg);
+            position: relative;
+            z-index: 10;
+        }
+
+        .status-active { color: #10b981; border: 2px solid #10b981; }
+        .status-trial { color: #f59e0b; border: 2px solid #f59e0b; }
+        .status-expired { color: #ef4444; border: 2px solid #ef4444; }
+        .status-pending { color: #64748b; border: 2px solid #64748b; }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(248, 250, 252, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeLeft 0.5s ease-out backwards;
+        }
+
+        .feature-item:hover {
+            transform: translateX(-5px);
+            background: var(--card-bg);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-color: var(--border-color);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: #4f46e5;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.5);
+        }
+
+        .price-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 35px 25px;
+            text-align: center;
+            margin: 0 0 25px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03), inset 0 2px 10px rgba(255,255,255,1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .price-box::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+        }
+
+        .price-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            display: block;
+            line-height: 1.1;
+            margin: 15px 0 10px;
+        }
+
+        .badge-premium {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            color: white;
+            font-weight: 700;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .rip-box {
+            background: #0f172a;
+            color: #10b981;
+            padding: 20px 25px;
+            border-radius: 16px;
+            font-family: 'Outfit', monospace;
+            font-size: 1.5rem;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+        }
+
+        .contact-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .contact-card:hover {
+            border-color: #818cf8;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.12);
+            transform: translateY(-3px);
+        }
+
+        .copy-btn {
+            background: var(--bg-color);
+            color: var(--primary-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-btn:hover { background: #4f46e5; color: white; }
+        .rip-box .copy-btn { background: rgba(255,255,255,0.1); color: white; }
+        .rip-box .copy-btn:hover { background: #10b981; color: white; }
+
+        .btn-check-activation {
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 1.15rem;
+            border: none;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s;
+        }
+
+        .btn-check-activation:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(79, 70, 229, 0.4);
+            color: white;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes pulseGlow {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 0.6; transform: scale(1.1); }
+        }
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(40px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes fadeLeft {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .feature-item:nth-child(2) { animation-delay: 0.1s; }
+        .feature-item:nth-child(3) { animation-delay: 0.2s; }
+        .feature-item:nth-child(4) { animation-delay: 0.3s; }
+        .steps-wrapper .col-md-12:nth-child(1) { animation: slideUpFade 0.5s ease backwards; animation-delay: 0.3s; }
+        .steps-wrapper .col-md-12:nth-child(2) { animation: slideUpFade 0.5s ease backwards; animation-delay: 0.4s; }
+
+        #toastContainer {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../assets/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof IconManager !== 'undefined') IconManager.render();
+        });
+    </script>
+
+    <div class="container subscription-container">
+        <div class="main-card">
+            <div class="card-header-gradient">
+                <i class="fas fa-crown fa-3x mb-3 premium-icon"></i>
+                <h1 class="h3 fw-bold position-relative z-1 mb-2">الباقة الاحترافية لنظام إدارتي</h1>
+                <p class="opacity-75 mb-0 pb-2 position-relative z-1">استثمر في وقتك وقم بتفعيل النظام كاملاً لتحظى بتجربة إدارية استثنائية</p>
+            </div>
+
+            <div class="text-center">
+                <div id="statusBadge" class="status-badge status-pending">
+                    <i class="fas fa-spinner fa-spin"></i> جاري التحقق من حالة الاشتراك...
+                </div>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+
+                <div id="expirationAlert" class="alert alert-danger text-center mb-5 d-none border-0 shadow-sm rounded-4">
+                    <i class="fas fa-exclamation-triangle fa-lg me-2"></i>
+                    <span id="expirationMessage" class="fw-bold">اشتركك الجاري غير فعال. سارع بالتجديد لضمان استمرارية أداء مؤسستك.</span>
+                </div>
+
+                <div class="row g-5 justify-content-center">
+                    <div class="col-lg-6">
+                        <div class="price-box">
+                            <span class="text-muted fw-bold text-uppercase tracking-wider">رسوم الاشتراك السنوي</span>
+                            <span class="price-text">1000 <span class="fs-4 text-muted">دج</span></span>
+                            <span class="badge bg-success-soft text-success px-3 py-2 rounded-pill mt-2 fw-bold"><i class="fas fa-sync me-1"></i> تتضمن كافة التحديثات</span>
+                        </div>
+
+                        <div id="subscriptionDates" class="card bg-light border-0 p-4 mb-4 rounded-4 d-none">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                                <span class="text-secondary fw-semibold">تاريخ التفعيل:</span>
+                                <span id="startDate" class="fw-bold text-dark">-</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-secondary fw-semibold">ينتهي في:</span>
+                                <span id="endDate" class="badge bg-danger rounded-pill px-3 py-1 fs-6">-</span>
+                            </div>
+                        </div>
+
+                        <button id="btnAction" class="btn btn-check-activation w-100" onclick="handleActivationClick()">
+                            <i class="fas fa-shield-check me-2"></i> التحقق من التفعيل الان
+                        </button>
+                    </div>
+                </div>
+
+                <div class="my-5 text-center position-relative">
+                    <hr class="text-muted opacity-25">
+                    <span class="bg-white px-4 position-absolute top-50 start-50 translate-middle text-muted fw-bold">طرق الدفع والتفعيل الميسرة</span>
+                </div>
+
+                <div class="row g-4 steps-wrapper">
+                    <div class="col-md-12">
+                        <div class="card border-0 bg-slate-50 p-4 rounded-4 shadow-sm" style="background: var(--bg-color);">
+                            <h5 class="fw-bold text-dark mb-4"><i class="fas fa-money-check-alt text-primary fa-lg me-2"></i> الخطوة 1: يرجى تحويل المبلغ عبر الحساب البريدي الجاري أو تطبيق بريدي موب</h5>
+                            <div class="rip-box">
+                                <span id="ripText">00799999001750616921</span>
+                                <button class="copy-btn" onclick="copyToClipboard('00799999001750616921', this)">
+                                    <i class="fas fa-copy"></i> نسخ الـ RIP
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <h5 class="fw-bold text-dark mb-4 mt-2"><i class="fas fa-paper-plane text-primary fa-lg me-2"></i> الخطوة 2: إرسال صورة وصل الدفع لمعالجتها وتفعيل باقتك فوراً</h5>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <a href="https://www.facebook.com/profile.php?id=61580202407300" target="_blank" class="text-decoration-none d-block h-100">
+                                    <div class="contact-card h-100">
+                                        <div class="feature-icon flex-shrink-0" style="background: linear-gradient(135deg, #1877f2 0%, #0d5cbf 100%); color: white;">
+                                            <i class="fab fa-facebook-messenger"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="fw-bold text-dark mb-0">رسالة عبر الفايسبوك</h6>
+                                            <span class="small text-muted">إضغط للتوجه المباشر للصفحة</span>
+                                        </div>
+                                        <i class="fas fa-chevron-left text-primary opacity-50 ms-2"></i>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="contact-card h-100">
+                                    <div class="feature-icon flex-shrink-0" style="background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%); color: white;">
+                                        <i class="fas fa-envelope"></i>
+                                    </div>
+                                    <div class="flex-grow-1" style="min-width: 0;">
+                                        <h6 class="fw-bold text-dark mb-0" style="word-break: break-all; font-size: 0.95rem;">benkreddamaamar@gmail.com</h6>
+                                        <span class="small text-muted">عبر البريد الإلكتروني</span>
+                                    </div>
+                                    <button class="copy-btn py-2 px-3 ms-2" onclick="copyToClipboard('benkreddamaamar@gmail.com', this)">
+                                        <i class="fas fa-copy"></i> نسخ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- To get copyToClipboard if globally defined, but we define it here too to be safe/independent -->
+    <script>
+        // Local copyToClipboard if not in index.js or to avoid dependency issues
+        function copyToClipboard(text, btnEl) {
+            if (!navigator.clipboard) {
+                var textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try { document.execCommand('copy'); } catch (err) { }
+                document.body.removeChild(textArea);
+            } else {
+                navigator.clipboard.writeText(text);
+            }
+
+            if (btnEl) {
+                var originalHtml = btnEl.innerHTML;
+                btnEl.innerHTML = '<i class="fas fa-check"></i> تم النسخ';
+                btnEl.classList.add('bg-success', 'text-white');
+                setTimeout(function () {
+                    btnEl.innerHTML = originalHtml;
+                    btnEl.classList.remove('bg-success', 'text-white');
+                }, 2000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check for persistent message
+            var redirectMsg = sessionStorage.getItem('subscriptionMessage');
+            if (redirectMsg) {
+                sessionStorage.removeItem('subscriptionMessage');
+                var alertEl = document.getElementById('expirationAlert');
+                var msgEl = document.getElementById('expirationMessage');
+                if (alertEl && msgEl) {
+                    msgEl.textContent = redirectMsg;
+                    alertEl.classList.remove('d-none');
+                }
+            }
+
+            // FIXED: Use syncStatusWithServer() instead of performStartupChecks().
+            // performStartupChecks() redirects away from this page when expired,
+            // causing an infinite redirect loop. syncStatusWithServer() silently
+            // updates local session without any redirect.
+            if (typeof Auth !== 'undefined') {
+                if (Auth.syncStatusWithServer) {
+                    Auth.syncStatusWithServer();
+                }
+                // Small timeout to allow the async sync to settle before rendering
+                setTimeout(function () {
+                    loadSubscriptionStatus();
+                }, 300);
+            } else {
+                loadSubscriptionStatus();
+            }
+        });
+
+        function loadSubscriptionStatus() {
+            if (typeof Auth === 'undefined' || !Auth.getUser) return;
+
+            var user = Auth.getUser();
+            var statusBadge = document.getElementById('statusBadge');
+            var subDates = document.getElementById('subscriptionDates');
+            var startDateEl = document.getElementById('startDate');
+            var endDateEl = document.getElementById('endDate');
+            var btn = document.getElementById('btnAction');
+
+            if (!user) {
+                statusBadge.innerHTML = '<i class="fas fa-user-slash"></i> غير مسجل';
+                statusBadge.className = 'status-badge status-pending';
+                return;
+            }
+
+            var accessState = (Auth.getAccessState && Auth.getAccessState()) || null;
+            var displayUser = accessState && accessState.user ? accessState.user : user;
+            var daysLeft = accessState ? accessState.daysRemaining : Auth.calculateDaysRemaining();
+            var isActive = accessState ? accessState.isActiveStatus : false;
+            var isExpired = accessState ? accessState.isExpired : (daysLeft !== Auth.DAYS_UNKNOWN && daysLeft <= 0);
+            var isTampered = accessState ? accessState.isTampered : false;
+            var isTrial = accessState ? accessState.isTrial : (displayUser.status === 'trial');
+
+            // Dates — prefer expiresDate from server if available
+            var startDate = Auth.parseDate(displayUser);
+            if (startDate || displayUser.expiresDate) {
+                subDates.classList.remove('d-none');
+
+                if (startDate) {
+                    startDateEl.textContent = startDate.toLocaleDateString('ar-DZ');
+                } else {
+                    startDateEl.textContent = '-';
+                }
+
+                // Use expiresDate from server directly if available (most accurate)
+                if (displayUser.expiresDate) {
+                    var serverExpiry = new Date(displayUser.expiresDate);
+                    if (!isNaN(serverExpiry.getTime())) {
+                        endDateEl.textContent = serverExpiry.toLocaleDateString('ar-DZ');
+                    }
+                } else if (startDate) {
+                    // Fallback: calculate from startDate
+                    var endDate = new Date(startDate);
+                    if (isTrial) {
+                        endDate.setDate(endDate.getDate() + 15);
+                    } else {
+                        endDate.setFullYear(endDate.getFullYear() + 1);
+                    }
+                    endDateEl.textContent = endDate.toLocaleDateString('ar-DZ');
+                }
+
+                // Show days remaining if available
+                if (daysLeft !== Auth.DAYS_UNKNOWN && daysLeft !== Auth.DAYS_TAMPERED && endDateEl) {
+                    var daysText = daysLeft > 0
+                        ? ' (' + daysLeft + ' يوم متبق)'
+                        : ' (منتهي)';
+                    endDateEl.textContent += daysText;
+                }
+            }
+
+            // UI Status
+            if (isTampered) {
+                statusBadge.innerHTML = '<i class="fas fa-clock"></i> راجع ساعة النظام';
+                statusBadge.className = 'status-badge status-expired';
+            } else if (isTrial) {
+                if (!isExpired) {
+                    statusBadge.innerHTML = '<i class="fas fa-clock"></i> فترة تجريبية (' + (daysLeft !== Auth.DAYS_UNKNOWN ? daysLeft + ' يوم' : '') + ')';
+                    statusBadge.className = 'status-badge status-trial';
+                } else {
+                    statusBadge.innerHTML = '<i class="fas fa-times-circle"></i> تجريبية منتهية';
+                    statusBadge.className = 'status-badge status-expired';
+                }
+            } else if (isActive && !isExpired) {
+                var daysDisplay = (daysLeft !== Auth.DAYS_UNKNOWN && daysLeft !== Auth.DAYS_TAMPERED) ? ' - متبق ' + daysLeft + ' يوم' : '';
+                statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> اشتراك مفعّل' + daysDisplay;
+                statusBadge.className = 'status-badge status-active';
+            } else if (isExpired) {
+                statusBadge.innerHTML = '<i class="fas fa-exclamation-circle"></i> اشتراك منتهي';
+                statusBadge.className = 'status-badge status-expired';
+            } else {
+                statusBadge.innerHTML = '<i class="fas fa-hourglass-half"></i> قيد الانتظار';
+                statusBadge.className = 'status-badge status-pending';
+            }
+        }
+
+        function handleActivationClick() {
+            var btn = document.getElementById('btnAction');
+            var originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> جاري التحقق...';
+
+            if (typeof Auth === 'undefined' || !Auth.isActive) {
+                showToast('خطأ في تحميل نظام التحقق. ❌', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return;
+            }
+
+            // FIXED: handleActivationClick uses a safe login check without redirect
+            var user = Auth.getUser();
+
+            if (!user) {
+                showToast('لا توجد جلسة نشطة. يرجى تسجيل الدخول أولاً. ❌', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return;
+            }
+
+            Auth.loadStoredPassword().then(function (pass) {
+                if (!pass) {
+                    showToast('لا توجد جلسة نشطة. يرجى تسجيل الدخول أولاً. ❌', 'danger');
+                    return;
+                }
+
+                return Auth.login(user.email, pass).then(function (json) {
+                    var accessState = Auth.getAccessState ? Auth.getAccessState() : null;
+                    var daysLeft = accessState ? accessState.daysRemaining : Auth.calculateDaysRemaining();
+                    var isTrial = accessState ? accessState.isTrial : false;
+                    var isActive = accessState ? accessState.isActiveStatus : false;
+                    var isExpired = accessState ? accessState.isExpired : false;
+                    var isTampered = accessState ? accessState.isTampered : false;
+
+                    if (json.result !== 'success') {
+                        showToast('خطأ: ' + (json.message || 'فشل الاتصال بالخادم.') + ' ❌', 'danger');
+                    } else if (isTampered) {
+                        showToast('تم اكتشاف خلل في ساعة النظام. يرجى تصحيحها ثم إعادة المحاولة. ⚠️', 'warning');
+                    } else if (isTrial && isExpired) {
+                        showToast('حسابك في الفترة التجريبية وقد انتهت. يرجى تفعيل الاشتراك. ⏳', 'warning');
+                    } else if (isTrial) {
+                        showToast('حسابك في الفترة التجريبية. بعض الميزات مثل الطباعة غير متاحة. يرجى تفعيل الاشتراك. ⏳', 'warning');
+                    } else if (isActive && (daysLeft === Auth.DAYS_UNKNOWN || daysLeft > 0)) {
+                        showToast('تم التحقق! حسابك مفعّل حالياً. ✅', 'success');
+                    } else if (isActive && daysLeft <= 0) {
+                        showToast('تم التحقق، ولكن الاشتراك منتهي الصلاحية. يرجى تجديد الاشتراك. ⚠️', 'warning');
+                    } else {
+                        showToast('الحساب لا يزال بانتظار التفعيل. يرجى إرسال وصل الدفع. ℹ️', 'info');
+                    }
+                    loadSubscriptionStatus();
+                }).catch(function () {
+                    showToast('خطأ في الاتصال بالخادم. ❌', 'danger');
+                });
+            }).finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        }
+
+        function showToast(message, type) {
+            type = type || 'info';
+            var container = document.getElementById('toastContainer');
+            var toast = document.createElement('div');
+            toast.className = 'alert alert-' + type + ' shadow-lg animate-fade-in';
+            toast.style.minWidth = '300px';
+            toast.innerHTML = message;
+            container.appendChild(toast);
+            setTimeout(function () {
+                toast.style.opacity = '0';
+                setTimeout(function () { toast.remove(); }, 500);
+            }, 4000);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استيراد التلاميذ - تحليل النتائج</title>
+    <!-- Hack to force XLSX to load as global variable in Electron -->
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../assets/js/xlsx.full.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <script>
+    </script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script>Auth.checkAuth();</script>
+    <style>
+        /* ===== Import Tabs (Students Page) ===== */
+        .import-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--border-color);
+            max-width: 1200px;
+            width: 95%;
+            margin: 0 auto;
+        }
+        .import-tab-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: 600;
+            font-family: 'Cairo', sans-serif;
+            color: #999;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+        .import-tab-btn:hover { color: var(--secondary-color); background: rgba(52,152,219,0.05); }
+        .import-tab-btn.active { color: var(--secondary-color); border-bottom-color: var(--secondary-color); }
+        .import-tab-btn .tab-badge {
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: bold;
+        }
+        .import-tab-btn.active .tab-badge { background: var(--secondary-color); color: white; }
+        .import-tab-panel { display: none; }
+        .import-tab-panel.active { display: block; }
+        .json-preview-area { margin-top: 15px; text-align: right; display: none; }
+        #jsonFileInput { display: none; }
+        html[data-theme="dark"] .import-tab-btn:hover { background: rgba(52,152,219,0.1); }
+
+        /* Info Note Bar Styles */
+        .info-note-bar {
+            padding: 12px 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: var(--primary-color);
+            text-align: right;
+            border-right: 4px solid var(--secondary-color);
+            background: #e8f4fd;
+        }
+
+        .info-note-bar.purple {
+            background: linear-gradient(135deg, #e8f4fd, #f0e6ff);
+            border-right-color: #8e44ad;
+            margin-bottom: 20px;
+            margin-top: 0;
+        }
+
+        html[data-theme="dark"] .info-note-bar {
+            background: rgba(30, 41, 59, 0.7);
+            color: #94a3b8;
+            border-right-color: #3b82f6;
+        }
+
+        html[data-theme="dark"] .info-note-bar.purple {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(88, 28, 135, 0.2));
+            border-right-color: #a855f7;
+            color: #d8b4fe;
+        }
+
+        html[data-theme="dark"] .info-note-bar.warning {
+            background: rgba(69, 26, 3, 0.2);
+            color: #fbbf24;
+            border-right-color: #f59e0b;
+        }
+
+        html[data-theme="dark"] .filter-group {
+            background: #1e293b !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        html[data-theme="dark"] .file-upload-area {
+            background: rgba(15, 23, 42, 0.5);
+            border-color: #334155;
+        }
+
+        html[data-theme="dark"] .file-upload-area:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: #3b82f6;
+        }
+
+        html[data-theme="dark"] .import-container {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+            color: #e2e8f0 !important;
+        }
+
+        html[data-theme="dark"] .import-tab-btn {
+            color: #94a3b8;
+        }
+
+        html[data-theme="dark"] .import-tab-btn.active {
+            color: #3b82f6;
+        }
+
+        html[data-theme="dark"] .filter-group {
+            background: rgba(15, 23, 42, 0.6) !important;
+            border: 1px solid #334155 !important;
+            box-shadow: none !important;
+        }
+
+        html[data-theme="dark"] .filter-group label {
+            color: #e2e8f0 !important;
+        }
+
+        html[data-theme="dark"] .file-upload-area p:first-child {
+            color: #e2e8f0 !important;
+        }
+
+        html[data-theme="dark"] .sync-stage-card {
+            background: rgba(30, 41, 59, 0.5) !important;
+            border-color: #334155 !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        html[data-theme="dark"] .log-area {
+            background: #020617 !important;
+            border-color: #1e293b !important;
+            color: #94a3b8 !important;
+        }
+
+        html[data-theme="dark"] #folderPathDisplay {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #e2e8f0 !important;
+        }
+
+        html[data-theme="dark"] .forms-hint-text {
+            color: #94a3b8;
+        }
+
+        html[data-theme="dark"] .progress-wrapper {
+            background: rgba(15, 23, 42, 0.6) !important;
+            border-color: #334155 !important;
+        }
+
+        .info-note-bar.warning {
+            border-right-color: #f39c12;
+            background: #fdf8e3;
+            color: #d35400;
+        }
+
+        #folderPathDisplay {
+            background: var(--card-bg, #f9f9f9);
+            color: var(--primary-color, #333);
+        }
+
+        .forms-hint-text {
+            font-size: 0.85rem;
+            color: var(--text-muted, #666);
+            margin-top: 5px;
+        }
+
+        #btnCancelDownload {
+            display: none;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        #btnCancelDownload:hover { opacity: 0.85; }
+
+        .forms-summary-box {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            font-weight: bold;
+        }
+        .forms-summary-box .summary-success { color: #2ecc71; }
+        .forms-summary-box .summary-fail { color: #e74c3c; }
+        .forms-summary-box .summary-skip { color: #f39c12; }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <header>
+            <h1><span data-icon="upload"></span> استيراد قائمة التلاميذ</h1>
+            <p>رفع ملفات القوائم الاسمية لتحديث قاعدة بيانات التلاميذ</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="import-tabs">
+            <button class="import-tab-btn active" onclick="switchStudentImportTab('excel')" id="tabBtnExcelSt">
+                <span data-icon="file-excel"></span> استيراد HTML
+            </button>
+            <button class="import-tab-btn" onclick="switchStudentImportTab('json')" id="tabBtnJsonSt" style="display: none;">
+                <span data-icon="file-code"></span> استيراد JSON <span class="tab-badge">جديد</span>
+            </button>
+            <button class="import-tab-btn" onclick="switchStudentImportTab('rakmana_sync')" id="tabBtnRakmanaSync">
+                <span data-icon="sync"></span> تحميل الاستمارات واستيراد البيانات <span class="tab-badge" style="background:var(--secondary-color);color:#fff;">شامل</span>
+            </button>
+        </div>
+
+        <!-- Tab 1: Excel/HTML Import -->
+        <div class="import-tab-panel active" id="tabExcelSt">
+            <section class="import-container">
+                <a href="#" onclick="openImportTutorialVideo('https://youtu.be/s9tqlPE3sa8'); return false;"
+                    style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 15px; color: #e74c3c; font-weight: bold; text-decoration: none;">
+                    <span data-icon="youtube"></span> شاهد فيديو طريقة الاستيراد
+                </a>
+                <!-- Stage Selection -->
+                <div class="filter-group"
+                    style="margin-bottom: 15px; background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <label style="font-weight: bold; margin-left: 10px;">الطور التعليمي:</label>
+                    <select id="stageSelect"
+                        style="padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); min-width: 200px;">
+                        <option value="middle">التعليم المتوسط</option>
+                        <option value="secondary">التعليم الثانوي</option>
+                    </select>
+                    <div style="margin-top: 5px; font-size: 0.85rem; color: var(--text-muted);">
+                        * سيتم استخدام هذا الطور لتحديد المستويات في حال عدم وضوحها في الملف.
+                    </div>
+                </div>
+
+                <div class="filter-group"
+                    style="margin-bottom: 15px; background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <label style="font-weight: bold; margin-left: 10px;">نوع الاستيراد:</label>
+                    <select id="studentImportModeSelect"
+                        style="padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); min-width: 320px;">
+                        <option value="standard">استيراد عادي لنفس السنة</option>
+                        <option value="promote_from_previous">استيراد سنة جديدة انطلاقًا من السنة السابقة</option>
+                    </select>
+                    <div style="margin-top: 5px; font-size: 0.85rem; color: var(--text-muted);">
+                        * في وضع السنة الجديدة، سيحاول النظام مطابقة التلاميذ مع السنة السابقة لنقل الصور وبيانات الولي والمعلومات الإدارية.
+                    </div>
+                </div>
+
+                <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                    <p>قم بسحب وإفلات ملف القوائم هنا أو اضغط للاختيار</p>
+                    <p style="font-size: 0.9rem; color: #888;">يدعم ملفات Excel (.xls, .xlsx) وصفحات الويب المحفوظة (.html,
+                        .htm) - القوائم الاسمية</p>
+                    <span class="btn-select">اختيار الملف</span>
+                    <input type="file" id="fileInput"
+                        accept=".xls,.xlsx,.html,.htm,.mhtml,.mht,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/html"
+                        onchange="handleStudentFileSelect(event)">
+                </div>
+
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="statusBox" class="status-box"></div>
+                <div class="log-area" id="logArea"></div>
+                <button id="btnProcess" style="display:none; margin-top:20px;" class="btn-analyze"
+                    onclick="processStudentFile()">معالجة واستيراد</button>
+                <div id="studentImportReportBox" style="display:none; margin-top: 18px; padding: 16px 18px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: 0 4px 18px rgba(0,0,0,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <div>
+                            <div style="font-weight:700; margin-bottom:6px;">آخر تقرير استيراد</div>
+                            <div id="studentImportReportSummary" style="font-size:0.92rem; color: var(--text-muted);"></div>
+                        </div>
+                        <button id="btnViewStudentImportReport" class="btn-modal btn-confirm" style="padding:10px 16px;" onclick="openLatestStudentImportReportModal()">عرض التقرير</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Tab 2: JSON Import -->
+        <div class="import-tab-panel" id="tabJsonSt">
+            <section class="import-container">
+                <div class="info-note-bar purple">
+                    <strong><span data-icon="info-circle" style="color:#8e44ad;"></span> استيراد من موقع الرقمنة:</strong>
+                    قم برفع ملف JSON المصدر من موقع الرقمنة وسيتم الكشف التلقائي عن نوعه واستيراد التلاميذ.
+                </div>
+
+                <div class="file-upload-area" onclick="document.getElementById('jsonFileInput').click()" style="border-color: #8e44ad;">
+                    <p><span data-icon="file-code" style="font-size:2rem;color:#8e44ad;"></span></p>
+                    <p>قم بسحب وإفلات ملفات JSON هنا أو اضغط للاختيار</p>
+                    <p style="font-size: 0.9rem; color: #888;">ملفات مصدرة من موقع الرقمنة (.json)</p>
+                    <span class="btn-select" style="background-color: #8e44ad;">اختيار ملفات JSON</span>
+                    <input type="file" id="jsonFileInput" multiple accept=".json,application/json" onchange="handleJsonFileSelect(event)">
+                </div>
+
+                <div id="jsonFileListContainer" class="file-list-container"></div>
+                <div id="jsonPreviewArea" class="json-preview-area" style="display:none;"></div>
+
+                <div class="progress-bar" id="jsonProgressBar">
+                    <div class="progress-fill" id="jsonProgressFill"></div>
+                </div>
+                <div id="jsonStatusBox" class="status-box"></div>
+                <div class="log-area" id="jsonLogArea" style="display:none;"></div>
+
+                <div class="import-actions" id="jsonImportActions">
+                    <button id="btnJsonImport" class="btn-import-update" onclick="processJsonImport()" style="background: linear-gradient(135deg, #8e44ad, #6c3483); color:white; padding:12px 25px; border-radius:8px; border:none; cursor:pointer; font-size:1.1rem; font-weight:bold;">
+                        <span data-icon="database"></span> بدء استيراد التلاميذ
+                    </button>
+                </div>
+            </section>
+        </div>
+
+                <!-- Tab 3: Rakmana Sync (Unified) -->
+        <div class="import-tab-panel" id="tabRakmanaSync">
+            <section class="import-container" style="max-width: 900px; margin: 0 auto; background: transparent; box-shadow: none; padding: 0;">
+                
+                <a href="#" onclick="openImportTutorialVideo('https://youtu.be/Vw54W1T_dao?si=1WAsBwyuYybGmXju'); return false;"
+                    style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; color: #e74c3c; font-weight: bold; text-decoration: none; padding: 10px 20px; background: rgba(231, 76, 60, 0.1); border-radius: 10px; border: 1px solid rgba(231, 76, 60, 0.2); transition: all 0.3s ease;">
+                    <span data-icon="youtube" style="font-size: 1.3rem;"></span> شاهد فيديو توضيحي لطريقة تحميل واستيراد البيانات
+                </a>
+
+                <div class="info-note-bar warning" style="border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.1); border: 1px solid rgba(243, 156, 18, 0.3); display: flex; align-items: flex-start; gap: 15px; padding: 15px 20px;">
+                    <span data-icon="exclamation-triangle" style="color:#f39c12; font-size: 1.5rem; margin-top: 2px;"></span>
+                    <div>
+                        <strong style="display: block; margin-bottom: 5px; color: #d68910; font-size: 1.05rem;">تنبيه مهم للربط مع الرقمنة</strong>
+                        <span style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">يرجى <b>تسجيل الدخول</b> في موقع الرقمنة لتتمكن الأداة من تنزيل استمارات التلاميذ بأمان، وتمريرها لمرحلة التحليل لاستخراج البيانات العائلية وتحديثها.</span>
+                    </div>
+                </div>
+
+                <div class="sync-stages-container" style="display: flex; flex-direction: column; gap: 20px;">
+                    
+                    <!-- Stage 1 -->
+                    <div class="sync-stage-card" style="background: var(--card-bg); border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border-color); position: relative; overflow: hidden; transition: transform 0.2s;">
+                        <div style="position: absolute; top: 0; right: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #3498db, #2980b9);"></div>
+                        
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                            <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(52, 152, 219, 0.1); color: var(--secondary-color); border-radius: 10px; font-weight: bold; font-size: 1.1rem;">1</div>
+                            <h3 style="margin: 0; color: var(--primary-color); font-size: 1.25rem; font-weight:bold;">الإعدادات وتسجيل الدخول</h3>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: end;">
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <label style="font-weight: 600; color: var(--text-color); font-size: 0.95rem;">المستوى والقسم المستهدف:</label>
+                                <select id="formLevelSelect" style="padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border-color); width: 100%; transition: all 0.3s; background: var(--bg-color); outline: none; font-size: 1rem; color: var(--text-color);">
+                                    <option value="">جاري التحميل...</option>
+                                </select>
+                            </div>
+                            
+                            <div style="display: none;">
+                                <label style="font-weight: 600; color: var(--text-color); font-size: 0.95rem;">سنة الرابط:</label>
+                                <input type="text" id="formLinkYear" inputmode="numeric" value="2025" style="padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border-color); width: 100%;">
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 8px; grid-column: 1 / -1;">
+                                <label style="font-weight: 600; color: var(--text-color); font-size: 0.95rem;">مجلد حفظ الاستمارات المؤقت:</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="folderPathDisplay" readonly placeholder="يرجى اختيار مجلد للحفظ..." style="flex: 1; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-color); font-size: 1rem;">
+                                    <button onclick="selectDownloadFolder()" style="padding: 0 25px; border: 1px solid #ccc; background: var(--bg-color); color: var(--primary-color); border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.2s; white-space: nowrap; display:flex; align-items:center; gap:8px;">
+                                        <span data-icon="folder-open"></span> استعراض
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 25px; padding-top: 25px; border-top: 1px dashed var(--border-color); display: flex; justify-content: flex-start;">
+                            <button id="btnLoginRakmana" onclick="loginToRakmana()" style="background: linear-gradient(135deg, #f39c12, #d68910); color:white; padding:12px 30px; border-radius:10px; border:none; cursor:pointer; font-weight:bold; font-size: 1.05rem; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3); transition: transform 0.2s, box-shadow 0.2s;">
+                                <span data-icon="lock-open"></span> فتح جلسة الرقمنة
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stage 2 -->
+                    <div class="sync-stage-card" style="background: var(--card-bg); border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border-color); position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: 0; right: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #2ecc71, #27ae60);"></div>
+                        
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(46, 204, 113, 0.1); color: #27ae60; border-radius: 10px; font-weight: bold; font-size: 1.1rem;">2</div>
+                            <h3 style="margin: 0; color: var(--primary-color); font-size: 1.25rem; font-weight:bold;">تحميل الاستمارات (PDF)</h3>
+                        </div>
+
+                        <div>
+                            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                                <button id="btnStartDownload" onclick="startFormsDownload()" disabled style="background: linear-gradient(135deg, #2ecc71, #27ae60); color:white; padding:12px 30px; border-radius:10px; border:none; cursor:not-allowed; font-weight:bold; font-size: 1.05rem; opacity: 0.6; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); transition: opacity 0.3s;">
+                                    <span data-icon="download"></span> بدء التحميل
+                                </button>
+                                <button id="btnCancelDownload" onclick="cancelFormsDownload()" style="display:none; background: #fff; color: #e74c3c; border: 1px solid #e74c3c; padding:12px 30px; border-radius:10px; cursor:pointer; font-weight:bold; font-size: 1.05rem; align-items: center; gap: 10px; transition: background 0.2s;">
+                                    <span data-icon="times"></span> إلغاء العملية
+                                </button>
+                                <button id="btnRetryDownload" onclick="startFormsDownload()" style="display:none; background: linear-gradient(135deg, #3498db, #2980b9); color:white; padding:12px 30px; border-radius:10px; border:none; cursor:pointer; font-weight:bold; font-size: 1.05rem; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); transition: transform 0.2s;">
+                                    <span data-icon="redo"></span> إعادة المحاولة / استكمال
+                                </button>
+                            </div>
+
+                            <div class="forms-summary-box" id="formsSummaryBox" style="border-radius: 10px; display:none; margin-bottom: 15px;"></div>
+                            
+                            <div class="progress-wrapper" id="formsProgressBar" style="display: none; padding: 15px; background: rgba(248, 249, 250, 0.5); border-radius: 10px; border: 1px solid rgba(0,0,0,0.05);">
+                                <div class="progress-bar-container" style="background: rgba(0,0,0,0.08); border-radius: 8px; height: 12px; overflow: hidden; width: 100%;">
+                                    <div class="progress-fill" id="formsProgressFill" style="background: linear-gradient(to right, #2ecc71, #27ae60); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <div id="formsProgressText" style="text-align: center; margin-top: 10px; font-weight: 600; font-size: 0.95rem; color: #555;"></div>
+                            </div>
+                            
+                            <div class="log-area" id="formsLogArea" style="display:none; height: 150px; margin-top: 15px; border-radius: 10px; background: #1e1e1e; font-family: monospace; padding: 15px; color: #a9b7c6; font-size: 0.85rem; overflow-y: auto; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);"></div>
+                        </div>
+                    </div>
+
+                    <!-- Stage 3 -->
+                    <div class="sync-stage-card" style="background: var(--card-bg); border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border-color); position: relative; overflow: hidden;">
+                        <div style="position: absolute; top: 0; right: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #9b59b6, #8e44ad);"></div>
+                        
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(155, 89, 182, 0.1); color: #8e44ad; border-radius: 10px; font-weight: bold; font-size: 1.1rem;">3</div>
+                            <h3 style="margin: 0; color: var(--primary-color); font-size: 1.25rem; font-weight:bold;">تحديث قاعدة البيانات</h3>
+                        </div>
+
+                        <div>
+                            <p style="color: #666; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; background: rgba(155, 89, 182, 0.04); padding: 15px 18px; border-radius: 10px; border-right: 3px solid rgba(155, 89, 182, 0.4);">
+                                سيتم قراءة الاستمارات المحملة لاستخراج وتسجيل المعلومات الشخصية والعائلية وبيانات الحالة لكل طالب في قاعدة البيانات الحالية دون استبدال أو مسح أي بيانات أساسية أخرى.
+                            </p>
+                            
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                <button id="btnPdfParse" onclick="startPhase3Parsing()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color:white; padding:12px 30px; border-radius:10px; border:none; cursor:pointer; font-weight:bold; font-size: 1.05rem; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3); transition: all 0.3s ease;">
+                                    <span data-icon="search"></span> 1. تحليل الاستمارات
+                                </button>
+                                <button id="btnPdfMerge" onclick="mergePdfStudents()" style="display:none; background: linear-gradient(135deg, #16a085, #1abc9c); color:white; padding:12px 30px; border-radius:10px; border:none; cursor:pointer; font-weight:bold; font-size: 1.05rem; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(22, 160, 133, 0.3); transition: transform 0.2s;">
+                                    <span data-icon="database"></span> 2. استيراد وتحديث البيانات
+                                </button>
+                            </div>
+                            
+                            <div class="progress-wrapper" id="pdfProgressBar" style="display: none; margin-top: 20px; padding: 15px; background: rgba(248, 249, 250, 0.5); border-radius: 10px; border: 1px solid rgba(0,0,0,0.05);">
+                                <div class="progress-bar-container" style="background: rgba(0,0,0,0.08); border-radius: 8px; height: 12px; overflow: hidden; width: 100%;">
+                                    <div class="progress-fill" id="pdfProgressFill" style="background: linear-gradient(to right, #9b59b6, #8e44ad); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <div id="pdfProgressText" style="text-align: center; margin-top: 10px; font-weight: 600; font-size: 0.95rem; color: #555;"></div>
+                            </div>
+                            
+                            <div class="forms-summary-box" id="pdfReportBox" style="display:none; margin-top: 15px; border-radius: 10px;"></div>
+                            
+                            <div id="pdfPreviewArea" style="display:none; margin-top: 20px; max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; background: var(--bg-color); box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);"></div>
+                            
+                            <div class="log-area" id="pdfLogArea" style="display:none; height: 150px; margin-top: 15px; border-radius: 10px; background: #1e1e1e; font-family: monospace; padding: 15px; color: #a9b7c6; font-size: 0.85rem; overflow-y: auto; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="studentImportReportModal" class="modal-overlay">
+        <div class="modal-content animate-pop-in" style="max-width: 1100px; width: 96%; text-align: right;">
+            <div class="modal-title">تفاصيل تقرير الاستيراد</div>
+            <div id="studentImportReportModalBody" class="modal-message" style="max-height: 65vh; overflow:auto; text-align:right;"></div>
+            <div class="modal-buttons">
+                <button id="studentImportReportCloseBtn" class="btn-modal btn-confirm">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="missingStudentsModal" class="modal-overlay">
+        <div class="modal-content animate-pop-in" style="max-width: 1100px; width: 96%; text-align: right;">
+            <div class="modal-title">مراجعة التلاميذ غير الموجودين في ملف الاستيراد</div>
+            <div class="modal-message" style="margin-bottom: 14px;">
+                تم العثور على <strong id="missingStudentsCount">0</strong> تلميذ من نفس السنة الدراسية موجودين في القاعدة وغير موجودين في الملف الجديد.
+                اختر الإجراء المناسب لكل تلميذ ثم اضغط <strong>تطبيق</strong>.
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-bottom: 14px;">
+                <button id="missingStudentsKeepAllBtn" class="btn-modal" style="background:#95a5a6; color:#fff;">إبقاء الكل</button>
+                <button id="missingStudentsStrikeAllBtn" class="btn-modal" style="background:#e67e22; color:#fff;">شطب الكل</button>
+                <button id="missingStudentsTransferAllBtn" class="btn-modal" style="background:var(--secondary-color); color:#fff;">اعتبار الكل محولين</button>
+                <button id="missingStudentsDeleteAllBtn" class="btn-modal" style="background:#c0392b; color:#fff;">حذف الكل نهائيًا</button>
+            </div>
+            <div style="max-height: 420px; overflow:auto; border:1px solid var(--border-color); border-radius: 10px;">
+                <table style="width:100%; border-collapse: collapse; font-size: 0.95rem;">
+                    <thead style="position: sticky; top: 0; background: var(--card-bg, #fff); z-index: 1;">
+                        <tr>
+                            <th style="padding:10px; border-bottom:1px solid var(--border-color);">#</th>
+                            <th style="padding:10px; border-bottom:1px solid var(--border-color);">اللقب والاسم</th>
+                            <th style="padding:10px; border-bottom:1px solid var(--border-color);">تاريخ الميلاد</th>
+                            <th style="padding:10px; border-bottom:1px solid var(--border-color);">المستوى / القسم</th>
+                            <th style="padding:10px; border-bottom:1px solid var(--border-color);">السنة</th>
+                            <th style="padding:10px; border-bottom:1px solid var(--border-color);">الصفة الحالية</th>
+                            <th style="padding:10px; border-bottom:1px solid var(--border-color);">الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="missingStudentsTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-buttons" style="margin-top: 16px;">
+                <button id="missingStudentsSkipBtn" class="btn-modal" style="background:#95a5a6; color:#fff;">تخطي الآن</button>
+                <button id="missingStudentsApplyBtn" class="btn-modal btn-confirm">تطبيق</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal-overlay">
+        <div class="modal-content animate-pop-in">
+            <div class="modal-icon"><span data-icon="check"></span></div>
+            <div class="modal-title">تم الاستيراد بنجاح</div>
+            <div class="modal-message" id="successMessage">
+                تم استيراد بيانات التلاميذ بنجاح.
+            </div>
+            <div class="modal-buttons">
+                <button id="modalSuccessViewReport" class="btn-modal" style="display:none; background: var(--secondary-color); color:#fff;">عرض التقرير</button>
+                <button id="modalSuccessOk" class="btn-modal btn-confirm">حسناً</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchStudentImportTab(tab) {
+            document.getElementById('tabBtnExcelSt').classList.toggle('active', tab === 'excel');
+            document.getElementById('tabBtnJsonSt').classList.toggle('active', tab === 'json');
+            document.getElementById('tabBtnRakmanaSync').classList.toggle('active', tab === 'rakmana_sync');
+            
+            document.getElementById('tabExcelSt').classList.toggle('active', tab === 'excel');
+            document.getElementById('tabJsonSt').classList.toggle('active', tab === 'json');
+            document.getElementById('tabRakmanaSync').classList.toggle('active', tab === 'rakmana_sync');
+            
+            if (tab === 'json') {
+                var logArea = document.getElementById('jsonLogArea');
+                if (logArea && logArea.children.length > 0) logArea.style.display = 'block';
+            }
+            if (tab === 'rakmana_sync') {
+                if (typeof loadFormLevels === 'function') loadFormLevels();
+                var logArea1 = document.getElementById('formsLogArea');
+                if (logArea1 && logArea1.children.length > 0) logArea1.style.display = 'block';
+                var logArea2 = document.getElementById('pdfLogArea');
+                if (logArea2 && logArea2.children.length > 0) logArea2.style.display = 'block';
+            }
+            if (tab === 'forms') {
+                if (typeof loadFormLevels === 'function') loadFormLevels();
+                var logArea = document.getElementById('formsLogArea');
+                if (logArea && logArea.children.length > 0) logArea.style.display = 'block';
+            }
+            if (tab === 'pdfmerge') {
+                var logArea = document.getElementById('pdfLogArea');
+                if (logArea && logArea.children.length > 0) logArea.style.display = 'block';
+            }
+            if (window.IconManager) IconManager.render();
+        }
+    </script>
+    <script src="import_students.js"></script>
+    <script src="../_dev_archive/import_json.js"></script>
+    <script src="../_dev_archive/download_forms.js"></script>
+    <script src="../_dev_archive/import_pdf_forms.js"></script>
+
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script src="../assets/js/fullscreen_toggle.js"></script>
+</body>
+
+</html>

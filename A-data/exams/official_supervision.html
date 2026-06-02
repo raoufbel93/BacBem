@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الحراسة - الامتحانات الرسمية</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../assets/js/xlsx-js-style.min.js"></script>
+    <script src="../assets/js/excel_export_helper.js"></script>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../assets/js/signature_helper.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => Auth.checkAuth());
+    </script>
+    <style>
+        /* ========== Page Header ========== */
+        .page-header {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .page-header .header-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            flex-shrink: 0;
+            color: white;
+        }
+
+        .page-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: 0;
+            color: #fff;
+        }
+
+        .page-header p {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin: 4px 0 0 0;
+            font-weight: 500;
+        }
+
+        /* Let the supervision page use the full iframe width on large screens */
+        .supervision-container {
+            width: 100%;
+            max-width: calc(100vw - 20px);
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        /* Teacher Management Section */
+        .teachers-section {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .section-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        /* Teacher Form */
+        .teacher-form {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg-color);
+            border-radius: 8px;
+        }
+
+        .teacher-form input,
+        .teacher-form select {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: inherit;
+            min-width: 150px;
+        }
+
+        .teacher-form input:focus,
+        .teacher-form select:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        /* Teachers Table */
+        .teachers-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .teachers-table th,
+        .teachers-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .teachers-table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .teachers-table tr:nth-child(even) {
+            background: var(--bg-color);
+        }
+
+        .teachers-table tr:hover {
+            background: var(--table-row-hover);
+        }
+
+        /* Subject Tags */
+        .subject-tag {
+            display: inline-block;
+            background: #e1f5fe;
+            color: #0277bd;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin: 2px;
+        }
+
+        /* Days Section */
+        .days-section {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .day-card {
+            background: var(--bg-color);
+            border-radius: 10px;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            transition: all 0.3s ease;
+        }
+
+        .day-card:hover {
+            border-color: var(--secondary-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .day-date {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .period-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: var(--card-bg);
+            border-radius: 6px;
+            gap: 8px;
+        }
+
+        .period-label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .period-row select {
+            min-width: 0 !important;
+            padding: 5px 10px 5px 25px !important;
+            font-size: 0.85rem;
+            background-position: left 5px center;
+            background-size: 12px;
+            flex: 1;
+        }
+
+        .period-row input[type="number"] {
+            width: 45px !important;
+            padding: 5px !important;
+            font-size: 0.85rem;
+        }
+
+        .period-label.morning {
+            color: #f39c12;
+        }
+
+        .period-label.evening {
+            color: #9b59b6;
+        }
+
+        /* Schedule Table */
+        .schedule-section {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            overflow-x: auto;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            padding: 3px 4px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            min-width: 30px;
+            font-size: 0.85rem;
+        }
+
+        .schedule-table thead th {
+            background: var(--primary-color);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .schedule-table .day-header-cell {
+            background: #34495e;
+        }
+
+        .schedule-table .period-header {
+            font-size: 0.85rem;
+            background: #5d6d7e;
+        }
+
+        .schedule-table .teacher-name {
+            text-align: right;
+            padding-right: 15px;
+            font-weight: 500;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.35;
+            width: 180px;
+            min-width: 180px;
+        }
+
+        .schedule-table .total-col {
+            background: #e8f8f5;
+            font-weight: bold;
+            color: #27ae60;
+        }
+
+        /* Floating totals bar at bottom of screen */
+        .floating-totals-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fef9e7;
+            border-top: 3px solid #f39c12;
+            padding: 10px 20px;
+            z-index: 1000;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.15);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #f39c12;
+        }
+
+        .floating-totals-bar .total-item {
+            background: var(--card-bg);
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid #f39c12;
+            font-size: 0.9rem;
+        }
+
+        .schedule-table .total-row td {
+            background: #fef9e7;
+            font-weight: bold;
+            color: #f39c12;
+            border-top: 2px solid #f39c12;
+        }
+
+        .schedule-table .guard-total-row td {
+            background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+            color: #047857;
+            border-top: 2px solid #10b981;
+            border-bottom: 2px solid #6ee7b7;
+        }
+
+        .schedule-table .guard-total-row td:first-child {
+            color: #065f46;
+            font-size: 0.92rem;
+        }
+
+        .schedule-table .reserve-total-row td {
+            background: linear-gradient(180deg, #fffbeb 0%, #fde68a 100%);
+            color: #b45309;
+            border-top: 2px solid #f59e0b;
+            border-bottom: 2px solid #fcd34d;
+        }
+
+        .schedule-table .reserve-total-row td:first-child {
+            color: #92400e;
+            font-size: 0.92rem;
+        }
+
+        .schedule-table .check-cell {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .schedule-table .check-cell:hover {
+            background: #d4edda;
+        }
+
+        .schedule-table .check-cell.checked {
+            background: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .schedule-table .check-cell.absent-cell,
+        .schedule-table .check-cell.checked.absent-cell,
+        .schedule-table .check-cell.absent-cell:hover {
+            background: #dc2626 !important;
+            color: #ffffff !important;
+            font-weight: bold;
+        }
+
+        .schedule-table .check-cell.room-assigned {
+            color: #000000 !important;
+            font-weight: bold;
+        }
+
+        .schedule-table .check-cell.disabled {
+            background: #f8d7da;
+            cursor: not-allowed;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            background: var(--bg-color);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting-item label {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #219a52;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .close-modal {
+            font-size: 28px;
+            cursor: pointer;
+            color: #aaa;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: #e74c3c;
+        }
+
+        /* Print Styles */
+        @media print {
+
+            .navbar,
+            .teachers-section,
+            .days-section,
+            .settings-panel,
+            .action-buttons,
+            .no-print,
+            .btn {
+                display: none !important;
+            }
+
+            .schedule-section {
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .schedule-table th {
+                background: var(--primary-color) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .schedule-table .check-cell.checked {
+                background: #d4edda !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        /* Teacher Slip Print */
+        .teacher-slip {
+            background: var(--card-bg);
+            padding: 20px;
+            border: 2px solid #333;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .slip-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #333;
+        }
+
+        .slip-header h3 {
+            margin: 0 0 10px;
+        }
+
+        .slip-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .slip-table th,
+        .slip-table td {
+            border: 1px solid #333;
+            padding: 8px 12px;
+            text-align: center;
+        }
+
+        .slip-table th {
+            background: #f0f0f0;
+        }
+
+        .slip-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .supervision-container {
+                max-width: 100%;
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            .teacher-form {
+                flex-direction: column;
+            }
+
+            .teacher-form input,
+            .teacher-form select {
+                width: 100%;
+            }
+
+            .settings-panel {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+        /* =========================================
+           Dark Mode Specific Overrides for Supervision
+           ========================================= */
+        html[data-theme="dark"] .page-header {
+            background: linear-gradient(135deg, #0f172a, #020617);
+            border: 1px solid #1e293b;
+        }
+
+        html[data-theme="dark"] .teachers-table tr:hover {
+            background-color: var(--table-row-hover) !important;
+            color: var(--text-color) !important;
+        }
+
+        html[data-theme="dark"] .subject-tag {
+            background: rgba(56, 189, 248, 0.15);
+            color: #7dd3fc;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        html[data-theme="dark"] .day-card {
+            border-color: #334155;
+            background: #0f172a;
+        }
+        
+        html[data-theme="dark"] .day-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        html[data-theme="dark"] .period-label {
+            color: #94a3b8;
+        }
+
+        html[data-theme="dark"] .period-label.morning {
+            color: #fbbf24;
+        }
+
+        html[data-theme="dark"] .period-label.evening {
+            color: #c084fc;
+        }
+
+        html[data-theme="dark"] .schedule-table .day-header-cell {
+            background: #0f172a !important;
+            border-color: #1e293b !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .period-header {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .total-col {
+            background: rgba(16, 185, 129, 0.1) !important;
+            color: #34d399 !important;
+        }
+
+        html[data-theme="dark"] .floating-totals-bar {
+            background: #0f172a;
+            border-top: 3px solid #f59e0b;
+            color: #fcd34d;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        html[data-theme="dark"] .floating-totals-bar .total-item {
+            background: #1e293b;
+            border-color: #f59e0b;
+            color: #fcd34d;
+        }
+
+        html[data-theme="dark"] .schedule-table .total-row td {
+            background: #0f172a !important;
+            color: #fcd34d !important;
+            border-top: 2px solid #f59e0b !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .guard-total-row td {
+            background: linear-gradient(180deg, rgba(6, 95, 70, 0.95) 0%, rgba(4, 120, 87, 0.95) 100%) !important;
+            color: #ecfdf5 !important;
+            border-top: 2px solid #34d399 !important;
+            border-bottom: 2px solid rgba(167, 243, 208, 0.45) !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .reserve-total-row td {
+            background: linear-gradient(180deg, rgba(120, 53, 15, 0.96) 0%, rgba(146, 64, 14, 0.96) 100%) !important;
+            color: #fffbeb !important;
+            border-top: 2px solid #fbbf24 !important;
+            border-bottom: 2px solid rgba(253, 224, 71, 0.35) !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .check-cell:hover {
+            background: rgba(16, 185, 129, 0.15) !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .check-cell.checked {
+            background: rgba(16, 185, 129, 0.25) !important;
+            color: #34d399 !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .check-cell.absent-cell,
+        html[data-theme="dark"] .schedule-table .check-cell.checked.absent-cell,
+        html[data-theme="dark"] .schedule-table .check-cell.absent-cell:hover {
+            background: #dc2626 !important;
+            color: #ffffff !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .check-cell.room-assigned {
+            color: #f8fafc !important;
+        }
+
+        html[data-theme="dark"] .schedule-table .check-cell.disabled {
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #fca5a5 !important;
+        }
+        
+        html[data-theme="dark"] .teacher-slip {
+            border: 2px solid #334155;
+        }
+        
+        html[data-theme="dark"] .slip-header {
+            border-bottom: 2px solid #334155;
+        }
+        
+        html[data-theme="dark"] .slip-table th,
+        html[data-theme="dark"] .slip-table td {
+            border: 1px solid #334155;
+        }
+        
+        html[data-theme="dark"] .slip-table th {
+            background: #1e293b;
+            color: #f8fafc;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+
+    <div id="root"></div>
+
+    <!-- Scripts -->
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script src="official_supervision_react.js?v=20260530-audit"></script>
+
+    <!-- Shared Styles Fix -->
+    <style>
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast-error {
+            background: #e74c3c;
+        }
+
+        .toast-success {
+            background: #27ae60;
+        }
+
+        .toast-warning {
+            background: #f39c12;
+        }
+    </style>
+
+    <script>
+        // Trial Mode - Disable printing
+        document.addEventListener('DOMContentLoaded', function () {
+            const user = (typeof Auth !== 'undefined' && Auth.getUser) ? ((typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null) : null;
+            if (typeof Auth !== 'undefined' && Auth.isTrialRestricted && Auth.isTrialRestricted()) {
+                // Use observer to handle React mounting which might be slow
+                const observer = new MutationObserver(function (mutations) {
+                    const buttons = document.querySelectorAll('button');
+                    buttons.forEach(btn => {
+                        const text = (btn.textContent || '').trim();
+                        if (text.includes('طباعة') || text.includes('print')) {
+                            // Visually disable
+                            btn.style.opacity = '0.5';
+                            btn.style.cursor = 'not-allowed';
+                            btn.title = 'غير متاح في النسخة التجريبية';
+
+                            // Try to block click events at capture phase
+                            if (!btn.getAttribute('data-trial-blocked')) {
+                                btn.setAttribute('data-trial-blocked', 'true');
+                                btn.addEventListener('click', function (e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    alert('طباعة جدول الحراسة غير متاحة في النسخة التجريبية. يرجى تفعيل الاشتراك.');
+                                }, true); // Use capture to intercept before React
+                            }
+                        }
+                    });
+
+                    // Add warning banner if missing
+                    const root = document.getElementById('root');
+                    if (root && !document.querySelector('.trial-warning-box')) {
+                        const w = document.createElement('div');
+                        w.className = 'trial-warning-box no-print'; // Add no-print class
+                        w.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px;border-radius:8px;margin:15px 20px;text-align:center;font-weight:bold;';
+                        w.innerHTML = '<span data-icon="lock"></span> النسخة التجريبية: طباعة جدول الحراسة غير متاحة. <a href="../settings/subscription.html" style="color:#856404;">تفعيل الاشتراك</a>';
+                        root.parentNode.insertBefore(w, root);
+                    }
+                });
+
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+        });
+    </script>
+</body>
+
+</html>

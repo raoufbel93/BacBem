@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إحصائيات الأعمار - إدارتي+</title>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+    <script src="../../assets/js/chart.js"></script>
+    <style>
+        body { font-family: 'Cairo', 'Tajawal', sans-serif !important; background-color: var(--bg-color); color: var(--primary-color); }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border-color); }
+        .page-header h1 { font-size: 1.8rem; margin: 0; font-weight: 800; color: var(--primary-color); }
+        .stats-section { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); margin-bottom: 25px; border: 1px solid var(--border-color); }
+        .section-title { font-size: 1.2rem; font-weight: 800; color: #3b82f6; margin-bottom: 15px; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; display: inline-block; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        .stats-table th, .stats-table td { padding: 10px; text-align: center; border: 1px solid var(--border-color); }
+        .stats-table th { background-color: #f8fafc; color: #1e293b; font-weight: 700; }
+        .row-label { font-weight: 800; background-color: #f1f5f9; color: #334155; text-align: right !important; width: 150px; }
+        .levels-grid-print { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .btn-analyze { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; padding: 10px 25px; border-radius: 30px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.3s; }
+        .btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4); }
+        @media (max-width: 992px) { .levels-grid-print { grid-template-columns: 1fr; } }
+        @media print { .no-print { display: none !important; } .container { width: 100% !important; max-width: none !important; margin: 0 !important; } }
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+    <div class="container animate-fade-in-up" style="padding-top: 30px;">
+        <div class="page-header no-print">
+            <div>
+                <h1><i class="fas fa-chart-pie me-2"></i> إحصائيات الأعمار</h1>
+                <p style="color: #64748b; margin: 5px 0 0 0;">توزيع التلاميذ حسب تاريخ الميلاد والعمر للسنة الدراسية الحالية</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-analyze" style="background: linear-gradient(135deg, #16a34a, #15803d);" onclick="exportAgeStatisticsToExcel()">
+                    <i class="fas fa-file-excel"></i> تصدير Excel
+                </button>
+                <button class="btn-analyze" onclick="openPrintWindow()">
+                    <i class="fas fa-print"></i> طباعة التقرير
+                </button>
+            </div>
+        </div>
+        <div id="printHeader" style="display: none;"></div>
+        <div class="stats-section" id="secGeneral">
+            <div class="section-title">1. إحصائيات عامة للمؤسسة</div>
+            <div style="overflow-x: auto;"><table class="stats-table" id="tableGeneral"></table></div>
+        </div>
+        <div class="stats-section no-print" id="secChart">
+            <div class="section-title"><i class="fas fa-chart-bar me-2"></i> التوزيع البياني للأعمار</div>
+            <div class="chart-container" style="height: 350px; position: relative;"><canvas id="ageChart"></canvas></div>
+        </div>
+        <div class="levels-grid-print">
+            <div class="stats-section" id="secLvl1"><div class="section-title">2. السنة الأولى</div><table class="stats-table" id="tableLevel1"></table></div>
+            <div class="stats-section" id="secLvl2"><div class="section-title">3. السنة الثانية</div><table class="stats-table" id="tableLevel2"></table></div>
+            <div class="stats-section" id="secLvl3"><div class="section-title">4. السنة الثالثة</div><table class="stats-table" id="tableLevel3"></table></div>
+            <div class="stats-section" id="secLvl4"><div class="section-title">5. السنة الرابعة</div><table class="stats-table" id="tableLevel4"></table></div>
+        </div>
+    </div>
+    <script src="../../assets/js/sweetalert2.all.min.js"></script>
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../../assets/js/xlsx-js-style.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <script src="../../assets/js/excel_export_helper.js"></script>
+    <script src="age_statistics.js"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+    <script src="../../assets/js/fullscreen_toggle.js"></script>
+    <script src="../../assets/js/print_toolbar_helper.js"></script>
+</body>
+</html>

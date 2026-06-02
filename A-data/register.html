@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنشاء حساب - idara+</title>
+    <!-- Bootstrap CSS (Local) -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <!-- Global Styles & Win7 Fixes -->
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome (Local) -->
+    <link rel="stylesheet" href="assets/fontawesome/css/all.min.css">
+    <!-- Cairo Font (Local) -->
+    <style>
+        @font-face {
+            font-family: 'Cairo';
+            src: url('assets/fonts/Cairo-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Cairo';
+            src: url('assets/fonts/Cairo-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Cairo';
+            src: url('assets/fonts/Cairo-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+    </style>
+    <style>
+        * {
+            font-family: 'Cairo', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background orbs */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            z-index: 0;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        body::before {
+            width: 400px;
+            height: 400px;
+            background: #667eea;
+            top: -100px;
+            right: -100px;
+        }
+
+        body::after {
+            width: 350px;
+            height: 350px;
+            background: #764ba2;
+            bottom: -80px;
+            left: -80px;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(30px);
+            }
+        }
+
+        .register-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 680px;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Header Section */
+        .card-header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 35px 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-header-section::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .header-icon {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 1.8rem;
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .card-header-section h2 {
+            color: white;
+            margin: 0;
+            font-size: 1.7rem;
+            font-weight: 800;
+        }
+
+        .card-header-section p {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+        }
+
+        /* Form Body */
+        .card-body-section {
+            padding: 15px 35px 30px;
+        }
+
+        /* Step Indicators */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 8px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+            border-radius: 12px;
+            border: 1px solid #d6deff;
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .step-text {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* Form Groups */
+        .form-floating {
+            margin-bottom: 16px;
+        }
+
+        .form-floating>.form-control,
+        .form-floating>.form-select {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem 1rem 0.5rem 1rem;
+            height: auto;
+            min-height: 52px;
+            font-size: 0.95rem;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: var(--bg-color);
+            text-align: right;
+            direction: rtl;
+        }
+
+        .form-floating>.form-control:focus,
+        .form-floating>.form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
+            background-color: var(--card-bg);
+        }
+
+        .form-floating>label {
+            right: 0;
+            left: auto;
+            padding: 0.8rem 1rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-family: 'Cairo', sans-serif;
+            text-align: right;
+            transform-origin: right top;
+        }
+
+        .form-floating>.form-control:focus~label,
+        .form-floating>.form-control:not(:placeholder-shown)~label,
+        .form-floating>.form-select~label {
+            color: #667eea;
+            font-weight: 600;
+            transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+        }
+
+        /* Input Icons */
+        .input-group-text {
+            background: transparent;
+            border: none;
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 5;
+            color: #94a3b8;
+            font-size: 1rem;
+            padding: 0;
+            transition: color 0.3s;
+        }
+
+        .form-floating:focus-within .input-group-text {
+            color: #667eea;
+        }
+
+        .field-wrapper {
+            position: relative;
+        }
+
+        /* Password Toggle */
+        .password-toggle-btn {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 5;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+
+        .password-toggle-btn:hover {
+            color: #667eea;
+        }
+
+        /* Row layout */
+        .fields-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Submit Button */
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Cairo', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-register:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+            filter: brightness(1.05);
+        }
+
+        .btn-register:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-register:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Footer Links */
+        .auth-footer {
+            text-align: center;
+            padding: 20px 35px 25px;
+            border-top: 1px solid #f0f0f0;
+            background: #fafbfc;
+            border-radius: 0 0 24px 24px;
+        }
+
+        .auth-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .auth-footer a:hover {
+            color: #5a67d8;
+            text-decoration: underline;
+        }
+
+        /* Alert */
+        .custom-alert {
+            border-radius: 12px;
+            font-weight: 600;
+            animation: slideIn 0.4s ease;
+            font-size: 0.92rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Education Stage Selector */
+        .stage-selector {
+            margin-bottom: 20px;
+        }
+
+        .stage-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stage-option {
+            display: none;
+        }
+
+        .stage-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 16px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg-color);
+            text-align: center;
+        }
+
+        .stage-label i {
+            font-size: 1.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+        }
+
+        .stage-label span {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .stage-option:checked+.stage-label {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15);
+        }
+
+        .stage-option:checked+.stage-label i {
+            color: #667eea;
+        }
+
+        .stage-option:checked+.stage-label span {
+            color: #667eea;
+        }
+
+        .stage-label:hover {
+            border-color: #cbd5e0;
+            background: var(--bg-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 576px) {
+            .card-header-section {
+                padding: 25px 20px 20px;
+            }
+
+            .card-body-section {
+                padding: 10px 20px 25px;
+            }
+
+            .auth-footer {
+                padding: 15px 20px 20px;
+            }
+
+            .fields-row {
+                grid-template-columns: 1fr;
+            }
+
+            .register-container {
+                max-width: 100%;
+            }
+        }
+
+        /* Spinner */
+        .spinner-border-sm {
+            width: 1.2rem;
+            height: 1.2rem;
+        }
+
+        /* Select styling */
+        .form-select {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="register-container">
+        <div class="auth-card">
+            <!-- Header -->
+            <div class="card-header-section">
+                <div class="header-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h2>إنشاء حساب جديد</h2>
+                <p>أنشئ حسابك للوصول إلى جميع ميزات التطبيق</p>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body-section">
+
+                <form id="registerForm">
+                    <!-- Step 1: Education Stage -->
+                    <div class="step-indicator">
+                        <div class="step-number">1</div>
+                        <div class="step-text">اختر الطور التعليمي</div>
+                    </div>
+
+                    <div class="stage-selector">
+                        <div class="stage-options">
+                            <input type="radio" name="educationStage" id="stageMiddle" value="middle"
+                                class="stage-option" checked>
+                            <label for="stageMiddle" class="stage-label">
+                                <i class="fas fa-school"></i>
+                                <span>الطور المتوسط</span>
+                            </label>
+
+                            <input type="radio" name="educationStage" id="stageSecondary" value="secondary"
+                                class="stage-option">
+                            <label for="stageSecondary" class="stage-label">
+                                <i class="fas fa-university"></i>
+                                <span>الطور الثانوي</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Institution Info -->
+                    <div class="step-indicator">
+                        <div class="step-number">2</div>
+                        <div class="step-text">معلومات المؤسسة</div>
+                    </div>
+
+                    <div class="fields-row">
+                        <!-- Wilaya -->
+                        <div class="form-floating field-wrapper">
+                            <select class="form-select" id="wilaya" required>
+                                <option value="" selected disabled>اختر الولاية...</option>
+                            </select>
+                            <label for="wilaya"><i class="fas fa-map-marker-alt me-1"></i> الولاية</label>
+                        </div>
+
+                        <!-- Daira -->
+                        <div class="form-floating field-wrapper">
+                            <input type="text" class="form-control" id="daira" placeholder="الدائرة" required>
+                            <label for="daira"><i class="fas fa-map me-1"></i> الدائرة</label>
+                        </div>
+                    </div>
+
+                    <div class="fields-row">
+                        <!-- Municipality -->
+                        <div class="form-floating field-wrapper">
+                            <input type="text" class="form-control" id="municipality" placeholder="البلدية" required>
+                            <label for="municipality"><i class="fas fa-map-pin me-1"></i> البلدية</label>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="form-floating field-wrapper">
+                            <input type="tel" class="form-control" id="phone" placeholder="رقم الهاتف" required dir="ltr" style="text-align: right;">
+                            <label for="phone"><i class="fas fa-phone me-1"></i> رقم الهاتف</label>
+                        </div>
+                    </div>
+
+                    <!-- Institution Name -->
+                    <div class="form-floating field-wrapper">
+                        <input type="text" class="form-control" id="institution" placeholder="اسم المؤسسة" required>
+                        <label for="institution"><i class="fas fa-school me-1"></i> اسم المؤسسة</label>
+                    </div>
+                    <small id="institutionHint" class="form-text text-muted"
+                        style="display:block; margin-top:-12px; margin-bottom:14px; padding-right:8px; font-size:0.82rem;">
+                        <i class="fas fa-info-circle me-1"></i> مثال: متوسطة الأمير عبد القادر
+                    </small>
+
+                    <!-- Manager -->
+                    <div class="form-floating field-wrapper">
+                        <input type="text" class="form-control" id="manager" placeholder="اسم المدير" required>
+                        <label for="manager"><i class="fas fa-user-tie me-1"></i> اسم المدير</label>
+                    </div>
+
+                    <!-- Step 3: Account -->
+                    <div class="step-indicator">
+                        <div class="step-number">3</div>
+                        <div class="step-text">معلومات الحساب</div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-floating field-wrapper">
+                        <input type="email" class="form-control" id="email" placeholder="البريد الإلكتروني" required>
+                        <label for="email"><i class="fas fa-envelope me-1"></i> البريد الإلكتروني</label>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-floating field-wrapper">
+                        <input type="password" class="form-control" id="password" placeholder="كلمة المرور" required
+                            minlength="6" style="padding-left: 45px;">
+                        <label for="password"><i class="fas fa-lock me-1"></i> كلمة المرور</label>
+                        <button type="button" class="password-toggle-btn" id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+
+                    <button type="submit" class="btn-register" id="registerBtn">
+                        <i class="fas fa-rocket"></i>
+                        إنشاء حساب
+                    </button>
+
+                    <div id="feedback" class="alert custom-alert" style="display: none; margin-top: 15px;" role="alert">
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="auth-footer">
+                <span style="color: #718096;">لديك حساب بالفعل؟</span>
+                <a href="login.html"><i class="fas fa-sign-in-alt me-1"></i> تسجيل الدخول</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/icon_manager.js"></script>
+    <script src="db.js"></script>
+    <script src="algeria_data.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Populate Wilayas on Load
+        function populateWilayas() {
+            const wilayaSelect = document.getElementById('wilaya');
+            if (typeof ALGERIA_DATA !== 'undefined') {
+                // Custom Algiers divisions
+                const algiersSubDivisions = [
+                    { code: '16', name: 'الجزائر وسط', suffix: 'وسط' },
+                    { code: '16', name: 'الجزائر غرب', suffix: 'غرب' },
+                    { code: '16', name: 'الجزائر شرق', suffix: 'شرق' }
+                ];
+
+                Object.entries(ALGERIA_DATA)
+                    .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+                    .forEach(([code, data]) => {
+                        if (code === '16') {
+                            // Replace Algiers with 3 divisions
+                            algiersSubDivisions.forEach(sub => {
+                                const option = document.createElement('option');
+                                option.value = sub.name;
+                                option.textContent = `${code} - ${sub.name}`;
+                                option.dataset.code = code;
+                                wilayaSelect.appendChild(option);
+                            });
+                        } else {
+                            const option = document.createElement('option');
+                            option.value = data.name;
+                            option.textContent = `${code} - ${data.name}`;
+                            option.dataset.code = code;
+                            wilayaSelect.appendChild(option);
+                        }
+                    });
+            }
+        }
+
+        // Update institution hint based on education stage
+        function updateInstitutionPlaceholder() {
+            var institutionInput = document.getElementById('institution');
+            var hint = document.getElementById('institutionHint');
+            var selected = document.querySelector('input[name="educationStage"]:checked');
+            if (!institutionInput || !selected) return;
+            if (selected.value === 'secondary') {
+                institutionInput.title = 'اسم المؤسسة مثل ثانوية الأمير عبد القادر';
+                if (hint) hint.innerHTML = '<i class="fas fa-info-circle me-1"></i> مثال: ثانوية الأمير عبد القادر';
+            } else {
+                institutionInput.title = 'اسم المؤسسة مثل متوسطة الأمير عبد القادر';
+                if (hint) hint.innerHTML = '<i class="fas fa-info-circle me-1"></i> مثال: متوسطة الأمير عبد القادر';
+            }
+        }
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', function () {
+            populateWilayas();
+            updateInstitutionPlaceholder();
+
+            // Listen for stage changes
+            var stageRadios = document.querySelectorAll('input[name="educationStage"]');
+            for (var i = 0; i < stageRadios.length; i++) {
+                stageRadios[i].addEventListener('change', updateInstitutionPlaceholder);
+            }
+        });
+
+        const registerForm = document.getElementById('registerForm');
+        const feedback = document.getElementById('feedback');
+        const registerBtn = document.getElementById('registerBtn');
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+
+        // Password Toggle Logic
+        togglePassword.addEventListener('click', function () {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            const icon = this.querySelector('i');
+            icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Get selected education stage from radio buttons
+            const selectedStage = document.querySelector('input[name="educationStage"]:checked');
+
+            const userData = {
+                wilaya: document.getElementById('wilaya').value,
+                daira: document.getElementById('daira').value,
+                municipality: document.getElementById('municipality').value,
+                phone: document.getElementById('phone').value,
+                institution: document.getElementById('institution').value,
+                manager: document.getElementById('manager').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                educationStage: selectedStage ? selectedStage.value : 'middle'
+            };
+
+            feedback.style.display = 'none';
+            registerBtn.disabled = true;
+            registerBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> جاري التسجيل...';
+
+            try {
+                const response = await Auth.register(userData);
+
+                if (response.result === 'success') {
+
+                    // Save Stage to Settings
+                    if (typeof DB !== 'undefined' && DB.set) {
+                        const initialSettings = {
+                            educationStage: userData.educationStage,
+                            wilaya: userData.wilaya,
+                            daira: userData.daira,
+                            municipality: userData.municipality,
+                            phone: userData.phone,
+                            institutionName: userData.institution,
+                            managerName: userData.manager
+                        };
+                        const currentSettings = await DB.get('institutionSettings') || {};
+                        await DB.set('institutionSettings', { ...currentSettings, ...initialSettings });
+                    }
+
+                    feedback.className = 'alert alert-success custom-alert';
+                    feedback.innerHTML = '<i class="fas fa-check-circle me-2"></i> تم التسجيل بنجاح! جاري تسجيل الدخول...';
+                    feedback.style.display = 'block';
+                    feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                    // Auto Login & Redirect (Trial Mode)
+                    try {
+                        const loginResponse = await Auth.login(userData.email, userData.password);
+                        if (loginResponse.result === 'success') {
+                            setTimeout(() => {
+                                window.location.href = '../index.html';
+                            }, 1000);
+                        } else {
+                            throw new Error('فشل تسجيل الدخول التلقائي.');
+                        }
+                    } catch (loginErr) {
+                        feedback.className = 'alert alert-warning custom-alert';
+                        feedback.innerHTML = '<i class="fas fa-info-circle me-2"></i> تم التسجيل، لكن فشل الدخول التلقائي. يرجى تسجيل الدخول.';
+                        setTimeout(() => window.location.href = 'login.html', 2000);
+                    }
+                } else {
+                    throw new Error(response.message || 'فشل التسجيل');
+                }
+            } catch (error) {
+                feedback.className = 'alert alert-danger custom-alert';
+                feedback.innerHTML = '<i class="fas fa-times-circle me-2"></i> ' + error.message;
+                feedback.style.display = 'block';
+                feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<i class="fas fa-redo"></i> إعادة المحاولة';
+            }
+        });
+    </script>
+</body>
+
+</html>

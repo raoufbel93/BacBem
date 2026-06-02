@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التعداد - تحليل النتائج</title>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+        <script>
+    </script>
+    <style>
+        /* ========== Premium Design System ========== */
+        body {
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+        }
+
+        /* ── Header ── */
+        .page-header {
+            padding: 24px 32px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.35);
+        }
+        .page-header::after {
+            content: '';
+            position: absolute;
+            top: -60%;
+            left: -12%;
+            width: 340px;
+            height: 340px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.14) 0%, transparent 72%);
+            filter: blur(32px);
+            pointer-events: none;
+        }
+        .page-header h1 {
+            margin: 0;
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+        .page-header .header-sub {
+            margin: 6px 0 0 0;
+            color: #94a3b8;
+            font-size: 0.95rem;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-print {
+            padding: 11px 24px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            position: relative;
+            z-index: 1;
+        }
+        .btn-print:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+        }
+
+        /* ── Filters ── */
+        .filters-section {
+            background: var(--card-bg);
+            padding: 18px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -2px rgba(0,0,0,0.04);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            margin-bottom: 28px;
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 130px;
+        }
+        .filter-group label {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .filter-group select {
+            padding: 7px 12px;
+            border: 2px solid rgba(148, 163, 184, 0.2);
+            border-radius: 10px;
+            font-size: 0.88rem;
+            background: var(--card-bg);
+            color: var(--primary-color);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .filter-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* ── Stats Cards ── */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 24px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -2px rgba(0,0,0,0.04);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            text-align: center;
+            border-top: 4px solid transparent;
+            border-right: none;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            opacity: 0.06;
+            transform: translate(30%, -30%);
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px -6px rgba(0,0,0,0.08);
+        }
+        .stat-card.total    { border-top-color: #10b981; }
+        .stat-card.total::before    { background: #10b981; }
+        .stat-card.male     { border-top-color: #3b82f6; }
+        .stat-card.male::before     { background: #3b82f6; }
+        .stat-card.female   { border-top-color: #ec4899; }
+        .stat-card.female::before   { background: #ec4899; }
+        .stat-card.repeater { border-top-color: #f59e0b; }
+        .stat-card.repeater::before { background: #f59e0b; }
+
+        .stat-card .stat-value {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        .stat-card .stat-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 0;
+        }
+
+        /* ── Data Sections ── */
+        .stats-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -2px rgba(0,0,0,0.04);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            padding: 28px;
+            margin-bottom: 28px;
+        }
+        .section-title {
+            text-align: right;
+            font-weight: 800;
+            font-size: 1.15rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            border-bottom: 2px solid rgba(148, 163, 184, 0.1);
+            padding-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ── Tables ── */
+        .stats-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+        .stats-table th,
+        .stats-table td {
+            padding: 13px 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .stats-table thead th {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: #f8fafc;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+            border: none;
+        }
+        .stats-table thead th:first-child {
+            border-radius: 0 12px 0 0;
+        }
+        .stats-table thead th:last-child {
+            border-radius: 12px 0 0 0;
+        }
+        .stats-table tbody tr {
+            transition: all 0.2s ease;
+        }
+        .stats-table tbody tr:nth-child(even) {
+            background-color: var(--bg-color);
+        }
+        .stats-table tbody tr:hover {
+            background-color: #3b82f61a;
+        }
+        .stats-table .total-row {
+            background: linear-gradient(135deg, #ecfdf5, #f0fdf4) !important;
+            font-weight: 800;
+            border-top: 2px solid #d1fae5;
+        }
+
+        /* ── Charts ── */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 16px;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+        .chart-box {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -2px rgba(0,0,0,0.04);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            padding: 24px;
+        }
+        .chart-title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 12px;
+            color: var(--primary-color);
+        }
+
+        /* ── Print ── */
+        @media print {
+            .navbar, .btn-print, .filters-section, .page-header, .no-print {
+                display: none !important;
+            }
+            body { background-color: var(--card-bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .container { max-width: 100%; padding: 0; }
+            #printHeader { display: block !important; }
+            .stats-section, .chart-box { box-shadow: none; page-break-inside: avoid; border: 1px solid var(--border-color); }
+            .stats-table th { background-color: #eee !important; color: var(--primary-color) !important; }
+            .stat-card { box-shadow: none; border: 1px solid var(--border-color); }
+            @page { size: A4; margin: 10mm; }
+        }
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+    <script src="../../assets/js/icon_manager.js"></script>
+
+    <div class="container-fluid px-4 py-3 animate-fade-in-up">
+        <div class="page-header no-print">
+            <div>
+                <h1><i class="fas fa-chart-pie" style="color: #60a5fa;"></i> التعداد الإحصائي</h1>
+                <p class="header-sub">تحليل شامل لتوزيع التلاميذ حسب المستويات والأقسام والصفات</p>
+            </div>
+
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-section no-print">
+            <div class="filter-group">
+                <label><i class="fas fa-calendar-alt me-1" style="color:#64748b;"></i> السنة الدراسية:</label>
+                <select id="yearFilter" onchange="updateStats()">
+
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="fas fa-layer-group me-1" style="color:#64748b;"></i> المستوى:</label>
+                <select id="levelFilter" onchange="updateStats()">
+                    <option value="">جميع المستويات</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="fas fa-chalkboard me-1" style="color:#64748b;"></i> القسم:</label>
+                <select id="classFilter" onchange="updateStats()">
+                    <option value="">جميع الأقسام</option>
+                </select>
+            </div>
+            <div style="margin-right: auto;">
+                <button class="btn-print" style="background: #16a34a; margin-left: 8px;" onclick="exportCensusToExcel()">
+                    <i class="fas fa-file-excel"></i> تصدير Excel
+                </button>
+                <button class="btn-print" onclick="printReport()">
+                    <i class="fas fa-print"></i> طباعة التقرير
+                </button>
+            </div>
+        </div>
+
+        <!-- Print Header (hidden on screen) -->
+        <div id="printHeader" style="display: none;"></div>
+
+        <!-- Stats Cards -->
+        <div class="stats-cards" id="statsCards">
+            <div class="stat-card total">
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">إجمالي التلاميذ</div>
+            </div>
+            <div class="stat-card male">
+                <div class="stat-value" id="maleCount">0</div>
+                <div class="stat-label">الذكور</div>
+            </div>
+            <div class="stat-card female">
+                <div class="stat-value" id="femaleCount">0</div>
+                <div class="stat-label">الإناث</div>
+            </div>
+            <div class="stat-card repeater">
+                <div class="stat-value" id="repeaterCount">0</div>
+                <div class="stat-label">المعيدون</div>
+            </div>
+        </div>
+
+        <!-- Table by Level -->
+        <div class="stats-section" id="levelTableSection">
+            <div class="section-title">التعداد حسب المستوى</div>
+            <table class="stats-table" id="levelTable">
+                <thead>
+                    <tr>
+                        <th>المستوى</th>
+                        <th>إجمالي التلاميذ</th>
+                        <th>الذكور</th>
+                        <th>الإناث</th>
+                        <th>المعيدون</th>
+                    </tr>
+                </thead>
+                <tbody id="levelTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table by Status (النظام) -->
+        <div class="stats-section" id="statusTableSection">
+            <div class="section-title">التعداد حسب النظام (الصفة)</div>
+            <table class="stats-table" id="statusTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="vertical-align: middle; border-bottom: none;">المستوى</th>
+                        <th colspan="2" class="group-divider">خارجي</th>
+                        <th colspan="2" class="group-divider">نصف داخلي</th>
+                        <th colspan="2" class="group-divider">داخلي</th>
+                        <th rowspan="2" style="vertical-align: middle; border-bottom: none;">المجموع</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-th">ذ</th>
+                        <th class="sub-th group-divider">إ</th>
+                        <th class="sub-th">ذ</th>
+                        <th class="sub-th group-divider">إ</th>
+                        <th class="sub-th">ذ</th>
+                        <th class="sub-th group-divider">إ</th>
+                    </tr>
+                </thead>
+                <tbody id="statusTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-box">
+                <div class="chart-title">التعداد حسب المستوى</div>
+                <div class="chart-container">
+                    <canvas id="levelChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-box">
+                <div class="chart-title">مقارنة الذكور والإناث</div>
+                <div class="chart-container">
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-section">
+            <div class="chart-title">المعيدون حسب المستوى</div>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="repeaterChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../assets/js/navbar_fix.js"></script>
+    <script src="../../assets/js/fullscreen_toggle.js"></script>
+    <script src="../../assets/js/chart.js"></script>
+    <script src="../../assets/js/subject_manager.js"></script>
+    <script src="../../assets/js/bootstrap.bundle.min.js"></script>
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../../assets/js/xlsx-js-style.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <script src="../../assets/js/excel_export_helper.js"></script>
+    <script src="census.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - idara+</title>
+    <!-- Bootstrap CSS (Local) -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <!-- Global Styles & Win7 Fixes -->
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome (Local) -->
+    <link rel="stylesheet" href="assets/fontawesome/css/all.min.css">
+    <!-- Cairo Font (Local) -->
+    <style>
+        @font-face {
+            font-family: 'Cairo';
+            src: url('assets/fonts/Cairo-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Cairo';
+            src: url('assets/fonts/Cairo-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Cairo';
+            src: url('assets/fonts/Cairo-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+    </style>
+    <style>
+        * {
+            font-family: 'Cairo', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background orbs */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            z-index: 0;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        body::before {
+            width: 400px;
+            height: 400px;
+            background: #667eea;
+            top: -100px;
+            right: -100px;
+        }
+
+        body::after {
+            width: 350px;
+            height: 350px;
+            background: #764ba2;
+            bottom: -80px;
+            left: -80px;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(30px);
+            }
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 460px;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Header Section */
+        .card-header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 35px 35px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-header-section::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .header-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 2rem;
+            color: white;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .card-header-section h2 {
+            color: white;
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .card-header-section p {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+        }
+
+        /* Form Body */
+        .card-body-section {
+            padding: 15px 35px 30px;
+        }
+
+        /* Form Groups - Floating Labels RTL Fix */
+        .form-floating {
+            margin-bottom: 18px;
+        }
+
+        .form-floating>.form-control {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem 1rem 0.5rem 1rem;
+            height: auto;
+            min-height: 56px;
+            font-size: 1rem;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: var(--bg-color);
+            text-align: right;
+            direction: rtl;
+        }
+
+        .form-floating>.form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.12);
+            background-color: var(--card-bg);
+        }
+
+        .form-floating>label {
+            right: 0;
+            left: auto;
+            padding: 0.9rem 1rem;
+            color: #94a3b8;
+            font-size: 0.95rem;
+            font-family: 'Cairo', sans-serif;
+            text-align: right;
+            transform-origin: right top;
+        }
+
+        .form-floating>.form-control:focus~label,
+        .form-floating>.form-control:not(:placeholder-shown)~label {
+            color: #667eea;
+            font-weight: 600;
+            transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+        }
+
+        .field-wrapper {
+            position: relative;
+        }
+
+        /* Password Toggle */
+        .password-toggle-btn {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 5;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+
+        .password-toggle-btn:hover {
+            color: #667eea;
+        }
+
+        /* Submit Button */
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Cairo', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+            filter: brightness(1.05);
+        }
+
+        .btn-login:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-login:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Alert */
+        .custom-alert {
+            border-radius: 12px;
+            font-weight: 600;
+            animation: slideIn 0.4s ease;
+            font-size: 0.92rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Footer Links */
+        .auth-footer {
+            text-align: center;
+            padding: 20px 35px 25px;
+            border-top: 1px solid #f0f0f0;
+            background: #fafbfc;
+            border-radius: 0 0 24px 24px;
+        }
+
+        .auth-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .auth-footer a:hover {
+            color: #5a67d8;
+            text-decoration: underline;
+        }
+
+        /* Info Box */
+        .info-box {
+            margin-top: 20px;
+            padding: 16px;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+            border-radius: 14px;
+            font-size: 0.82rem;
+            color: var(--primary-color);
+            line-height: 1.7;
+            text-align: center;
+            border: 1px solid #d6deff;
+        }
+
+        .info-box i {
+            color: #f1c40f;
+            margin-left: 5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 576px) {
+            .card-header-section {
+                padding: 25px 20px 20px;
+            }
+
+            .card-body-section {
+                padding: 10px 20px 25px;
+            }
+
+            .auth-footer {
+                padding: 15px 20px 20px;
+            }
+
+            .login-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <div class="auth-card">
+            <!-- Header -->
+            <div class="card-header-section">
+                <div class="header-icon">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+                <h2>مرحباً بك</h2>
+                <p>قم بتسجيل الدخول للوصول إلى حسابك</p>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body-section">
+                <div id="feedback" class="alert custom-alert" style="display: none;" role="alert"></div>
+
+                <form id="loginForm">
+                    <!-- Email -->
+                    <div class="form-floating field-wrapper">
+                        <input type="email" class="form-control" id="email" placeholder="البريد الإلكتروني" required>
+                        <label for="email"><i class="fas fa-envelope me-1"></i> البريد الإلكتروني</label>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-floating field-wrapper">
+                        <input type="password" class="form-control" id="password" placeholder="كلمة المرور" required
+                            style="padding-left: 45px;">
+                        <label for="password"><i class="fas fa-lock me-1"></i> كلمة المرور</label>
+                        <button type="button" class="password-toggle-btn" id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+
+                    <div style="text-align: left; margin-top: -10px; margin-bottom: 12px;">
+                        <a href="forgot_password.html" style="color: #667eea; text-decoration: none; font-size: 0.88rem; font-weight: 600; transition: color 0.3s;"
+                           onmouseover="this.style.color='#5a67d8'; this.style.textDecoration='underline';"
+                           onmouseout="this.style.color='#667eea'; this.style.textDecoration='none';">
+                            <i class="fas fa-key me-1"></i> نسيت كلمة المرور؟
+                        </a>
+                    </div>
+
+                    <button type="submit" class="btn-login" id="loginBtn">
+                        <i class="fas fa-arrow-right"></i>
+                        تسجيل الدخول
+                    </button>
+                </form>
+
+                <div class="info-box">
+                    <i class="fas fa-lightbulb"></i>
+                    جميع بيانات التطبيق (تلاميذ، أساتذة، نقاط) مخزنة على حاسوبك الشخصي.
+                    يعمل التطبيق دون اتصال بالإنترنت، ويحتاج الاتصال فقط أثناء التسجيل وعملية التفعيل.
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="auth-footer">
+                <span style="color: #718096;">ليس لديك حساب؟</span>
+                <a href="register.html"><i class="fas fa-user-plus me-1"></i> إنشاء حساب جديد</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/icon_manager.js"></script>
+    <script src="db.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const feedback = document.getElementById('feedback');
+        const loginBtn = document.getElementById('loginBtn');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+
+        // Password Toggle Logic
+        if (togglePassword) {
+            togglePassword.addEventListener('click', function () {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                const icon = this.querySelector('i');
+                icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+            });
+        }
+
+        // Load saved email
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedEmail = localStorage.getItem('savedEmail');
+            if (savedEmail) {
+                emailInput.value = savedEmail;
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            // Save email for next time
+            localStorage.setItem('savedEmail', email);
+
+            // Reset UI
+            feedback.style.display = 'none';
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> جاري التحقق...';
+
+            try {
+                const response = await Auth.login(email, password);
+
+                if (response.result === 'success') {
+                    feedback.className = 'alert alert-success custom-alert';
+                    feedback.innerHTML = '<i class="fas fa-check-circle me-2"></i> تم تسجيل الدخول بنجاح! جاري التوجيه...';
+                    feedback.style.display = 'block';
+
+                    setTimeout(() => {
+                        window.location.href = '../index.html';
+                    }, 1500);
+                } else {
+                    throw new Error(response.message || 'فشل تسجيل الدخول');
+                }
+            } catch (error) {
+                feedback.className = 'alert alert-danger custom-alert';
+                feedback.innerHTML = '<i class="fas fa-times-circle me-2"></i> ' + error.message;
+                feedback.style.display = 'block';
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-arrow-right"></i> تسجيل الدخول';
+            }
+        });
+    </script>
+</body>
+
+</html>

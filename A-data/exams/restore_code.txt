@@ -1,0 +1,59 @@
+function populatePeriodSelect() {
+    const dayId = parseInt(document.getElementById('daySelect').value);
+    const periodSelect = document.getElementById('periodSelect');
+    const currentValue = periodSelect.value;
+
+    let html = '<option value="morning">صباح</option>';
+
+    const day = days.find(d => d.id === dayId);
+    if (day && day.midday) {
+        html += '<option value="midday">منتصف</option>';
+    }
+
+    html += '<option value="evening">مساء</option>';
+    periodSelect.innerHTML = html;
+
+    if (currentValue) periodSelect.value = currentValue;
+}
+
+function loadTeachersForPeriod() {
+    const dayId = parseInt(document.getElementById('daySelect').value);
+    const period = document.getElementById('periodSelect').value;
+
+    if (!dayId || !period) {
+        currentTeachers = [];
+        renderTeachersTable();
+        return;
+    }
+
+    const day = days.find(d => d.id === dayId);
+    if (!day) return;
+
+    const key = `${dayId}_${period}`;
+    const assignedTeacherIds = schedule[key] || [];
+
+    // Get teacher details
+    currentTeachers = assignedTeacherIds.map(tid => {
+        const teacher = teachers.find(t => t.id === tid);
+        if (!teacher) return null;
+
+        // Get saved room/note or defaults
+        const saved = roomAssignments[key]?.[tid] || {};
+
+        return {
+            id: teacher.id,
+            surname: teacher.surname,
+            name: teacher.name,
+            subjects: teacher.subjects,
+            institution: teacher.institution,
+            room: saved.room || 0,
+            note: saved.note || '',
+            isReserve: saved.isReserve || false
+        };
+    }).filter(Boolean);
+
+    // Sort by surname
+    currentTeachers.sort((a, b) => a.surname.localeCompare(b.surname, 'ar'));
+
+    // Update info card
+    let periodLabel = 'صباحية';

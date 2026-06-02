@@ -1,0 +1,263 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تخصيص الواجهة - إعدادات</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .settings-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header-section {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 4px solid var(--secondary-color);
+        }
+
+        .header-section h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .header-section p {
+            color: #7f8c8d;
+        }
+
+        .toggles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .toggle-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s;
+            border: 1px solid var(--border-color);
+        }
+
+        .toggle-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .feature-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            background: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .feature-name {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* Switch Style */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--card-bg);
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--secondary-color);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(24px);
+        }
+
+        .btn-save {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 40px auto 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        .btn-save:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.6);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+
+    <div class="container settings-container">
+
+        <div class="header-section">
+            <h1><span data-icon="settings"></span> تخصيص الواجهة الرئيسية</h1>
+            <p>اختر الاختصارات التي تود إظهارها في الصفحة الرئيسية</p>
+        </div>
+
+        <div class="toggles-grid" id="togglesContainer">
+            <!-- Items injected by JS -->
+        </div>
+
+        <button class="btn-save" onclick="savePreferences()">
+            <span data-icon="save"></span> حفظ التغييرات
+        </button>
+
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script>
+        // Definition of available home buttons
+        const HOME_BUTTONS = [
+            { id: 'btn_absence', label: 'متابعة الغيابات', icon: 'calendar', color: 'var(--secondary-color)' },
+            { id: 'btn_students', label: 'قائمة التلاميذ', icon: 'list', color: 'var(--secondary-color)' },
+            { id: 'btn_teachers', label: 'إدارة الأساتذة', icon: 'teacher', color: '#7f8c8d' },
+            { id: 'btn_analysis', label: 'تحليل النتائج', icon: 'chart', color: '#e67e22' },
+            { id: 'btn_supervision', label: 'جدول الحراسة', icon: 'schedule', color: '#e67e22' },
+            { id: 'btn_settings', label: 'الإعدادات', icon: 'settings', color: '#7f8c8d' }
+        ];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            Auth.checkAuth();
+            if (typeof IconManager !== 'undefined') IconManager.render();
+            await loadPreferences();
+        });
+
+        async function loadPreferences() {
+            const container = document.getElementById('togglesContainer');
+            const config = await DB.get('home_buttons_config') || {};
+
+            container.innerHTML = HOME_BUTTONS.map(btn => {
+                // Default to true if not set
+                const isChecked = config[btn.id] !== false;
+
+                return `
+                    <div class="toggle-card">
+                        <div class="feature-info">
+                            <div class="feature-icon" style="color: ${btn.color}">
+                                <span data-icon="${btn.icon}"></span>
+                            </div>
+                            <span class="feature-name">${btn.label}</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle_${btn.id}" ${isChecked ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+
+            if (typeof IconManager !== 'undefined') IconManager.render();
+        }
+
+        async function savePreferences() {
+            const config = {};
+            HOME_BUTTONS.forEach(btn => {
+                const checkbox = document.getElementById(`toggle_${btn.id}`);
+                if (checkbox) {
+                    config[btn.id] = checkbox.checked;
+                }
+            });
+
+            await DB.set('home_buttons_config', config);
+            showToast('تم حفظ تفضيلات الواجهة بنجاح');
+
+            // Optional: Redirect back to settings or home after short delay
+            setTimeout(() => {
+                window.location.href = '../index.html';
+            }, 1000);
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<span class="toast-icon">✅</span> ${message}`;
+            container.appendChild(toast);
+
+            // Force reflow
+            toast.offsetHeight;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

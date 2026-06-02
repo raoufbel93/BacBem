@@ -1,0 +1,171 @@
+﻿﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حسابي - نظام إدارة المؤسسة التعليمية</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .account-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .account-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .account-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .account-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .account-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-left: 20px;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .card-desc {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+
+        .card-action {
+            margin-right: 20px;
+        }
+
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            transition: background 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .btn-subscribe {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-subscribe:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-logout {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-logout:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <div class="account-container">
+            <header class="account-header">
+                <h1><span data-icon="user"></span> حسابي</h1>
+                <p>إدارة حسابك واشتراكك</p>
+            </header>
+
+            <!-- Subscription Section -->
+            <div class="account-card">
+                <div class="card-icon" style="background-color: rgba(52, 152, 219, 0.1); color: var(--secondary-color);">
+                    <span data-icon="key"></span>
+                </div>
+                <div class="card-content">
+                    <div class="card-title">بيانات الاشتراك</div>
+                    <div class="card-desc">تفعيل البرنامج، التحقق من حالة الاشتراك، وتجديد الترخيص.</div>
+                </div>
+                <div class="card-action">
+                    <a href="subscription.html" class="btn-action btn-subscribe">تفاصيل الاشتراك</a>
+                </div>
+            </div>
+
+            <!-- Logout Section -->
+            <div class="account-card">
+                <div class="card-icon" style="background-color: rgba(231, 76, 60, 0.1); color: #e74c3c;">
+                    <span data-icon="door"></span>
+                </div>
+                <div class="card-content">
+                    <div class="card-title">تسجيل الخروج</div>
+                    <div class="card-desc">إنهاء الجلسة الحالية والعودة إلى شاشة تسجيل الدخول.</div>
+                </div>
+                <div class="card-action">
+                    <button onclick="Auth.logout()" class="btn-action btn-logout">خروج</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Auth.checkAuth();
+            if (typeof UpdateManager !== 'undefined') {
+                UpdateManager.checkForUpdates();
+            }
+        });
+    </script>
+    <script src="../assets/js/update_manager.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script src="../assets/js/fullscreen_toggle.js"></script>
+
+</body>
+
+</html>

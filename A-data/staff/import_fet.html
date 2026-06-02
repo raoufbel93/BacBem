@@ -1,0 +1,343 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استيراد FET - تحليل النتائج</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="assignment.css">
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+        <script src="../assets/js/icon_manager.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof IconManager !== 'undefined') IconManager.render();
+        });
+    </script>
+    <!-- Embedded Styles for Import Page -->
+    <style>
+        .import-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .upload-section {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            border: 2px dashed #ccc;
+            text-align: center;
+            margin-bottom: 2rem;
+            transition: border-color 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-section:hover {
+            border-color: var(--primary-color);
+        }
+
+        .upload-section.dragover {
+            border-color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .file-info {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-color);
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            border-right: 4px solid var(--primary-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .mapping-section {
+            display: none;
+            /* Hidden until analyzed */
+            margin-bottom: 2rem;
+        }
+
+        .mapping-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .mapping-table th {
+            position: sticky;
+            top: 0;
+            background: var(--bg-color);
+            z-index: 10;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .status-match {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-missing {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-new {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        select.mapping-select {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+
+        <div class="import-header no-print">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <button class="btn btn-secondary" onclick="window.location.href='assignment.html'">
+                    <i class="fas fa-arrow-right"></i> العودة لقسم الإسناد
+                </button>
+            </div>
+            <h1><span data-icon="upload"></span> استيراد التوقيت من FET</h1>
+            <p>قم برفع ملف XML الصادر من برنامج FET لاستيراد جداول الأساتذة.</p>
+            <button class="btn btn-secondary btn-sm" id="resetImportBtn" onclick="clearAnalysisState()"
+                style="display: none; margin-top: 10px;">
+                <i class="fas fa-trash-alt"></i> إعادة تعيين / ملف جديد
+            </button>
+        </div>
+
+        <!-- File Upload -->
+        <div class="upload-section" id="dropZone">
+            <input type="file" id="fileInput" accept=".xml" style="display: none;">
+            <div class="upload-icon"><i class="fas fa-file-upload"></i></div>
+            <div class="upload-text">
+                <h3>اختر ملف XML أو اسحبه هنا</h3>
+                <p class="text-muted">يدعم ملفات FET XML (timetables.xml)</p>
+            </div>
+            <div class="file-info" id="fileInfo"></div>
+        </div>
+
+        <div class="text-center mb-20" id="analyzeAction" style="display: none;">
+            <button class="btn btn-primary btn-lg" onclick="analyzeFile()">
+                <i class="fas fa-search"></i> تحليل الملف
+            </button>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="analysisResults" style="display: none;">
+            <div class="section-title">
+                <h2><span data-icon="chart"></span> نتائج التحليل</h2>
+            </div>
+
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <h3>عدد الأساتذة في الملف</h3>
+                    <div class="value" id="countTeachers">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>عدد الأقسام في الملف</h3>
+                    <div class="value" id="countClasses">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>إجمالي الحصص</h3>
+                    <div class="value" id="countActivities">-</div>
+                </div>
+            </div>
+
+            <!-- Stream Mapping Section -->
+            <div id="streamsMappingSection" class="mapping-section" style="display: none;">
+                <div class="section-title">
+                    <h2><span data-icon="list-ul"></span> مطابقة الشعب</h2>
+                    <p class="text-muted">يجب ربط كل شعبة موجودة في الملف بالشعبة الموافقة لها في النظام.</p>
+                </div>
+                <div class="mapping-table-container">
+                    <table class="table mapping-table">
+                        <thead>
+                            <tr>
+                                <th>الشعبة في الملف (FET)</th>
+                                <th>الحالة</th>
+                                <th>الشعبة في النظام</th>
+                            </tr>
+                        </thead>
+                        <tbody id="streamsMappingBody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Teacher Preview Section -->
+            <div class="section-title">
+                <h2><span data-icon="search"></span> معاينة جدول الأستاذ</h2>
+            </div>
+
+            <div class="teacher-selection mb-20"
+                style="background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;">
+
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="font-weight: bold; margin-bottom: 5px; display: block;">اختر الأستاذ من FET:</label>
+                    <select id="previewTeacherSelect" class="teacher-select"
+                        onchange="renderPreviewSchedule(this.value); updatePreviewAppTeacherSelect(this.value);"
+                        style="width: 100%;">
+                        <option value="">-- اختر من الملف --</option>
+                    </select>
+                </div>
+
+                <div class="transfer-controls"
+                    style="flex: 1; min-width: 250px; display: flex; gap: 10px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label style="font-weight: bold; margin-bottom: 5px; display: block;">ربطه مع الأستاذ (في
+                            التطبيق):</label>
+                        <select id="previewAppTeacherSelect" class="teacher-select" style="width: 100%;">
+                            <option value="">-- اختر الأستاذ --</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="transferAssignmentFromPreview()"
+                        title="ربط التوقيت بهذا الأستاذ">
+                        <i class="fas fa-link"></i> ربط
+                    </button>
+                </div>
+            </div>
+
+            <div class="schedule-container mb-20" id="previewContainer" style="display: none;">
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>اليوم / الحصة</th>
+                            <th>الأحد</th>
+                            <th>الإثنين</th>
+                            <th>الثلاثاء</th>
+                            <th>الأربعاء</th>
+                            <th>الخميس</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewScheduleBody">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Teachers Mapping -->
+            <div class="mapping-section">
+                <div class="section-header">
+                    <h3>مطابقة الأساتذة</h3>
+                    <span class="badge" id="teacherMatchStats"></span>
+                </div>
+                <div class="mapping-table-container">
+                    <table class="table mapping-table">
+                        <thead>
+                            <tr>
+                                <th>الاسم في FET</th>
+                                <th>الحالة</th>
+                                <th>سيربط مع (في التطبيق)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teachersMappingBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Classes Mapping -->
+            <div class="mapping-section">
+                <div class="section-header">
+                    <h3>مطابقة الأقسام</h3>
+                    <span class="badge" id="classMatchStats"></span>
+                </div>
+                <div class="mapping-table-container">
+                    <table class="table mapping-table">
+                        <thead>
+                            <tr>
+                                <th>الاسم في FET</th>
+                                <th>الحالة</th>
+                                <th>سيربط مع (في التطبيق)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classesMappingBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                تحذير: تنفيذ الاستيراد سيقوم بحذف جميع التوقيتات الحالية واستبدالها بالبيانات الجديدة.
+            </div>
+
+            <div class="modal-footer" style="justify-content: center; margin-top: 2rem;">
+                <button class="btn btn-secondary" onclick="window.location.href='assignment.html'">إلغاء</button>
+                <button id="btnExecuteImport" class="btn btn-success btn-lg">
+                    <i class="fas fa-check-circle"></i> تنفيذ الاستيراد
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script src="import_fet.js?v=2"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script src="../assets/js/fullscreen_toggle.js"></script>
+</body>
+
+</html>

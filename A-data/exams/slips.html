@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>القصاصات - تحليل النتائج</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="slips.css">
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            Auth.checkAuth();
+        });
+    </script>
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container slips-shell">
+        <div id="root"></div>
+    </div>
+
+    <script src="slips_react.js"></script>
+</body>
+
+</html>

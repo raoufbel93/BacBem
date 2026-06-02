@@ -1,0 +1,1656 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الاعدادات - تحليل النتائج</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* ========== Page Header ========== */
+        .settings-page-header {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white;
+            padding: 25px 30px; /* Reduced from 30/35 */
+            border-radius: 20px;
+            margin-top: 0px; /* Force 0 margin top */
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        /* Shell Mode Overrides */
+        body.shell-mode .container {
+            padding-top: 0 !important;
+            margin-top: 5px !important;
+        }
+
+        .settings-page-header .header-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            flex-shrink: 0;
+        }
+
+        .settings-page-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: 0;
+            color: #fff;
+        }
+
+        .settings-page-header p {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin: 4px 0 0 0;
+        }
+
+        /* ========== Settings Card ========== */
+        .settings-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .settings-card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+            transform: translateY(-3px);
+        }
+
+        .settings-card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 20px 28px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-card-header .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .settings-card-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .settings-card-header p {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            margin: 2px 0 0 0;
+        }
+
+        .settings-card-body {
+            padding: 24px 28px;
+        }
+
+        /* ========== Education Stage Selector ========== */
+        .stage-selector {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .stage-option {
+            flex: 1;
+            max-width: 240px;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+        }
+
+        .stage-option:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+        }
+
+        .stage-option.active {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .stage-option .stage-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 1.4rem;
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            transition: all 0.3s ease;
+        }
+
+        .stage-option.active .stage-icon {
+            background: #3b82f6;
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        .stage-option .stage-label {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .stage-option.active .stage-label {
+            color: #1e40af;
+        }
+
+        /* Hidden real select */
+        #educationStage {
+            display: none;
+        }
+
+        /* ========== Academic Year Section ========== */
+        .academic-year-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px dashed var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-weight: 800;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .section-title i {
+            color: #3b82f6;
+        }
+
+        .year-select-container {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .year-select-container select {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 100%;
+            padding: 14px 44px 14px 20px !important;
+            font-size: 1.15rem !important;
+            font-weight: 800 !important;
+            text-align: center;
+            border: 2px solid #3b82f6 !important;
+            background-color: #eff6ff !important;
+            border-radius: 16px !important;
+            color: #1e40af !important;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .year-select-container select:hover {
+            border-color: #2563eb !important;
+            background-color: #dbeafe !important;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+        }
+
+        .year-select-container .select-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #3b82f6;
+            pointer-events: none;
+        }
+
+        /* ========== Warning Banner ========== */
+        .info-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px 20px;
+            border-radius: 14px;
+            margin-bottom: 24px;
+            font-size: 0.88rem;
+            line-height: 1.7;
+        }
+
+        .info-banner.warning {
+            background: linear-gradient(135deg, #fefce8, #fef9c3);
+            border: 1px solid #fde68a;
+            color: #854d0e;
+        }
+
+        .info-banner .banner-icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        /* ========== Modern Form Grid ========== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .form-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-group.full-width {
+            grid-column: span 3;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.88rem;
+        }
+
+        .form-group label i[data-lucide] {
+            color: #64748b;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 11px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background-color: var(--card-bg);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-group input[readonly] {
+            background-color: var(--bg-color);
+            cursor: not-allowed;
+            color: #64748b;
+            border-color: var(--border-color);
+        }
+
+        /* Editable fields indicator */
+        .form-group input:not([readonly]),
+        .form-group select,
+        .form-grid .form-group input:not([readonly]),
+        .form-grid .form-group select,
+        #_0xDB6,
+        #morningEntryTime,
+        #eveningEntryTime {
+            border-color: #86efac !important;
+            background-color: #f0fdf4 !important;
+        }
+
+        .form-group input:not([readonly]):focus,
+        .form-group select:focus,
+        .form-grid .form-group input:not([readonly]):focus,
+        .form-grid .form-group select:focus,
+        #_0xDB6:focus,
+        #morningEntryTime:focus,
+        #eveningEntryTime:focus {
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1) !important;
+        }
+
+        /* ========== Evaluation Cards ========== */
+        .eval-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .eval-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .eval-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .eval-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .eval-card .eval-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 1.3rem;
+        }
+
+        .eval-card .eval-label {
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            color: var(--primary-color);
+        }
+
+        .eval-card input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            text-align: center;
+            font-family: inherit;
+            font-size: 1.1rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+        }
+
+        .eval-card input:focus {
+            outline: none;
+        }
+
+        /* Honor */
+        .eval-card.honor {
+            background: linear-gradient(135deg, #fefce8, #fef9c3);
+            border: 1px solid #fde68a;
+        }
+        .eval-card.honor::before { background: #eab308; }
+        .eval-card.honor .eval-icon { background: rgba(234, 179, 8, 0.15); color: #ca8a04; }
+        .eval-card.honor input { border-color: #fde68a; }
+        .eval-card.honor input:focus { border-color: #eab308; box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.1); }
+
+        /* Encouragement */
+        .eval-card.encouragement {
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border: 1px solid #bbf7d0;
+        }
+        .eval-card.encouragement::before { background: #22c55e; }
+        .eval-card.encouragement .eval-icon { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+        .eval-card.encouragement input { border-color: #bbf7d0; }
+        .eval-card.encouragement input:focus { border-color: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1); }
+
+        /* Congratulation */
+        .eval-card.congratulation {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 1px solid #bfdbfe;
+        }
+        .eval-card.congratulation::before { background: #3b82f6; }
+        .eval-card.congratulation .eval-icon { background: rgba(59, 130, 246, 0.15); color: #2563eb; }
+        .eval-card.congratulation input { border-color: #bfdbfe; }
+        .eval-card.congratulation input:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+
+        /* Excellence */
+        .eval-card.excellence {
+            background: linear-gradient(135deg, #fdf4ff, #fae8ff);
+            border: 1px solid #f0abfc;
+        }
+        .eval-card.excellence::before { background: #a855f7; }
+        .eval-card.excellence .eval-icon { background: rgba(168, 85, 247, 0.15); color: #9333ea; }
+        .eval-card.excellence input { border-color: #f0abfc; }
+        .eval-card.excellence input:focus { border-color: #a855f7; box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.1); }
+
+        /* ========== Exempt Subjects Table ========== */
+        .exempt-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .exempt-table thead tr {
+            background: linear-gradient(135deg, #1e293b, #334155);
+        }
+
+        .exempt-table th {
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 14px 16px;
+            border: none;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .exempt-table td {
+            padding: 14px 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .exempt-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .exempt-table tbody tr:nth-child(even) {
+            background-color: var(--bg-color);
+        }
+
+        .exempt-table tbody tr:hover {
+            background-color: #eff6ff;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .exempt-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Custom Toggle Switch for Checkboxes */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: all 0.3s ease;
+            border-radius: 24px;
+        }
+
+        .toggle-slider::before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            right: 3px;
+            bottom: 3px;
+            background-color: var(--card-bg);
+            transition: all 0.3s ease;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(-20px);
+        }
+
+        /* ========== Customize Button ========== */
+        .customize-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px 24px;
+            background: var(--bg-color);
+            color: var(--primary-color);
+            text-decoration: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .customize-link:hover {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-color: #93c5fd;
+            color: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+        }
+
+        .customize-link .link-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: #3b82f6;
+            transition: all 0.3s ease;
+        }
+
+        .customize-link:hover .link-icon {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        /* ========== Theme Presets ========== */
+        .theme-tip {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(148, 163, 184, 0.08));
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            line-height: 1.8;
+            font-weight: 600;
+        }
+
+        .theme-presets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .theme-preset-card {
+            position: relative;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            border-radius: 18px;
+            padding: 18px;
+            text-align: right;
+            cursor: pointer;
+            font-family: inherit;
+            color: inherit;
+            appearance: none;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .theme-preset-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+            border-color: var(--secondary-color);
+        }
+
+        .theme-preset-card.active {
+            border-color: var(--secondary-color);
+            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+            background: var(--card-bg);
+        }
+
+        .theme-current-badge {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            background: var(--secondary-color);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
+        .theme-swatch-strip {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .theme-swatch {
+            height: 12px;
+            flex: 1;
+            border-radius: 999px;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+        }
+
+        .theme-preset-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .theme-preset-title i {
+            color: var(--secondary-color);
+        }
+
+        .theme-preset-desc {
+            color: var(--text-muted);
+            font-size: 0.86rem;
+            line-height: 1.8;
+            margin: 0;
+        }
+
+        .settings-page-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .settings-page-header p,
+        .settings-card-header p {
+            color: rgba(255, 255, 255, 0.82);
+        }
+
+        .settings-card-header p {
+            color: var(--text-muted);
+        }
+
+        .stage-option:hover {
+            border-color: rgba(var(--secondary-rgb), 0.45);
+            background: rgba(var(--secondary-rgb), 0.08);
+        }
+
+        .stage-option.active {
+            border-color: var(--secondary-color);
+            background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.14), rgba(var(--secondary-rgb), 0.06));
+            box-shadow: 0 4px 15px rgba(var(--secondary-rgb), 0.2);
+        }
+
+        .stage-option .stage-icon,
+        .section-title i,
+        .year-select-container .select-icon {
+            color: var(--secondary-color);
+        }
+
+        .stage-option .stage-icon {
+            background: rgba(var(--secondary-rgb), 0.12);
+        }
+
+        .stage-option.active .stage-icon {
+            background: var(--secondary-color);
+        }
+
+        .stage-option.active .stage-label {
+            color: var(--primary-color);
+        }
+
+        .year-select-container select {
+            border-color: var(--secondary-color) !important;
+            background-color: rgba(var(--secondary-rgb), 0.1) !important;
+            color: var(--primary-color) !important;
+        }
+
+        .year-select-container select:hover {
+            border-color: var(--color-brand-strong) !important;
+            background-color: rgba(var(--secondary-rgb), 0.16) !important;
+            box-shadow: 0 10px 15px -3px rgba(var(--secondary-rgb), 0.16);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 4px rgba(var(--secondary-rgb), 0.12);
+        }
+
+        .customize-link:hover {
+            background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.12), rgba(var(--secondary-rgb), 0.06));
+            border-color: rgba(var(--secondary-rgb), 0.35);
+            color: var(--primary-color);
+            box-shadow: 0 8px 20px rgba(var(--secondary-rgb), 0.15);
+        }
+
+        .customize-link .link-icon {
+            background: rgba(var(--secondary-rgb), 0.12);
+            color: var(--secondary-color);
+        }
+
+        .customize-link:hover .link-icon {
+            background: var(--secondary-color);
+        }
+
+        /* ========== Save Status ========== */
+        .save-status {
+            text-align: center;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: all 0.5s ease;
+            background: #f0fdf4;
+            margin-top: 8px;
+        }
+
+        /* ========== Responsive ========== */
+        @media (max-width: 768px) {
+            .form-grid, .form-grid-4 {
+                grid-template-columns: 1fr;
+            }
+            .form-group.full-width {
+                grid-column: span 1;
+            }
+            .eval-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .stage-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            .stage-option {
+                max-width: 100%;
+                width: 100%;
+            }
+            .settings-page-header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .eval-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Exempt Subjects Highlights */
+        .exempt-card {
+            border: 2px solid #fecaca !important;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.1) !important;
+            animation: pulse-border 3s infinite alternate;
+        }
+        
+        .exempt-card .settings-card-header {
+            background: linear-gradient(to left, rgba(254, 226, 226, 0.4), transparent);
+            border-bottom: 1px solid #fecaca;
+        }
+
+        .exempt-card h2 {
+            background: linear-gradient(135deg, #ef4444, #991b1b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.25rem !important;
+            font-weight: 800 !important;
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: #fecaca; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.1); }
+            100% { border-color: #fca5a5; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.25); }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script>Auth.checkAuth();</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialization logic
+        });
+    </script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js?v=2"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../assets/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/lucide.min.js"></script>
+
+    <div class="container animate-fade-in-up">
+
+        <!-- Page Header -->
+        <div class="settings-page-header">
+            <div class="header-icon">
+                <i data-lucide="settings"></i>
+            </div>
+            <div>
+                <h1>الإعدادات العامة</h1>
+                <p>إدارة معلومات المؤسسة وتخصيص الإعدادات</p>
+            </div>
+        </div>
+
+        <!-- ============ CARD 1: Education Stage ============ -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #3b82f6;">
+                    <i data-lucide="layers"></i>
+                </div>
+                <div>
+                    <h2>الطور التعليمي</h2>
+                    <p>اختر الطور التعليمي للمؤسسة</p>
+                </div>
+            </div>
+            <div class="settings-card-body" style="text-align: center;">
+                <!-- Hidden real select for JS compatibility -->
+                <select id="educationStage">
+                    <option value="middle">الطور المتوسط</option>
+                    <option value="secondary">الطور الثانوي</option>
+                </select>
+
+                <div class="stage-selector" id="stageSelector">
+                    <div class="stage-option active" data-value="middle" onclick="selectStage('middle')">
+                        <div class="stage-icon">
+                            <i data-lucide="school"></i>
+                        </div>
+                        <div class="stage-label">الطور المتوسط</div>
+                    </div>
+                    <div class="stage-option" data-value="secondary" onclick="selectStage('secondary')">
+                        <div class="stage-icon">
+                            <i data-lucide="landmark"></i>
+                        </div>
+                        <div class="stage-label">الطور الثانوي</div>
+                    </div>
+                </div>
+
+                <div class="academic-year-section">
+                    <div class="section-title">
+                        <i data-lucide="calendar"></i>
+                        <span>السنة الدراسية الحالية</span>
+                    </div>
+                    <div class="year-select-container">
+                        <select id="currentAcademicYear">
+                            <option value="2024/2023">2024/2023</option>
+                            <option value="2025/2024">2025/2024</option>
+                            <option value="2026/2025" selected>2026/2025</option>
+                            <option value="2027/2026">2027/2026</option>
+                            <option value="2028/2027">2028/2027</option>
+                            <option value="2029/2028">2029/2028</option>
+                        </select>
+                        <div class="select-icon">
+                            <i data-lucide="chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ CARD 2: Institution Info ============ -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #22c55e;">
+                    <i data-lucide="building-2"></i>
+                </div>
+                <div>
+                    <h2>معلومات المؤسسة</h2>
+                    <p>البيانات الأساسية عن المؤسسة التعليمية</p>
+                </div>
+            </div>
+            <div class="settings-card-body">
+
+                <!-- Warning Banner -->
+                <div class="info-banner warning">
+                    <span class="banner-icon"><i data-lucide="alert-triangle"></i></span>
+                    <div>
+                        <b>تنبيه:</b> هذه المعلومات يتم استيرادها تلقائياً من الخادم.
+                        <br>
+                        في حال أردت تعديل بيانات المؤسسة، يرجى التواصل معنا عبر <b>البريد الإلكتروني</b> أو <b>صفحة الفيسبوك</b>.
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label><i data-lucide="map-pin" style="width:16px;height:16px;"></i> الولاية</label>
+                        <input type="text" id="_0xW1" placeholder="..." readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i data-lucide="navigation" style="width:16px;height:16px;"></i> الدائرة</label>
+                        <input type="text" id="districtInput" placeholder="أدخل اسم الدائرة..." readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i data-lucide="home" style="width:16px;height:16px;"></i> البلدية</label>
+                        <input type="text" id="_0xM2" placeholder="..." readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i data-lucide="school" style="width:16px;height:16px;"></i> اسم المؤسسة</label>
+                        <input type="text" id="_0xI3" placeholder="..." readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i data-lucide="user" style="width:16px;height:16px;"></i> اسم المدير</label>
+                        <input type="text" id="_0xMG5" placeholder="..." readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i data-lucide="phone" style="width:16px;height:16px;"></i> رقم الهاتف</label>
+                        <input type="text" id="phoneInput" placeholder="..." readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ CARD 2.5: Editable Settings ============ -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4f46e5;">
+                    <i data-lucide="sliders"></i>
+                </div>
+                <div>
+                    <h2>إعدادات الدوام والتمدرس</h2>
+                    <p>تخصيص أوقات الدخول ونظام الدراسة المعتمد</p>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                <div class="form-grid-4">
+                    <div class="form-group">
+                        <label><i data-lucide="cake" style="width:16px;height:16px;"></i> سنة ميلاد التلاميذ الموجهون</label>
+                        <input type="number" id="_0xDB6" placeholder="..." min="2000" max="2030">
+                    </div>
+
+                    <div class="form-group">
+                        <label><i data-lucide="sun" style="width:16px;height:16px;"></i> وقت الدخول صباحاً</label>
+                        <input type="time" id="morningEntryTime">
+                    </div>
+
+                    <div class="form-group">
+                        <label><i data-lucide="moon" style="width:16px;height:16px;"></i> وقت الدخول مساءً</label>
+                        <input type="time" id="eveningEntryTime">
+                    </div>
+
+                    <div class="form-group">
+                        <label><i data-lucide="book-open" style="width:16px;height:16px;"></i> نظام التمدرس</label>
+                        <select id="schoolingSystem">
+                            <option value="external">خارجي</option>
+                            <option value="half_board">نصف داخلي</option>
+                            <option value="boarding">داخلي</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ CARD 3: Evaluation Scale ============ -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #fef9c3, #fde68a); color: #ca8a04;">
+                    <i data-lucide="star"></i>
+                </div>
+                <div>
+                    <h2>سلم التقديرات الافتراضية</h2>
+                    <p>حدد المعدلات الدنيا لكل تقدير (يبدأ التقدير من هذا المعدل فما فوق)</p>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                <div class="eval-grid">
+                    <div class="eval-card honor">
+                        <div class="eval-icon"><i data-lucide="award"></i></div>
+                        <div class="eval-label">لوحة شرف</div>
+                        <input type="number" id="evalHonor" step="0.01" min="10" max="20" placeholder="12.00">
+                    </div>
+                    <div class="eval-card encouragement">
+                        <div class="eval-icon"><i data-lucide="thumbs-up"></i></div>
+                        <div class="eval-label">تشجيع</div>
+                        <input type="number" id="evalEncouragement" step="0.01" min="10" max="20" placeholder="14.00">
+                    </div>
+                    <div class="eval-card congratulation">
+                        <div class="eval-icon"><i data-lucide="trophy"></i></div>
+                        <div class="eval-label">تهنئة</div>
+                        <input type="number" id="evalCongratulation" step="0.01" min="10" max="20" placeholder="16.00">
+                    </div>
+                    <div class="eval-card excellence">
+                        <div class="eval-icon"><i data-lucide="gem"></i></div>
+                        <div class="eval-label">إمتياز</div>
+                        <input type="number" id="evalExcellence" step="0.01" min="10" max="20" placeholder="18.00">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ CARD 4: Exempt Subjects ============ -->
+        <div class="settings-card exempt-card">
+            <div class="settings-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: var(--card-bg); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">
+                    <i data-lucide="shield-alert"></i>
+                </div>
+                <div>
+                    <h2>إعفاء المواد</h2>
+                    <p style="color: #ef4444; font-weight: 600;">حدد المواد التي تستثنى ولا تظهر أبداً في تحليل النتائج</p>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                <table class="exempt-table data-table">
+                    <thead>
+                        <tr>
+                            <th>المستوى</th>
+                            <th>ت.تشكيلية</th>
+                            <th>الموسيقية</th>
+                            <th>المعلوماتية</th>
+                            <th>الأمازيغية</th>
+                        </tr>
+                    </thead>
+                    <tbody id="exemptSubjectsBody">
+                        <tr>
+                            <td>السنة الأولى</td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_1_art"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_1_music"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_1_info"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_1_ama"><span class="toggle-slider"></span></label></td>
+                        </tr>
+                        <tr>
+                            <td>السنة الثانية</td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_2_art"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_2_music"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_2_info"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_2_ama"><span class="toggle-slider"></span></label></td>
+                        </tr>
+                        <tr>
+                            <td>السنة الثالثة</td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_3_art"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_3_music"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_3_info"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_3_ama"><span class="toggle-slider"></span></label></td>
+                        </tr>
+                        <tr>
+                            <td>السنة الرابعة</td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_4_art"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_4_music"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_4_info"><span class="toggle-slider"></span></label></td>
+                            <td><label class="toggle-switch"><input type="checkbox" id="exempt_4_ama"><span class="toggle-slider"></span></label></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============ CARD 5: Email Settings (SMTP) ============ -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4f46e5;">
+                    <i data-lucide="mail"></i>
+                </div>
+                <div>
+                    <h2>إعدادات البريد الإلكتروني (SMTP)</h2>
+                    <p>إعدادات خادم البريد الخاص بالمؤسسة لإرسال الرسائل للأولياء</p>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label><i data-lucide="mail"></i> البريد الإلكتروني (المرسل)</label>
+                        <input type="email" id="smtpEmail" placeholder="example@gmail.com" style="direction: ltr; text-align: left;">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="d-flex justify-content-between align-items-center">
+                            <span><i data-lucide="key"></i> كلمة مرور التطبيق (App Password)</span>
+                            <div class="d-flex gap-2">
+                                <a href="#" onclick="window.shell ? window.shell.openExternal('https://youtu.be/-YrZ3ZfaYwg') : window.open('https://youtu.be/-YrZ3ZfaYwg', '_blank'); return false;" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.85rem; border-radius: 12px; text-decoration: none; display: flex; align-items: center;">
+                                    <i class="fab fa-youtube me-1"></i> فيديو توضيحي
+                                </a>
+                                <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="showAppPasswordHelp()" style="font-size: 0.85rem; border-radius: 12px;">
+                                    <i class="fas fa-question-circle me-1"></i> طريقة الحصول عليها
+                                </button>
+                            </div>
+                        </label>
+                        <input type="password" id="smtpPassword" placeholder="••••••••••••••••" style="direction: ltr; text-align: left;">
+                    </div>
+                    <div class="form-group">
+                        <label><i data-lucide="server"></i> خادم SMTP (Host)</label>
+                        <input type="text" id="smtpHost" placeholder="smtp.gmail.com" value="smtp.gmail.com" style="direction: ltr; text-align: left;" readonly>
+                        <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle"></i> افتراضي لـ Gmail</small>
+                    </div>
+                    <div class="form-group">
+                        <label><i data-lucide="hash"></i> المنفذ (Port)</label>
+                        <input type="number" id="smtpPort" placeholder="465" value="465" style="direction: ltr; text-align: left;" readonly>
+                        <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle"></i> افتراضي لـ Gmail</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ CARD 6: Theme Presets ============ -->
+        <div class="settings-card" id="theme-settings">
+            <div class="settings-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #f5f3ff, #ede9fe); color: #8b5cf6;">
+                    <i data-lucide="palette"></i>
+                </div>
+                <div>
+                    <h2>ثيمات التطبيق</h2>
+                    <p>اختر لون الواجهة المناسب لك مع إبقاء الشكل الحالي كثيم افتراضي</p>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                <div class="theme-tip">
+                    الثيم الحالي للتطبيق محفوظ هنا باسم <strong>الافتراضي</strong>. يمكنك تبديله فوراً من هذه الصفحة أو من القائمة الفرعية داخل قائمة الإعدادات في الشريط العلوي.
+                </div>
+                <div id="themePresetsGrid" class="theme-presets-grid"></div>
+            </div>
+        </div>
+
+        <!-- ============ CARD 7: Customize Interface ============ -->
+        <div class="settings-card">
+            <div class="settings-card-body" style="padding: 20px 28px;">
+                <a href="home_settings.html" class="customize-link">
+                    <span class="link-icon"><i data-lucide="palette"></i></span>
+                    تخصيص أزرار الواجهة الرئيسية
+                    <i data-lucide="chevron-left" style="margin-right: auto; opacity: 0.4;"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- SweetAlert2 library injected here -->
+        <script src="../assets/js/sweetalert2.all.min.js"></script>
+
+        <!-- Save Status -->
+        <div id="saveStatus" class="save-status" style="opacity: 0;">
+            <span data-icon="check"></span> تم حفظ التغييرات تلقائياً
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toastContainer" class="toast-container"></div>
+
+        <script>
+            function showAppPasswordHelp() {
+                if (!window.Swal) return alert("نافذة المساعدة قيد التحميل، يرجى إعادة المحاولة.");
+
+                Swal.fire({
+                    title: '<strong style="color: #1e3c72;"><i class="fas fa-shield-alt me-2"></i> كلمة مرور التطبيق</strong>',
+                    html: `
+                        <div style="text-align: right; font-size: 1.05rem;" dir="rtl">
+                            <p style="margin-bottom:15px; font-family: 'Cairo', sans-serif;">لأسباب أمنية تفرضها <strong>Google</strong>، يطلب التطبيق "كلمة مرور تطبيقات" خاصة به ولا يقبل الباسوورد العادي.</p>
+                            <ol style="margin-bottom:15px; font-family: 'Cairo', sans-serif; line-height: 1.8;">
+                                <li>المرحلة الأولى: تأكد من تفعيل <a href="#" onclick="window.shell ? window.shell.openExternal('https://myaccount.google.com/signinoptions/two-step-verification') : window.open('https://myaccount.google.com/signinoptions/two-step-verification', '_blank'); return false;" style="color:#2a5298; font-weight:bold; text-decoration:underline;">التحقق بخطوتين (Validation en deux étapes)</a> في حسابك.</li>
+                                <li>المرحلة الثانية: يمكنك مشاهدة <a href="#" onclick="window.shell ? window.shell.openExternal('https://youtu.be/-YrZ3ZfaYwg') : window.open('https://youtu.be/-YrZ3ZfaYwg', '_blank'); return false;" style="color:#e11d48; font-weight:bold; text-decoration:underline;"><i class="fab fa-youtube me-1"></i> هذا الفيديو التوضيحي</a> لمعرفة الطريقة بالتفصيل.</li>
+                                <li>المرحلة الثالثة: اضغط على الزر الأخضر بالأسفل للذهاب لصفحة كلمات مرور التطبيقات.</li>
+                                <li>اختر <strong>"تطبيق آخر"</strong> واكتب أي اسم كـ (برنامج الإدارة).</li>
+                                <li>انسخ الكلمة المتكونة من <strong style="color:#d35400;">16 حرفاً</strong> التي يعطيها لك وضعها هنا.</li>
+                            </ol>
+                            <button onclick="window.shell ? window.shell.openExternal('https://myaccount.google.com/apppasswords') : window.open('https://myaccount.google.com/apppasswords', '_blank')" class="btn btn-success" style="width:100%; font-family: 'Cairo', sans-serif; padding:10px; border-radius:8px; display:flex; justify-content:center; align-items:center; gap:8px;">
+                                <i class="fas fa-external-link-alt"></i> الانتقال لإنشاء كلمة المرور سريعاً
+                            </button>
+                        </div>
+                    `,
+                    icon: 'info',
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    customClass: {
+                        popup: 'animate-pop-in'
+                    }
+                });
+            }
+
+            const THEME_PRESET_PRESENTATION = [
+                {
+                    key: 'default',
+                    label: 'الافتراضي',
+                    description: 'ألوان التطبيق الحالية كما هي بدون أي تغيير على الطابع الأصلي.',
+                    swatches: ['#2563eb', '#243b53', '#dc2626']
+                },
+                {
+                    key: 'blue',
+                    label: 'أزرق',
+                    description: 'ثيم أزرق واضح وعصري يمنح شريط القوائم والواجهة حضوراً أكثر حيوية.',
+                    swatches: ['#3b82f6', '#1d4ed8', '#0284c7']
+                },
+                {
+                    key: 'azure',
+                    label: 'سماوي',
+                    description: 'ثيم سماوي قريب من اللون المرفق، يمنح الواجهة طابعاً هادئاً ونظيفاً وواضحاً.',
+                    swatches: ['#3188c7', '#1f6fa7', '#57a7dd']
+                },
+                {
+                    key: 'emerald',
+                    label: 'زمردي',
+                    description: 'ثيم هادئ بلمسات خضراء مريحة للعين ومناسب للاستخدام الطويل.',
+                    swatches: ['#059669', '#14532d', '#0f766e']
+                },
+                {
+                    key: 'sunset',
+                    label: 'غروب',
+                    description: 'ألوان دافئة برتقالية تمنح الواجهة حضوراً أوضح وحيوية أكثر.',
+                    swatches: ['#ea580c', '#7c2d12', '#dc2626']
+                },
+                {
+                    key: 'rose',
+                    label: 'وردي',
+                    description: 'تدرجات وردية أنيقة تمنح الواجهة شخصية عصرية وناعمة.',
+                    swatches: ['#e11d48', '#881337', '#be123c']
+                }
+            ];
+
+            function getCurrentThemePresetKey() {
+                try {
+                    if (window.ThemeManager && typeof window.ThemeManager.getCurrentPreset === 'function') {
+                        return window.ThemeManager.getCurrentPreset();
+                    }
+                } catch (e) { }
+
+                try {
+                    return localStorage.getItem('themePreset') || 'default';
+                } catch (storageError) { }
+
+                return 'default';
+            }
+
+            function getThemePresetLabel(presetKey) {
+                const preset = THEME_PRESET_PRESENTATION.find(item => item.key === presetKey);
+                return preset ? preset.label : 'الافتراضي';
+            }
+
+            function renderThemePresetOptions() {
+                const container = document.getElementById('themePresetsGrid');
+                if (!container) return;
+
+                const currentPreset = getCurrentThemePresetKey();
+
+                container.innerHTML = THEME_PRESET_PRESENTATION.map((preset) => {
+                    const isActive = preset.key === currentPreset;
+                    const badge = isActive ? '<span class="theme-current-badge">مفعل</span>' : '';
+
+                    return `
+                        <button type="button" class="theme-preset-card ${isActive ? 'active' : ''}" onclick="applyThemePresetSelection('${preset.key}')">
+                            ${badge}
+                            <div class="theme-swatch-strip">
+                                ${preset.swatches.map((swatch) => `<span class="theme-swatch" style="background:${swatch};"></span>`).join('')}
+                            </div>
+                            <div class="theme-preset-title">
+                                <i data-lucide="palette"></i>
+                                <span>${preset.label}</span>
+                            </div>
+                            <p class="theme-preset-desc">${preset.description}</p>
+                        </button>
+                    `;
+                }).join('');
+
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                }
+            }
+
+            function applyThemePresetSelection(presetKey) {
+                if (window.ThemeManager && typeof window.ThemeManager.setPreset === 'function') {
+                    window.ThemeManager.setPreset(presetKey);
+                } else {
+                    try {
+                        localStorage.setItem('themePreset', presetKey);
+                    } catch (storageError) { }
+                    document.documentElement.setAttribute('data-theme-preset', presetKey);
+                    if (document.body) {
+                        document.body.setAttribute('data-theme-preset', presetKey);
+                    }
+                }
+
+                renderThemePresetOptions();
+                showToast('تم تطبيق ثيم ' + getThemePresetLabel(presetKey) + ' بنجاح');
+            }
+
+            // ---- Stage Selector Visual Logic ----
+            function selectStage(value) {
+                const currentStage = document.getElementById('educationStage').value;
+                if (currentStage === value) return; // No change
+
+                if (!window.Swal) {
+                    applyStageChange(value);
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'تأكيد تغيير الطور',
+                    text: 'سيتم تغيير جميع الإعدادات بناءً على الطور الجديد. هل أنت متأكد من المتابعة؟',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'نعم، تغيير الطور',
+                    cancelButtonText: 'إلغاء',
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#94a3b8'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        applyStageChange(value);
+                    }
+                });
+            }
+
+            function applyStageChange(value) {
+                // Update hidden select
+                document.getElementById('educationStage').value = value;
+                // Update visual
+                var options = document.querySelectorAll('.stage-option');
+                for (var i = 0; i < options.length; i++) {
+                    options[i].classList.remove('active');
+                    if (options[i].getAttribute('data-value') === value) {
+                        options[i].classList.add('active');
+                    }
+                }
+                // Trigger change event
+                var event = new Event('change', { bubbles: true });
+                document.getElementById('educationStage').dispatchEvent(event);
+            }
+
+            // Sync stage selector visual on load
+            function syncStageSelector() {
+                var val = document.getElementById('educationStage').value;
+                var options = document.querySelectorAll('.stage-option');
+                for (var i = 0; i < options.length; i++) {
+                    options[i].classList.remove('active');
+                    if (options[i].getAttribute('data-value') === val) {
+                        options[i].classList.add('active');
+                    }
+                }
+            }
+
+            // Load settings on page load
+            document.addEventListener('DOMContentLoaded', function () {
+                // Render icons for Windows 7
+                if (typeof IconManager !== 'undefined') IconManager.render();
+
+                renderThemePresetOptions();
+                _0xLd();
+            });
+
+            window.addEventListener('themeChanged', function () {
+                renderThemePresetOptions();
+            });
+
+            async function _0xLd() {
+                let _0x1 = await DB.getSettings() || {};
+
+                // Self-Healing: Sync with currently logged in user
+                const user = (typeof Auth !== 'undefined' && Auth.getUser) ? ((typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null) : null;
+                if (user) {
+                    // Normalize user data to settings format
+                    const syncedSettings = {
+                        ..._0x1,
+                        wilaya: user.wilaya || _0x1.wilaya || '',
+                        district: _0x1.district || '',
+                        municipality: user.municipality || _0x1.municipality || '',
+                        institutionName: user.institution || _0x1.institutionName || '',
+                        managerName: user.manager || _0x1.managerName || ''
+                    };
+
+                    // Check if critical fields are different (ignoring empty vs undefined)
+                    const isDifferent =
+                        syncedSettings.institutionName !== (_0x1.institutionName || '') ||
+                        syncedSettings.managerName !== (_0x1.managerName || '');
+
+                    if (isDifferent) {
+                        console.log("Difference found. Updating DB from Session.");
+                        await DB.saveSettings(syncedSettings);
+                    }
+
+                    // ALWAYS use the synced settings for display to ensure it matches login
+                    _0x1 = syncedSettings;
+                }
+
+                // DEBUG PANEL (Temporary)
+                const existingDebug = document.getElementById('debug-panel');
+                if (existingDebug) existingDebug.remove();
+
+                document.getElementById('_0xW1').value = _0x1.wilaya || '';
+                document.getElementById('districtInput').value = _0x1.district || '';
+                document.getElementById('_0xM2').value = _0x1.municipality || '';
+                document.getElementById('educationStage').value = _0x1.educationStage || 'middle';
+                document.getElementById('_0xI3').value = _0x1.institutionName || '';
+                if(document.getElementById('currentAcademicYear')) {
+                    document.getElementById('currentAcademicYear').value = _0x1.currentAcademicYear || DB.getCurrentAcademicYear();
+                }
+                document.getElementById('_0xMG5').value = _0x1.managerName || '';
+                document.getElementById('_0xDB6').value = _0x1.directedBirthYear || '';
+                document.getElementById('morningEntryTime').value = _0x1.morningEntryTime || '08:00';
+                document.getElementById('eveningEntryTime').value = _0x1.eveningEntryTime || '13:00';
+                document.getElementById('schoolingSystem').value = _0x1.schoolingSystem || 'external';
+                document.getElementById('phoneInput').value = _0x1.phone || '';
+
+                document.getElementById('evalHonor').value = _0x1.evalHonor || '12';
+                document.getElementById('evalEncouragement').value = _0x1.evalEncouragement || '14';
+                document.getElementById('evalCongratulation').value = _0x1.evalCongratulation || '16';
+                document.getElementById('evalExcellence').value = _0x1.evalExcellence || '18';
+
+                // SMTP Setup
+                if(document.getElementById('smtpEmail')) {
+                    document.getElementById('smtpEmail').value = _0x1.smtpEmail || '';
+                    document.getElementById('smtpPassword').value = _0x1.smtpPassword || '';
+                    document.getElementById('smtpHost').value = _0x1.smtpHost || 'smtp.gmail.com';
+                    document.getElementById('smtpPort').value = _0x1.smtpPort || '465';
+                }
+
+                const _0x2 = await DB.get('exemptSubjects') || {};
+                const _0x3 = ['1', '2', '3', '4'];
+                const _0x4 = ['art', 'music', 'info', 'ama'];
+                _0x3.forEach(_0x5 => {
+                    _0x4.forEach(_0x6 => {
+                        const _0x7 = `exempt_${_0x5}_${_0x6}`;
+                        if (document.getElementById(_0x7)) {
+                            document.getElementById(_0x7).checked = (_0x2[_0x5] && _0x2[_0x5].includes(_0x6));
+                        }
+                    });
+                });
+
+                // Update UI based on loaded settings
+                updateExemptSubjectsUI();
+                // Sync stage selector visual
+                syncStageSelector();
+            }
+
+            async function _0xSv(silent = false) {
+                const _0x1 = {
+                    wilaya: document.getElementById('_0xW1').value,
+                    district: document.getElementById('districtInput').value,
+                    municipality: document.getElementById('_0xM2').value,
+                    educationStage: document.getElementById('educationStage').value,
+                    institutionName: document.getElementById('_0xI3').value,
+                    currentAcademicYear: document.getElementById('currentAcademicYear') ? document.getElementById('currentAcademicYear').value : DB.getCurrentAcademicYear(),
+                    managerName: document.getElementById('_0xMG5').value,
+                    directedBirthYear: document.getElementById('_0xDB6').value,
+                    morningEntryTime: document.getElementById('morningEntryTime').value,
+                    eveningEntryTime: document.getElementById('eveningEntryTime').value,
+                    schoolingSystem: document.getElementById('schoolingSystem').value,
+                    phone: document.getElementById('phoneInput').value,
+                    evalHonor: document.getElementById('evalHonor').value,
+                    evalEncouragement: document.getElementById('evalEncouragement').value,
+                    evalCongratulation: document.getElementById('evalCongratulation').value,
+                    evalExcellence: document.getElementById('evalExcellence').value,
+                    smtpEmail: document.getElementById('smtpEmail') ? document.getElementById('smtpEmail').value.trim() : '',
+                    smtpPassword: document.getElementById('smtpPassword') ? document.getElementById('smtpPassword').value.trim() : '',
+                    smtpHost: 'smtp.gmail.com', // Enforced default
+                    smtpPort: '465' // Enforced default
+                };
+                await DB.saveSettings(_0x1);
+
+                const _0x2 = {};
+                const _0x3 = ['1', '2', '3', '4'];
+                const _0x4 = ['art', 'music', 'info', 'ama'];
+                _0x3.forEach(_0x5 => {
+                    _0x2[_0x5] = [];
+                    _0x4.forEach(_0x6 => {
+                        const _0x7 = `exempt_${_0x5}_${_0x6}`;
+                        if (document.getElementById(_0x7) && document.getElementById(_0x7).checked) {
+                            _0x2[_0x5].push(_0x6);
+                        }
+                    });
+                });
+                await DB.set('exemptSubjects', _0x2);
+
+                if (!silent) {
+                    showToast(IconManager.get('check') + ' تم حفظ الإعدادات بنجاح!');
+                }
+            }
+
+            // --- Dynamic UI for Exempt Subjects ---
+            function updateExemptSubjectsUI() {
+                const stage = document.getElementById('educationStage').value;
+                const isSecondary = stage === 'secondary';
+                const table = document.querySelector('.data-table');
+
+                if (!table) return;
+
+                // Columns to hide (0-based index): 1 (Art), 2 (Music), 3 (Info)
+                // We keep 0 (Level) and 4 (Amazigh)
+                const indicesToHide = [1, 2, 3];
+
+                // 1. Toggle Headers
+                const headers = table.querySelectorAll('thead th');
+                headers.forEach((th, index) => {
+                    if (indicesToHide.includes(index)) {
+                        th.style.display = isSecondary ? 'none' : 'table-cell';
+                    }
+                });
+
+                // 2. Toggle Body Cells & Rows
+                const rows = table.querySelectorAll('tbody tr');
+
+                // Hide 4th year row for Secondary (Index 3)
+                if (rows.length > 3) {
+                    rows[3].style.display = isSecondary ? 'none' : 'table-row';
+                }
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((td, index) => {
+                        if (indicesToHide.includes(index)) {
+                            td.style.display = isSecondary ? 'none' : 'table-cell';
+                        }
+                    });
+                });
+            }
+
+            // Attach Listener
+            document.getElementById('educationStage').addEventListener('change', updateExemptSubjectsUI);
+
+            // Auto-Save Logic
+            let saveTimeout;
+            const statusEl = document.getElementById('saveStatus');
+
+            function showSavingStatus() {
+                if (statusEl) {
+                    statusEl.style.opacity = '1';
+                    statusEl.style.color = 'var(--secondary-color)';
+                    statusEl.innerHTML = IconManager.get('sync') + ' جاري الحفظ...';
+                }
+            }
+
+            function showSavedStatus() {
+                if (statusEl) {
+                    statusEl.style.opacity = '1';
+                    statusEl.style.color = '#2ecc71';
+                    statusEl.innerHTML = IconManager.get('check') + ' تم حفظ التغييرات تلقائياً';
+
+                    // Fade out after 2 seconds
+                    setTimeout(() => {
+                        statusEl.style.opacity = '0';
+                    }, 2000);
+                }
+            }
+
+            async function debouncedSave() {
+                showSavingStatus();
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(async () => {
+                    await _0xSv(true); // true = silent mode
+                    showSavedStatus();
+                }, 1000); // 1 second debounce
+            }
+
+            // Attach Auto-Save Listeners
+            // Inputs
+            ['_0xDB6', 'morningEntryTime', 'eveningEntryTime', 'districtInput', 'phoneInput', 'evalHonor', 'evalEncouragement', 'evalCongratulation', 'evalExcellence', 'smtpEmail', 'smtpPassword', 'smtpHost', 'smtpPort'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', debouncedSave);
+                    el.addEventListener('change', debouncedSave);
+                }
+            });
+
+            // Selects
+            ['educationStage', 'schoolingSystem', 'currentAcademicYear'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', debouncedSave);
+                }
+            });
+
+            // Checkboxes (delegate or attach directly)
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][id^="exempt_"]');
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', debouncedSave);
+            });
+
+            function showToast(message) {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+
+                // Use IconManager if available, otherwise fallback
+                const iconHtml = (typeof IconManager !== 'undefined')
+                    ? IconManager.get('sparkles')
+                    : '<span data-icon="sparkles"></span>';
+
+                toast.innerHTML = `
+                <span class="toast-icon">${iconHtml}</span>
+                <span class="toast-text">${message}</span>
+            `;
+
+                container.appendChild(toast);
+
+                // Force reflow
+                toast.offsetHeight;
+
+                // Show
+                toast.classList.add('show');
+
+                // Hide and remove after 3 seconds
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 500);
+                }, 3000);
+            }
+        </script>
+        <script src="../assets/js/navbar_fix.js"></script>
+        <script src="../assets/js/fullscreen_toggle.js"></script>
+
+</body>
+
+</html>

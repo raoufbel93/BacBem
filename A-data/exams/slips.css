@@ -1,0 +1,548 @@
+body {
+    background:
+        radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 28%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+}
+
+.slips-shell {
+    max-width: 1440px;
+    padding-top: 60px;
+    padding-bottom: 32px;
+}
+
+.slips-page {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.slips-header {
+    background: linear-gradient(135deg, #0f172a, #1e293b 55%, #1d4ed8 140%);
+    color: #ffffff;
+    border-radius: 22px;
+    padding: 24px 28px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+    position: relative;
+    overflow: hidden;
+}
+
+.slips-header::before {
+    content: "";
+    position: absolute;
+    inset: auto auto -50px -40px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(96, 165, 250, 0.24), transparent 72%);
+    pointer-events: none;
+}
+
+.slips-header h1 {
+    margin: 0 0 8px;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.slips-header p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1rem;
+    font-weight: 600;
+    max-width: 760px;
+}
+
+.slips-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
+    gap: 18px;
+}
+
+.slips-card {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(203, 213, 225, 0.85);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(10px);
+}
+
+.slips-card h2,
+.slips-card h3 {
+    margin: 0;
+    color: #0f172a;
+}
+
+.slips-card h2 {
+    font-size: 1.1rem;
+    font-weight: 900;
+}
+
+.slips-card-note {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.slips-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.slips-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.slips-field label {
+    font-size: 0.84rem;
+    font-weight: 800;
+    color: #475569;
+    padding-inline: 2px;
+}
+
+.slips-field select,
+.slips-field input[type="text"],
+.slips-field input[type="search"],
+.slips-field input[type="number"],
+.slips-field input[type="color"] {
+    height: 50px;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-family: inherit;
+    padding: 0 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.slips-field select:focus,
+.slips-field input[type="text"]:focus,
+.slips-field input[type="search"]:focus,
+.slips-field input[type="number"]:focus,
+.slips-field input[type="color"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.slips-field input[disabled],
+.slips-field select[disabled] {
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.slips-print-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+}
+
+.slips-mode-toggle {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.slips-mode-option {
+    border: 1px solid #cbd5e1;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+    color: #334155;
+    border-radius: 16px;
+    padding: 14px 12px;
+    text-align: right;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.slips-mode-option strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.slips-mode-option span {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.slips-mode-option.is-active {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.05));
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.14);
+}
+
+.slips-color-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.slips-color-grid .slips-field input[type="color"] {
+    padding: 6px;
+}
+
+.slips-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.slips-summary {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.slips-stat {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(203, 213, 225, 0.85);
+    color: #334155;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.88rem;
+    font-weight: 800;
+}
+
+.slips-print-button {
+    border: none;
+    border-radius: 14px;
+    padding: 14px 22px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-size: 0.98rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 16px 26px rgba(37, 99, 235, 0.24);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    font-family: inherit;
+}
+
+.slips-print-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 32px rgba(37, 99, 235, 0.3);
+}
+
+.slips-print-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.slips-surface {
+    background: #ffffff;
+    border-radius: 24px;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    padding: 22px;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+.slips-empty,
+.slips-loading,
+.slips-error {
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #475569;
+    font-size: 1rem;
+    font-weight: 700;
+    background: linear-gradient(180deg, #f8fafc, #eff6ff);
+    border: 1px dashed #bfdbfe;
+    border-radius: 20px;
+    padding: 30px;
+}
+
+.slips-error {
+    color: #b91c1c;
+    border-color: #fecaca;
+    background: linear-gradient(180deg, #fef2f2, #fff7f7);
+}
+
+.slips-chunk {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.slips-chunk + .slips-chunk {
+    margin-top: 24px;
+}
+
+.slips-chunk-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #0f172a;
+    padding: 0 2px;
+}
+
+.slips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 12px;
+}
+
+.slip-card {
+    position: relative;
+    min-height: 178px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #000;
+    padding: 12px 18px;
+    box-shadow: none;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    box-sizing: border-box;
+    color: #000;
+}
+
+.slip-card::before {
+    display: none;
+}
+
+.slip-card-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding-right: 4px;
+    position: relative;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.slip-number-badge {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    border-radius: 0 0 12px 0;
+    padding: 6px 14px;
+    background: #f0f0f0;
+    color: #000;
+    font-size: 0.85rem;
+    font-weight: 900;
+    border-bottom: 1px solid #000;
+    border-right: 1px solid #000;
+}
+
+.slip-header-center {
+    text-align: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slip-student-name {
+    margin-top: 2px;
+    font-size: 1.15rem;
+    font-weight: 900;
+    line-height: 1.2;
+    color: #000;
+}
+
+.slip-subtitle {
+    margin: 0;
+    color: #000;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.slip-meta-grid {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 10px;
+}
+
+.slip-meta-item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 10px;
+    border: 1px solid #000;
+}
+
+.slip-meta-label {
+    display: block;
+    color: #000;
+    font-size: 0.72rem;
+    font-weight: 800;
+    margin-bottom: 2px;
+}
+
+.slip-meta-value {
+    display: block;
+    color: #000;
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.slip-meta-item.is-wide {
+    grid-column: span 2;
+}
+
+@media (max-width: 1024px) {
+    .slips-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .slips-shell {
+        padding-top: 10px;
+    }
+
+    .slips-header {
+        padding: 18px 20px;
+        border-radius: 18px;
+    }
+
+    .slips-header h1 {
+        font-size: 1.55rem;
+    }
+
+    .slips-card,
+    .slips-surface {
+        padding: 16px;
+        border-radius: 18px;
+    }
+
+    .slips-mode-toggle,
+    .slips-color-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .slips-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media print {
+    @page {
+        size: A4;
+        margin: 5mm;
+    }
+
+    html,
+    body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body {
+        padding-top: 0 !important;
+    }
+
+    #navbar-container,
+    .no-print {
+        display: none !important;
+    }
+
+    .container,
+    .slips-shell,
+    .slips-page {
+        width: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        gap: 0 !important;
+    }
+
+    .slips-surface {
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .slips-chunk + .slips-chunk {
+        margin-top: 0 !important;
+    }
+
+    .slips-chunk.page-break-before {
+        break-before: page;
+        page-break-before: always;
+    }
+
+    .slips-chunk-title {
+        margin: 0 0 4mm !important;
+        font-size: 14pt !important;
+    }
+
+    .slips-grid {
+        grid-template-columns: repeat(2, 80mm) !important;
+        justify-content: center !important;
+        gap: 2mm !important;
+    }
+
+    .slip-card {
+        height: 40mm !important;
+        box-sizing: border-box;
+        box-shadow: none !important;
+        border-color: #b8c4d4 !important;
+        padding: 6px 8px !important;
+        overflow: hidden;
+    }
+
+    .slip-card::before {
+        width: 6px !important;
+    }
+
+    .slip-student-name {
+        font-size: 0.85rem !important;
+        color: #000000 !important;
+    }
+
+    .slip-subtitle {
+        font-size: 0.65rem !important;
+        margin-top: 2px !important;
+        color: #000000 !important;
+    }
+
+    .slip-number-badge {
+        padding: 4px 6px !important;
+        font-size: 0.7rem !important;
+        color: #000000 !important;
+    }
+
+    .slip-meta-grid {
+        margin-top: 6px !important;
+        gap: 2px 6px !important;
+    }
+
+    .slip-meta-item {
+        padding: 3px 5px !important;
+    }
+
+    .slip-meta-label {
+        font-size: 0.6rem !important;
+        margin-bottom: 2px !important;
+        color: #000000 !important;
+    }
+
+    .slip-meta-value {
+        font-size: 0.75rem !important;
+        color: #000000 !important;
+    }
+}

@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة البيانات - تحليل النتائج</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* ========== Page Header ========== */
+        .dm-page-header {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white;
+            padding: 30px 35px;
+            border-radius: 20px;
+            margin-bottom: 28px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .dm-page-header .header-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            flex-shrink: 0;
+        }
+
+        .dm-page-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: 0;
+            color: #fff;
+        }
+
+        .dm-page-header p {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin: 4px 0 0 0;
+        }
+
+        /* ========== Settings Card ========== */
+        .dm-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .dm-card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+            transform: translateY(-3px);
+        }
+
+        .dm-card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 20px 28px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dm-card-header .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .dm-card-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .dm-card-header p {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            margin: 2px 0 0 0;
+        }
+
+        .dm-card-body {
+            padding: 24px 28px;
+        }
+
+        /* ========== Export Checkboxes Grid ========== */
+        .export-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .export-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+            user-select: none;
+        }
+
+        .export-option:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+            transform: translateY(-2px);
+        }
+
+        .export-option.checked {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .export-option .option-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .export-option.checked .option-icon {
+            transform: scale(1.1);
+        }
+
+        .export-option .option-label {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.92rem;
+            flex: 1;
+        }
+
+        .export-option .option-check {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: transparent;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .export-option.checked .option-check {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+        }
+
+        .export-option input[type="checkbox"] {
+            display: none;
+        }
+
+        /* Select All Toggle */
+        .select-all-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 18px;
+            border-radius: 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        .select-all-bar span {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .toggle-btn {
+            padding: 8px 20px;
+            border-radius: 10px;
+            border: none;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .toggle-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        /* Export Button */
+        .btn-export {
+            width: 100%;
+            padding: 16px 24px;
+            border-radius: 14px;
+            border: none;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-export:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ========== Import Section ========== */
+        .import-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 36px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+            margin-bottom: 20px;
+        }
+
+        .import-dropzone:hover,
+        .import-dropzone.dragover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .import-dropzone .drop-icon {
+            font-size: 2.5rem;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .import-dropzone:hover .drop-icon {
+            color: #3b82f6;
+            transform: translateY(-4px);
+        }
+
+        .import-dropzone h3 {
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0 0 6px 0;
+            font-size: 1.05rem;
+        }
+
+        .import-dropzone p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        .import-dropzone .file-name {
+            margin-top: 12px;
+            font-weight: 700;
+            color: #3b82f6;
+            font-size: 0.95rem;
+        }
+
+        /* Import Mode Radio */
+        .import-mode-section {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .import-mode-section.visible {
+            display: block;
+        }
+
+        .mode-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .mode-option {
+            padding: 18px 16px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+            text-align: center;
+        }
+
+        .mode-option:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+        }
+
+        .mode-option.active {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .mode-option .mode-icon {
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .mode-option .mode-label {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.95rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .mode-option .mode-desc {
+            font-size: 0.78rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .mode-option input[type="radio"] {
+            display: none;
+        }
+
+        /* Preview Box */
+        .import-preview {
+            display: none;
+            padding: 18px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border: 1px solid #bbf7d0;
+            margin-bottom: 20px;
+        }
+
+        .import-preview.visible {
+            display: block;
+        }
+
+        .import-preview h4 {
+            font-weight: 700;
+            color: #166534;
+            margin: 0 0 12px 0;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+        }
+
+        .preview-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .preview-item .count {
+            font-weight: 800;
+            color: #16a34a;
+        }
+
+        /* Import Button */
+        .btn-import {
+            width: 100%;
+            padding: 16px 24px;
+            border-radius: 14px;
+            border: none;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-import.visible {
+            display: flex;
+        }
+
+        .btn-import:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+        }
+
+        /* ========== Delete Section ========== */
+        .delete-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn-delete {
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 2px solid #fecaca;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            color: #dc2626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-delete:hover {
+            background: #fef2f2;
+            border-color: #f87171;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+        }
+
+        .btn-factory-reset {
+            width: 100%;
+            padding: 16px 24px;
+            border-radius: 14px;
+            border: none;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-factory-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+
+        /* ========== Toast ========== */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10000;
+        }
+
+        .toast {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            min-width: 300px;
+            max-width: 90vw;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ========== Info Banner ========== */
+        .info-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            line-height: 1.7;
+        }
+
+        .info-banner.info {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+
+        .info-banner .banner-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        /* ========== Responsive ========== */
+        @media (max-width: 768px) {
+            .export-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mode-options {
+                grid-template-columns: 1fr;
+            }
+
+            .delete-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dm-page-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .preview-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+
+        <!-- Page Header -->
+        <div class="dm-page-header">
+            <div class="header-icon">
+                <i data-lucide="database"></i>
+            </div>
+            <div>
+                <h1>إدارة البيانات</h1>
+                <p>النسخ الاحتياطي، الاسترجاع، وحذف البيانات</p>
+            </div>
+        </div>
+
+        <!-- ============ CARD 1: Export ============ -->
+        <div class="dm-card">
+            <div class="dm-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #22c55e;">
+                    <i data-lucide="upload"></i>
+                </div>
+                <div>
+                    <h2>تصدير البيانات</h2>
+                    <p>اختر البيانات التي تريد تصديرها في نسخة احتياطية</p>
+                </div>
+            </div>
+            <div class="dm-card-body">
+                <!-- Select All -->
+                <div class="select-all-bar">
+                    <span><i data-lucide="check-square" style="width:16px;height:16px;vertical-align:middle;"></i>
+                        اختيار البيانات للتصدير</span>
+                    <button class="toggle-btn" id="toggleAllBtn" onclick="toggleAllExport()">تحديد الكل</button>
+                </div>
+
+                <!-- Export Options Grid -->
+                <div class="export-grid" id="exportGrid">
+                    <label class="export-option" onclick="toggleExportOption(this)">
+                        <input type="checkbox" value="students" checked>
+                        <div class="option-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <span class="option-label">التلاميذ</span>
+                        <span class="option-check"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+                    </label>
+
+                    <label class="export-option" onclick="toggleExportOption(this)">
+                        <input type="checkbox" value="grades" checked>
+                        <div class="option-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7;">
+                            <i data-lucide="file-text"></i>
+                        </div>
+                        <span class="option-label">النقاط والنتائج</span>
+                        <span class="option-check"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+                    </label>
+
+                    <label class="export-option" onclick="toggleExportOption(this)">
+                        <input type="checkbox" value="teachers" checked>
+                        <div class="option-icon" style="background: rgba(234, 179, 8, 0.12); color: #eab308;">
+                            <i data-lucide="briefcase"></i>
+                        </div>
+                        <span class="option-label">الأساتذة والموظفون</span>
+                        <span class="option-check"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+                    </label>
+
+                    <label class="export-option" onclick="toggleExportOption(this)">
+                        <input type="checkbox" value="absences" checked>
+                        <div class="option-icon" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+                            <i data-lucide="calendar-x"></i>
+                        </div>
+                        <span class="option-label">الغيابات</span>
+                        <span class="option-check"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+                    </label>
+
+                    <label class="export-option" onclick="toggleExportOption(this)">
+                        <input type="checkbox" value="supervision" checked>
+                        <div class="option-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                            <i data-lucide="shield"></i>
+                        </div>
+                        <span class="option-label">الحراسة</span>
+                        <span class="option-check"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+                    </label>
+
+                    <label class="export-option" onclick="toggleExportOption(this)">
+                        <input type="checkbox" value="notebooks" checked>
+                        <div class="option-icon" style="background: rgba(244, 63, 94, 0.12); color: #f43f5e;">
+                            <i data-lucide="book-open"></i>
+                        </div>
+                        <span class="option-label">دفاتر النصوص</span>
+                        <span class="option-check"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+                    </label>
+
+                    <label class="export-option" onclick="toggleExportOption(this)">
+                        <input type="checkbox" value="settings" checked>
+                        <div class="option-icon" style="background: rgba(20, 184, 166, 0.12); color: #14b8a6;">
+                            <i data-lucide="settings"></i>
+                        </div>
+                        <span class="option-label">الإعدادات</span>
+                        <span class="option-check"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+                    </label>
+
+                    <label class="export-option" onclick="toggleExportOption(this)">
+                        <input type="checkbox" value="official_exams" checked>
+                        <div class="option-icon" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9;">
+                            <i data-lucide="award"></i>
+                        </div>
+                        <span class="option-label">الامتحانات الرسمية</span>
+                        <span class="option-check"><i data-lucide="check" style="width:14px;height:14px;"></i></span>
+                    </label>
+                </div>
+
+                <!-- Export Button -->
+                <button class="btn-export" id="btnExport" onclick="exportSelectedData()">
+                    <i data-lucide="download" style="width:20px;height:20px;"></i>
+                    تصدير النسخة الاحتياطية
+                </button>
+            </div>
+        </div>
+
+        <!-- ============ CARD 2: Import ============ -->
+        <div class="dm-card">
+            <div class="dm-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #f97316;">
+                    <i data-lucide="download"></i>
+                </div>
+                <div>
+                    <h2>استرجاع البيانات</h2>
+                    <p>استيراد نسخة احتياطية مع إمكانية الدمج أو الاستبدال</p>
+                </div>
+            </div>
+            <div class="dm-card-body">
+                <!-- Drop Zone -->
+                <div class="import-dropzone" id="importDropzone"
+                    onclick="document.getElementById('importFile').click()">
+                    <div class="drop-icon"><i data-lucide="file-up" style="width:48px;height:48px;"></i></div>
+                    <h3>اسحب ملف النسخة هنا أو انقر للاختيار</h3>
+                    <p>يدعم ملفات JSON فقط</p>
+                    <div class="file-name" id="selectedFileName" style="display:none;"></div>
+                </div>
+                <input type="file" id="importFile" style="display: none;" accept=".json"
+                    onchange="handleImportFile(event)">
+
+                <!-- Preview Box -->
+                <div class="import-preview" id="importPreview">
+                    <h4><i data-lucide="eye" style="width:18px;height:18px;"></i> محتوى الملف</h4>
+                    <div class="preview-grid" id="previewGrid"></div>
+                </div>
+
+                <!-- Import Mode -->
+                <div class="import-mode-section" id="importModeSection">
+                    <div class="info-banner info">
+                        <span class="banner-icon"><i data-lucide="info" style="width:18px;height:18px;"></i></span>
+                        <div>اختر طريقة الاستيراد: <b>الدمج</b> يضيف البيانات الجديدة مع الاحتفاظ بالحالية،
+                            <b>الاستبدال</b> يحذف البيانات الحالية ويستبدلها.</div>
+                    </div>
+
+                    <div class="mode-options">
+                        <label class="mode-option active" onclick="selectImportMode('merge', this)">
+                            <input type="radio" name="importMode" value="merge" checked>
+                            <span class="mode-icon">🔄</span>
+                            <span class="mode-label">دمج البيانات</span>
+                            <span class="mode-desc">إضافة البيانات الجديدة مع الاحتفاظ بالحالية</span>
+                        </label>
+                        <label class="mode-option" onclick="selectImportMode('replace', this)">
+                            <input type="radio" name="importMode" value="replace">
+                            <span class="mode-icon">♻️</span>
+                            <span class="mode-label">استيراد جديد</span>
+                            <span class="mode-desc">حذف البيانات الحالية واستبدالها بالنسخة</span>
+                        </label>
+                    </div>
+
+                    <!-- Import Button -->
+                    <button class="btn-import visible" id="btnImport" onclick="executeImport()">
+                        <i data-lucide="upload" style="width:20px;height:20px;"></i>
+                        بدء الاسترجاع
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ CARD 3: Delete ============ -->
+        <div class="dm-card">
+            <div class="dm-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #fecaca, #fca5a5); color: #ef4444;">
+                    <i data-lucide="trash-2"></i>
+                </div>
+                <div>
+                    <h2>حذف البيانات</h2>
+                    <p>حذف أجزاء محددة من البيانات أو ضبط المصنع</p>
+                </div>
+            </div>
+            <div class="dm-card-body">
+                <div class="delete-grid">
+                    <button class="btn-delete" onclick="deleteStudentsData()">
+                        <i data-lucide="user-x" style="width:18px;height:18px;"></i>
+                        حذف قائمة التلاميذ فقط
+                    </button>
+                    <button class="btn-delete" onclick="deleteGradesData()">
+                        <i data-lucide="bar-chart-2" style="width:18px;height:18px;"></i>
+                        حذف جميع النقاط والنتائج
+                    </button>
+                    <button class="btn-delete" onclick="deleteTeachersData()">
+                        <i data-lucide="briefcase" style="width:18px;height:18px;"></i>
+                        حذف الأساتذة والتوقيت
+                    </button>
+                    <button class="btn-delete" onclick="deleteAbsenceData()">
+                        <i data-lucide="calendar-x" style="width:18px;height:18px;"></i>
+                        حذف سجلات الغيابات
+                    </button>
+                    <button class="btn-delete" onclick="deleteSupervisionData()">
+                        <i data-lucide="shield" style="width:18px;height:18px;"></i>
+                        حذف جداول وإعدادات الحراسة
+                    </button>
+                    <button class="btn-delete" onclick="deleteNotebooksData()">
+                        <i data-lucide="book-open" style="width:18px;height:18px;"></i>
+                        حذف بيانات دفاتر النصوص
+                    </button>
+                    <button class="btn-delete" onclick="deleteConfiguration()">
+                        <i data-lucide="settings" style="width:18px;height:18px;"></i>
+                        حذف الإعدادات فقط
+                    </button>
+                </div>
+
+                <div style="padding-top: 16px; border-top: 2px dashed #fecaca;">
+                    <button class="btn-factory-reset" onclick="clearData()">
+                        <i data-lucide="alert-triangle" style="width:20px;height:20px;"></i>
+                        ضبط المصنع (حذف كل شيء)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ CARD 4: Maintenance ============ -->
+        <div class="dm-card" id="maintenanceCard">
+            <div class="dm-card-header">
+                <div class="card-icon" style="background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: #0ea5e9;">
+                    <i data-lucide="wrench"></i>
+                </div>
+                <div>
+                    <h2>الصيانة والإصلاح</h2>
+                    <p>أدوات تقنية لحل مشاكل ترحيل البيانات أو نقص السجلات</p>
+                </div>
+            </div>
+            <div class="dm-card-body">
+                <div class="info-banner info">
+                    <span class="banner-icon"><i data-lucide="info" style="width:18px;height:18px;"></i></span>
+                    <div>استخدم خيار <b>"ترحيل البيانات"</b> لنقل بياناتك من النظام القديم (المتصفح) إلى قاعدة البيانات
+                        الجديدة. أو استخدم <b>"حذف التكرارات"</b> لتنظيف السجلات المكررة.</div>
+                </div>
+
+                <button class="btn-export"
+                    style="background: linear-gradient(135deg, #0ea5e9, #0284c7); box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); margin-bottom: 12px;"
+                    onclick="repairMigration()">
+                    <i data-lucide="refresh-cw" style="width:20px;height:20px;"></i>
+                    ترحيل / إصلاح البيانات (Migration Repair)
+                </button>
+
+                <button class="btn-export"
+                    style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);"
+                    onclick="runDeduplication()">
+                    <i data-lucide="filter" style="width:20px;height:20px;"></i>
+                    حذف التكرارات (Remove Duplicates)
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script src="data_management.js"></script>
+    <script>
+        // Trial Mode - Disable export/import
+        document.addEventListener('DOMContentLoaded', function () {
+            const user = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : null;
+            if (typeof Auth !== 'undefined' && Auth.isTrialRestricted && Auth.isTrialRestricted()) {
+                document.querySelectorAll('#btnExport, #btnImport, #importDropzone').forEach(function (btn) {
+                    btn.style.opacity = '0.5';
+                    btn.style.pointerEvents = 'none';
+                });
+
+                var header = document.querySelector('.dm-page-header');
+                if (header && !document.querySelector('.trial-warning-box')) {
+                    var w = document.createElement('div');
+                    w.className = 'trial-warning-box';
+                    w.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:14px 20px;border-radius:14px;margin-bottom:24px;text-align:center;font-weight:700;';
+                    w.innerHTML = '<i data-lucide="lock" style="width:16px;height:16px;vertical-align:middle;"></i> النسخة التجريبية: التصدير والاستيراد غير متاحين. <a href="subscription.html" style="color:#1e40af;">تفعيل الاشتراك</a>';
+                    header.after(w);
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الإسناد - تحليل النتائج</title>
+    <link rel="stylesheet" href="../../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="assignment.css"> <!-- New CSS File -->
+    <script src="../../db.js"></script>
+    <script src="../../auth.js"></script>
+        <script src="../../assets/js/icon_manager.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof IconManager !== 'undefined') IconManager.render();
+        });
+    </script>
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../../assets/js/react-polyfills.js"></script>
+    <script src="../../assets/js/react.production.min.js"></script>
+    <script src="../../assets/js/react-dom.production.min.js"></script>
+    <script src="../../assets/js/navbar_manager.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <!-- Page Header -->
+        <div class="page-header no-print">
+            <h1><span data-icon="pin"></span> الإسناد</h1>
+        </div>
+
+        <!-- Teacher Selection Controls -->
+        <div class="teacher-selection no-print">
+            <div class="teacher-input-group">
+                <label><span data-icon="teacher"></span> اختر الأستاذ:</label>
+                <select id="teacherSelect" class="teacher-select" onchange="loadTeacherSchedule()">
+                    <option value="">-- اختر الأستاذ --</option>
+                </select>
+            </div>
+            
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="printSchedule()"><span data-icon="print"></span> طباعة
+                    الجدول</button>
+                <button class="btn btn-danger" onclick="clearAllAssignments()"><span data-icon="delete"></span> مسح
+                    الكل</button>
+            </div>
+        </div>
+
+        <!-- Schedule Container -->
+        <div class="schedule-container" id="scheduleContainer">
+            <div class="empty-state" id="emptyState">
+                <div class="icon" data-icon="pin"></div>
+                <p>اختر أستاذًا لعرض وتعديل جدول الإسناد</p>
+            </div>
+
+            <table class="schedule-table" id="scheduleTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>الفترة / اليوم</th>
+                        <th>الأحد</th>
+                        <th>الإثنين</th>
+                        <th>الثلاثاء</th>
+                        <th>الأربعاء</th>
+                        <th>الخميس</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody">
+                    <!-- Will be populated dynamically -->
+                </tbody>
+            </table>
+
+            <div class="legend no-print" id="legend" style="display: none;">
+                <div class="legend-item">
+                    <div class="legend-color"
+                        style="background: linear-gradient(135deg, rgba(17, 153, 142, 0.3) 0%, rgba(56, 239, 125, 0.3) 100%);">
+                    </div>
+                    <span>فترة صباحية</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color"
+                        style="background: linear-gradient(135deg, rgba(240, 147, 251, 0.3) 0%, rgba(245, 87, 108, 0.3) 100%);">
+                    </div>
+                    <span>فترة مسائية</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    </div>
+                    <span>حصة مسندة</span>
+                </div>
+                <!-- Add Type Legends -->
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--secondary-color);"></div>
+                    <span>أ.م</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e74c3c;"></div>
+                    <span>أ.تط</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #1abc9c;"></div>
+                    <span>استدراك</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9b59b6;"></div>
+                    <span>استقبال</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Modal -->
+    <div class="modal-overlay" id="assignmentModal">
+        <div class="modal-content animate-pop-in">
+            <div class="modal-header">
+                <h3 id="modalTitle">إسناد حصة</h3>
+                <button class="close-modal" onclick="closeAssignmentModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Level Tabs - Dynamically populated based on education stage -->
+                <div class="level-tabs" id="modalLevelTabs">
+                    <!-- Will be populated via JS based on middle/secondary stage -->
+                </div>
+
+                <!-- Stream Selector - Only visible for secondary education -->
+                <div class="stream-selector" id="streamSelectorSection" style="display: none;">
+                    <label class="stream-label">الشعبة:</label>
+                    <select id="streamSelect" class="stream-select" onchange="onStreamChange()">
+                        <option value="">-- اختر الشعبة --</option>
+                    </select>
+                </div>
+
+                <!-- Class Grid -->
+                <div class="class-grid" id="modalClassGrid">
+                    <!-- Populated via JS -->
+                </div>
+
+                <!-- Subject Selection (Dynamic - for multi-subject teachers) -->
+                <div class="subject-selector" id="subjectSelectorSection" style="display: none;">
+                    <label class="subject-label"><i class="fas fa-book"></i> المادة:</label>
+                    <select id="subjectSelect" class="subject-select">
+                        <option value="">-- المادة الأصلية --</option>
+                    </select>
+                </div>
+
+                <!-- Type Selection -->
+                <div class="type-section">
+                    <label class="type-label">نوع الحصة:</label>
+                    <div class="type-toggles">
+                        <div class="type-option" id="typeNone" onclick="selectType('')" style="color: #666;">عادية</div>
+                        <div class="type-option" id="typeTD" onclick="selectType('TD')" style="color: var(--secondary-color);">أ.م
+                        </div>
+                        <div class="type-option" id="typeTP" onclick="selectType('TP')" style="color: #e74c3c;">أ.تط
+                        </div>
+                        <div class="type-option" id="typeRemedial" onclick="selectType('Remedial')"
+                            style="color: #1abc9c;">استدراك
+                        </div>
+                        <div class="type-option" id="typeReception" onclick="selectType('Reception')"
+                            style="color: #9b59b6;">استقبال
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="modal-footer">
+                    <button class="btn btn-danger" onclick="deleteAssignment()"><span data-icon="delete"></span> حذف
+                        الإسناد</button>
+                    <button class="btn btn-secondary" onclick="closeAssignmentModal()">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="../../assets/js/sweetalert2.all.min.js"></script>
+    <script src="assignment.js?v=2"></script>
+    <script src="../../assets/js/navbar_fix.js"></script>
+    <script src="../../assets/js/fullscreen_toggle.js"></script>
+</body>
+
+</html>

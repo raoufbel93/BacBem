@@ -1,0 +1,1405 @@
+const staffCardElement = React.createElement;
+const { useEffect, useMemo, useState } = React;
+
+const STAFF_CARD_TEMPLATES = [
+    { id: 'classic', label: 'كلاسيكي', icon: 'fa-id-card' },
+    { id: 'modern', label: 'عصري', icon: 'fa-bolt' },
+    { id: 'official', label: 'رسمي', icon: 'fa-building-columns' },
+    { id: 'ornate', label: 'مزخرف', icon: 'fa-gem' },
+    { id: 'premium', label: 'فاخر', icon: 'fa-crown' }
+];
+
+const STAFF_CARD_CONFIG = {
+    template: 'classic',
+    headerColor: '#0f172a',
+    titleColor: '#ffffff',
+    customTitle: '',
+    fontSize: 'medium',
+    printBack: false,
+    showBackRooms: true
+};
+const STAFF_CARD_LOGO_SRC = '../assets/diwan.png';
+const STAFF_CARD_PRINT_PAGE_SIZE = 8;
+const OFFICIAL_SUPERVISION_STORAGE_KEYS = {
+    TRIMESTER: 'officialSupervisionTrimester',
+    SETTINGS: 'officialSupervisionSettings',
+    PERIOD_ROOMS: 'officialSupervisionPeriodRooms'
+};
+const OFFICIAL_SUPERVISION_PERIODS = [
+    { key: 'morning', label: 'الفترة الصباحية', fallbackTime: '08:00 - 12:00' },
+    { key: 'midday', label: 'فترة المنتصف', fallbackTime: '11:00 - 13:00' },
+    { key: 'evening', label: 'الفترة المسائية', fallbackTime: '13:00 - 17:00' }
+];
+const OFFICIAL_SUPERVISION_TRIMESTER_LABELS = {
+    '1': 'الفصل الأول',
+    '2': 'الفصل الثاني',
+    '3': 'الفصل الثالث',
+    blanc: 'شهادة التعليم المتوسط',
+    blanc_lycee: 'شهادة البكالوريا',
+    custom: 'امتحان آخر'
+};
+
+function getOfficialExamDisplayName(trimester, storedExam) {
+    var normalizedTrimester = String(trimester || '').trim();
+    var examName = String(storedExam || '').trim();
+    if (normalizedTrimester === 'blanc') return 'شهادة التعليم المتوسط';
+    if (normalizedTrimester === 'blanc_lycee') return 'شهادة البكالوريا';
+    if (normalizedTrimester === 'custom') return examName || 'امتحان آخر';
+    return examName || 'امتحان رسمي';
+}
+
+function getOfficialSupervisionTrimesterKeys(tri) {
+    return {
+        DAYS: 'officialSupervisionDays_T' + tri,
+        SCHEDULE: 'officialSupervisionSchedule_T' + tri,
+        RESERVE_SCHEDULE: 'officialSupervisionReserveSchedule_T' + tri,
+        ROOM_ASSIGNMENTS: 'officialSupervisionRoomAssignments_T' + tri
+    };
+}
+
+function escapeStaffHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function normalizeHexColor(color, fallback) {
+    var value = String(color || '').trim();
+    if (!value) return fallback || '#0f172a';
+
+    if (/^#[0-9a-fA-F]{3}$/.test(value)) {
+        return '#' + value.charAt(1) + value.charAt(1)
+            + value.charAt(2) + value.charAt(2)
+            + value.charAt(3) + value.charAt(3);
+    }
+
+    if (/^#[0-9a-fA-F]{6}$/.test(value)) {
+        return value;
+    }
+
+    return fallback || '#0f172a';
+}
+
+function hexToRgb(color) {
+    var normalized = normalizeHexColor(color, '#0f172a');
+    return {
+        r: parseInt(normalized.slice(1, 3), 16),
+        g: parseInt(normalized.slice(3, 5), 16),
+        b: parseInt(normalized.slice(5, 7), 16)
+    };
+}
+
+function rgbToHex(r, g, b) {
+    var clamp = function (value) {
+        return Math.max(0, Math.min(255, Math.round(value)));
+    };
+    var toHex = function (value) {
+        return clamp(value).toString(16).padStart(2, '0');
+    };
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function mixHexColors(base, target, weight) {
+    var from = hexToRgb(base);
+    var to = hexToRgb(target);
+    var ratio = Math.max(0, Math.min(1, Number(weight)));
+    return rgbToHex(
+        from.r + ((to.r - from.r) * ratio),
+        from.g + ((to.g - from.g) * ratio),
+        from.b + ((to.b - from.b) * ratio)
+    );
+}
+
+function hexToRgba(color, alpha) {
+    var rgb = hexToRgb(color);
+    var opacity = Math.max(0, Math.min(1, Number(alpha)));
+    return 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + opacity + ')';
+}
+
+function buildPremiumStyleVars(config) {
+    var accent = normalizeHexColor(config && config.headerColor, '#0f172a');
+    return {
+        '--premium-accent': accent,
+        '--premium-accent-deep': mixHexColors(accent, '#08111f', 0.42),
+        '--premium-accent-soft': mixHexColors(accent, '#5eead4', 0.32),
+        '--premium-accent-muted': mixHexColors(accent, '#eff6ff', 0.78),
+        '--premium-border': hexToRgba(accent, 0.22),
+        '--premium-glow': hexToRgba(accent, 0.18),
+        '--premium-glow-soft': hexToRgba(accent, 0.10),
+        '--premium-badge-border': hexToRgba(accent, 0.30),
+        '--premium-surface-border': hexToRgba(accent, 0.18),
+        '--premium-label': mixHexColors(accent, '#ffffff', 0.12),
+        '--premium-footer-text': mixHexColors(accent, '#0f172a', 0.15),
+        '--premium-title': (config && config.titleColor) || '#ffffff'
+    };
+}
+
+function cloneStaffCardConfig() {
+    return {
+        template: STAFF_CARD_CONFIG.template,
+        headerColor: STAFF_CARD_CONFIG.headerColor,
+        titleColor: STAFF_CARD_CONFIG.titleColor,
+        customTitle: STAFF_CARD_CONFIG.customTitle,
+        fontSize: STAFF_CARD_CONFIG.fontSize,
+        printBack: STAFF_CARD_CONFIG.printBack,
+        showBackRooms: STAFF_CARD_CONFIG.showBackRooms
+    };
+}
+
+function chunkStaffCardRecords(records, pageSize) {
+    var chunks = [];
+    var size = pageSize || STAFF_CARD_PRINT_PAGE_SIZE;
+    for (var i = 0; i < records.length; i += size) {
+        chunks.push(records.slice(i, i + size));
+    }
+    return chunks;
+}
+
+function normalizeStaffTeacherId(id) {
+    return String(id == null ? '' : id);
+}
+
+function normalizeStaffTeacherName(value) {
+    var text = String(value || '').trim();
+    if (!text) return '';
+
+    try {
+        if (text.normalize) text = text.normalize('NFKC');
+    } catch (e) { }
+
+    return text
+        .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ى/g, 'ي')
+        .replace(/ؤ/g, 'و')
+        .replace(/ئ/g, 'ي')
+        .replace(/ة/g, 'ه')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function formatStaffCardDateShort(dateStr) {
+    var date = new Date(String(dateStr || '').indexOf('T') !== -1 ? dateStr : dateStr + 'T12:00:00');
+    var dayName = date.toLocaleDateString('ar-DZ', { weekday: 'long' });
+    var dateFormatted = date.toLocaleDateString('ar-DZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return { dayName: dayName, dateFormatted: dateFormatted, full: dayName + ' ' + dateFormatted };
+}
+
+function getOfficialSupervisionTrimesterLabel(value) {
+    return OFFICIAL_SUPERVISION_TRIMESTER_LABELS[value] || 'جدول الحراسة';
+}
+
+function normalizeStoredTrimesterValue(value) {
+    var raw = String(value == null ? '' : value).trim();
+    if (!raw) return '1';
+    if ((raw.charAt(0) === '"' && raw.charAt(raw.length - 1) === '"')
+        || (raw.charAt(0) === "'" && raw.charAt(raw.length - 1) === "'")) {
+        raw = raw.slice(1, -1).trim();
+    }
+    return raw || '1';
+}
+
+function buildStaffCardRoomCache(periodRoomsData) {
+    var cache = {};
+
+    function visit(value) {
+        if (!value) return;
+        if (Array.isArray(value)) {
+            value.forEach(function (room) {
+                if (room && room.id && room.label) {
+                    cache[room.id] = room.label;
+                }
+            });
+            return;
+        }
+
+        if (typeof value === 'object') {
+            Object.keys(value).forEach(function (key) {
+                visit(value[key]);
+            });
+        }
+    }
+
+    visit(periodRoomsData);
+    return cache;
+}
+
+function getStaffCardRoomLabelShort(id, roomCache) {
+    if (!id || id === 0) return '';
+    if (roomCache && roomCache[id]) return roomCache[id];
+
+    var numericId = parseInt(id, 10);
+    if (isNaN(numericId)) return String(id);
+    if (numericId >= 300) {
+        if (numericId > 1000000) return 'قاعة';
+        return 'خ' + (numericId - 300 + 1);
+    }
+    if (numericId > 200) return 'و' + (numericId - 200);
+    if (numericId > 100) return 'م' + (numericId - 100);
+    return 'ق' + numericId;
+}
+
+function normalizeStaffAssignmentList(items, excludedIds) {
+    var excluded = {};
+    var seen = {};
+    (excludedIds || []).forEach(function (teacherId) {
+        excluded[normalizeStaffTeacherId(teacherId)] = true;
+    });
+
+    return (Array.isArray(items) ? items : []).map(function (teacherId) {
+        return normalizeStaffTeacherId(teacherId);
+    }).filter(function (teacherId) {
+        if (!teacherId || excluded[teacherId] || seen[teacherId]) return false;
+        seen[teacherId] = true;
+        return true;
+    });
+}
+
+function getStaffCardEffectiveRoomAssignment(roomAssignmentsData, key, teacherId, isGuardAssigned, isReserveAssigned) {
+    var normalizedTeacherId = normalizeStaffTeacherId(teacherId);
+    var teacherRoomMap = roomAssignmentsData && roomAssignmentsData[key];
+    var roomEntry = teacherRoomMap && (teacherRoomMap[normalizedTeacherId] || teacherRoomMap[teacherId]);
+
+    if (isGuardAssigned) {
+        return roomEntry && typeof roomEntry === 'object' && roomEntry.room
+            ? Object.assign({}, roomEntry, { isReserve: false })
+            : null;
+    }
+
+    if (isReserveAssigned) {
+        return { isReserve: true };
+    }
+
+    return null;
+}
+
+function staffCardPeriodSupportsDuty(periodData) {
+    var requiredTeachers = periodData && periodData.requiredTeachers !== undefined ? Number(periodData.requiredTeachers) : 0;
+    var reserveTeachers = periodData && periodData.reserveTeachers !== undefined ? Number(periodData.reserveTeachers) : 0;
+    return requiredTeachers > 0 || reserveTeachers > 0;
+}
+
+function getStaffCardVisiblePeriodsForDay(day) {
+    return OFFICIAL_SUPERVISION_PERIODS.filter(function (period) {
+        var periodData = day && day[period.key] ? day[period.key] : {};
+        var subjects = Array.isArray(periodData.subjects) ? periodData.subjects.filter(function (subject) {
+            return String(subject || '').trim() !== '';
+        }) : [];
+        return subjects.length > 0 || staffCardPeriodSupportsDuty(periodData);
+    });
+}
+
+function readOfficialSupervisionStorage(key, parseJson) {
+    return DB.get(key).then(function (value) {
+        if (value !== undefined && value !== null) return value;
+
+        try {
+            var raw = localStorage.getItem(key);
+            if (raw === null) return null;
+            return parseJson === false ? raw : JSON.parse(raw);
+        } catch (error) {
+            console.warn('Official supervision storage fallback failed for key:', key, error);
+            return null;
+        }
+    });
+}
+
+function loadOfficialSupervisionScheduleContext() {
+    return readOfficialSupervisionStorage(OFFICIAL_SUPERVISION_STORAGE_KEYS.TRIMESTER, false).then(function (trimester) {
+        var effectiveTrimester = normalizeStoredTrimesterValue(trimester);
+        var triKeys = getOfficialSupervisionTrimesterKeys(effectiveTrimester);
+
+        return Promise.all([
+            DB.getExamProctors(),
+            readOfficialSupervisionStorage(triKeys.DAYS, true),
+            readOfficialSupervisionStorage(triKeys.SCHEDULE, true),
+            readOfficialSupervisionStorage(triKeys.RESERVE_SCHEDULE, true),
+            readOfficialSupervisionStorage(triKeys.ROOM_ASSIGNMENTS, true),
+            readOfficialSupervisionStorage(OFFICIAL_SUPERVISION_STORAGE_KEYS.SETTINGS, true),
+            readOfficialSupervisionStorage(OFFICIAL_SUPERVISION_STORAGE_KEYS.PERIOD_ROOMS, true)
+        ]).then(function (values) {
+            var teachers = Array.isArray(values[0]) ? values[0] : [];
+            var days = Array.isArray(values[1]) ? values[1] : [];
+            var schedule = values[2] && typeof values[2] === 'object' ? values[2] : {};
+            var reserveSchedule = values[3] && typeof values[3] === 'object' ? values[3] : {};
+            var roomAssignments = values[4] && typeof values[4] === 'object' ? values[4] : {};
+            var settings = values[5] && typeof values[5] === 'object' ? values[5] : {};
+            var roomCache = buildStaffCardRoomCache(values[6]);
+            var teacherById = {};
+            var teacherByName = {};
+
+            teachers.forEach(function (teacher) {
+                if (!teacher) return;
+
+                var teacherId = normalizeStaffTeacherId(teacher.id);
+                if (teacherId) teacherById[teacherId] = teacher;
+
+                var fullName = normalizeStaffTeacherName((teacher.surname || teacher.last_name || '') + ' ' + (teacher.name || teacher.first_name || ''));
+                if (fullName && !teacherByName[fullName]) {
+                    teacherByName[fullName] = teacher;
+                }
+            });
+
+            return {
+                trimester: effectiveTrimester,
+                trimesterLabel: getOfficialSupervisionTrimesterLabel(effectiveTrimester),
+                teachers: teachers,
+                teacherById: teacherById,
+                teacherByName: teacherByName,
+                days: days,
+                schedule: schedule,
+                reserveSchedule: reserveSchedule,
+                roomAssignments: roomAssignments,
+                roomCache: roomCache,
+                mark: settings.checkMark || '✓'
+            };
+        });
+    });
+}
+
+function getStaffCardMatchedTeacher(record, scheduleContext) {
+    if (!record || !scheduleContext) return null;
+
+    var sourceId = normalizeStaffTeacherId(record.sourceId);
+    if (sourceId && scheduleContext.teacherById[sourceId]) {
+        return scheduleContext.teacherById[sourceId];
+    }
+
+    var fullName = normalizeStaffTeacherName(record.fullName);
+    if (fullName && scheduleContext.teacherByName[fullName]) {
+        return scheduleContext.teacherByName[fullName];
+    }
+
+    return null;
+}
+
+function buildTeacherScheduleMatrix(record, scheduleContext, config) {
+    var matchedTeacher = record && record.entityType === 'proctor'
+        ? getStaffCardMatchedTeacher(record, scheduleContext)
+        : null;
+    var days = Array.isArray(scheduleContext && scheduleContext.days) ? scheduleContext.days : [];
+    var activeDays = days.filter(function (day) {
+        return getStaffCardVisiblePeriodsForDay(day).length > 0;
+    });
+    var visiblePeriods = OFFICIAL_SUPERVISION_PERIODS.filter(function (period) {
+        return activeDays.some(function (day) {
+            return getStaffCardVisiblePeriodsForDay(day).some(function (entry) {
+                return entry.key === period.key;
+            });
+        });
+    });
+    var totalAssignments = 0;
+
+    function getCellValue(day, periodKey) {
+        if (!matchedTeacher) return '';
+
+        var key = day.id + '_' + periodKey;
+        var teacherId = normalizeStaffTeacherId(matchedTeacher.id);
+        var guardIds = normalizeStaffAssignmentList(scheduleContext && scheduleContext.schedule && scheduleContext.schedule[key]);
+        var reserveIds = normalizeStaffAssignmentList(scheduleContext && scheduleContext.reserveSchedule && scheduleContext.reserveSchedule[key], guardIds);
+        var isGuardAssigned = guardIds.indexOf(teacherId) !== -1;
+        var isReserveAssigned = reserveIds.indexOf(teacherId) !== -1;
+
+        if (!isGuardAssigned && !isReserveAssigned) return '';
+
+        totalAssignments += 1;
+
+        var roomData = getStaffCardEffectiveRoomAssignment(
+            scheduleContext && scheduleContext.roomAssignments,
+            key,
+            teacherId,
+            isGuardAssigned,
+            isReserveAssigned
+        );
+
+        if (config && config.showBackRooms && roomData && roomData.room) {
+            return getStaffCardRoomLabelShort(roomData.room, scheduleContext.roomCache);
+        }
+
+        return scheduleContext && scheduleContext.mark ? scheduleContext.mark : '✓';
+    }
+
+    return {
+        matchedTeacher: matchedTeacher,
+        days: activeDays,
+        periods: visiblePeriods.map(function (period) {
+            return {
+                key: period.key,
+                label: period.label,
+                time: null
+            };
+        }),
+        getCellValue: getCellValue,
+        getPeriodTime: function (day, periodKey) {
+            var periodData = day && day[periodKey] ? day[periodKey] : {};
+            var periodDef = OFFICIAL_SUPERVISION_PERIODS.filter(function (period) {
+                return period.key === periodKey;
+            })[0];
+            return periodData.time || (periodDef ? periodDef.fallbackTime : '');
+        },
+        totalAssignments: totalAssignments
+    };
+}
+
+function getOfficialCenterDisplay(center, trimester) {
+    const safeCenter = Object.assign({
+        ministry: 'وزارة التربية الوطنية',
+        office: 'الديوان الوطني للامتحانات و المسابقات',
+        center_name: '',
+        institution: '',
+        province: '',
+        municipality: '',
+        exam: '',
+        session: '',
+        branch: ''
+    }, center || {});
+
+    return Object.assign({}, safeCenter, {
+        displayCenter: safeCenter.center_name || safeCenter.institution || 'المركز الرسمي',
+        displayProvince: safeCenter.province || 'غير محدد',
+        displayMunicipality: safeCenter.municipality || safeCenter.province || 'غير محدد',
+        displayExam: getOfficialExamDisplayName(trimester, safeCenter.exam),
+        displaySession: safeCenter.session || 'دورة حالية'
+    });
+}
+
+function buildProctorRecord(proctor, center, index) {
+    const firstName = proctor && proctor.first_name ? proctor.first_name : '';
+    const lastName = proctor && proctor.last_name ? proctor.last_name : '';
+    const fullName = (lastName + ' ' + firstName).trim();
+    return {
+        id: 'proctor-' + (proctor && proctor.id ? proctor.id : index),
+        sourceId: proctor && proctor.id ? proctor.id : index,
+        entityType: 'proctor',
+        fullName: fullName || 'بدون اسم',
+        role: (proctor && proctor.rank) || 'أستاذ حارس',
+        institution: (proctor && proctor.institution) || center.displayCenter,
+        subject: (proctor && proctor.subject) || '',
+        phone: (proctor && proctor.phone) || '',
+        note: ''
+    };
+}
+
+function buildMemberRecord(member, center, index) {
+    return {
+        id: 'member-' + (member && member.id ? member.id : index),
+        sourceId: member && member.id ? member.id : index,
+        entityType: 'member',
+        fullName: (member && member.full_name) || 'بدون اسم',
+        role: (member && member.role) || 'عضو مركز',
+        institution: (member && member.institution) || center.displayCenter,
+        subject: '',
+        phone: (member && member.phone) || '',
+        note: (member && member.note) || ''
+    };
+}
+
+function getCardTitle(config, entityType) {
+    if (config.customTitle) return config.customTitle;
+    return entityType === 'member' ? 'بطاقة عضو المركز' : 'بطاقة أستاذ حارس';
+}
+
+function getCardFontSize(fontSize) {
+    if (fontSize === 'small') return '0.88em';
+    if (fontSize === 'large') return '1.08em';
+    return '1em';
+}
+
+function getCenterLine(center) {
+    return 'المركز: ' + (center && center.displayCenter ? center.displayCenter : '-');
+}
+
+function getStaffCardInfoRows(record, center) {
+    if (record && record.entityType === 'member') {
+        const rows = [
+            { label: 'الاسم', value: record.fullName },
+            { label: 'المهمة', value: record.note || record.role || '-' },
+            { label: 'المؤسسة', value: record.institution || (center && center.displayCenter) || '-' }
+        ];
+
+        if (record.phone) {
+            rows.push({ label: 'الهاتف', value: record.phone });
+        }
+
+        return rows;
+    }
+
+    return [
+        { label: 'الاسم', value: record.fullName },
+        { label: 'الصفة', value: record.role },
+        { label: 'المادة', value: record.subject || '-' },
+        { label: 'المؤسسة', value: record.institution || (center && center.displayCenter) || '-' }
+    ];
+}
+
+function StaffCardLogo() {
+    return staffCardElement('img', {
+        className: 'osc-card-logo',
+        src: STAFF_CARD_LOGO_SRC,
+        alt: 'شعار الديوان',
+        onError: function (event) {
+            if (event && event.target) {
+                event.target.style.display = 'none';
+            }
+        }
+    });
+}
+
+function buildPrintLogoMarkup() {
+    return "<img class=\"osc-card-logo\" src=\"" + escapeStaffHtml(STAFF_CARD_LOGO_SRC) + "\" alt=\"شعار الديوان\" onerror=\"this.style.display='none'\">";
+}
+
+function StaffCard(props) {
+    const record = props.record;
+    const center = props.center;
+    const config = props.config;
+    const title = getCardTitle(config, record.entityType);
+    const fontSize = getCardFontSize(config.fontSize);
+    const titleStyle = { color: config.titleColor || '#ffffff' };
+    const centerLine = getCenterLine(center);
+    const infoRows = getStaffCardInfoRows(record, center);
+
+    const badgeIcon = record.entityType === 'member' ? 'fa-users-gear' : 'fa-user-shield';
+    const subtitle = center.displayExam + ' - ' + center.displaySession;
+
+    if (config.template === 'official') {
+        return staffCardElement('div', { className: 'osc-card osc-card--official', style: { fontSize: fontSize } },
+            staffCardElement('div', { className: 'osc-card-header' },
+                staffCardElement('div', { className: 'osc-official-head' },
+                    staffCardElement('div', { className: 'osc-official-logo-wrap' },
+                        staffCardElement(StaffCardLogo, null)
+                    ),
+                    staffCardElement('div', { className: 'osc-card-brand-text osc-card-brand-text--official' },
+                        staffCardElement('div', { className: 'osc-official-top' }, center.ministry),
+                        staffCardElement('div', { className: 'osc-official-sub' }, center.office),
+                        staffCardElement('div', { className: 'osc-official-sub' }, center.displayCenter + ' - ' + center.displayProvince)
+                    ),
+                    staffCardElement('div', { className: 'osc-official-logo-wrap' },
+                        staffCardElement(StaffCardLogo, null)
+                    )
+                ),
+                staffCardElement('div', {
+                    className: 'osc-official-title',
+                    style: { background: '#22c55e', color: '#111827' }
+                }, title)
+            ),
+            staffCardElement('div', { className: 'osc-card-body' },
+                staffCardElement('div', { className: 'osc-card-badge' },
+                    staffCardElement('i', { className: 'fa-solid ' + badgeIcon })
+                ),
+                staffCardElement('div', { className: 'osc-card-info' },
+                    infoRows.map(function (row) {
+                        return staffCardElement('div', { className: 'osc-card-row', key: row.label },
+                            staffCardElement('span', { className: 'lbl' }, row.label + ':'),
+                            staffCardElement('span', { className: 'val' }, row.value || '-')
+                        );
+                    })
+                )
+            ),
+            staffCardElement('div', { className: 'osc-card-footer' },
+                staffCardElement('span', null, center.displayProvince),
+                staffCardElement('span', null, subtitle)
+            )
+        );
+    }
+
+    if (config.template === 'ornate') {
+        return staffCardElement('div', {
+            className: 'osc-card osc-card--ornate',
+            style: {
+                fontSize: fontSize,
+                '--ornate-accent': config.headerColor || '#0f172a',
+                '--ornate-title': config.titleColor || '#ffffff'
+            }
+        },
+            staffCardElement('div', { className: 'osc-card-header' },
+                staffCardElement('div', { className: 'osc-ornate-corner osc-ornate-corner--right' }),
+                staffCardElement('div', { className: 'osc-ornate-corner osc-ornate-corner--left' }),
+                staffCardElement('div', { className: 'osc-ornate-center-logo' },
+                    staffCardElement(StaffCardLogo, null)
+                ),
+                staffCardElement('div', { className: 'osc-ornate-side-logo' },
+                    staffCardElement(StaffCardLogo, null)
+                ),
+                staffCardElement('div', { className: 'osc-card-brand osc-card-brand--ornate' },
+                    staffCardElement('div', { className: 'osc-card-brand-text osc-card-brand-text--ornate' },
+                        staffCardElement('div', { className: 'osc-ornate-kicker' }, center.displayExam),
+                        staffCardElement('h3', { style: titleStyle }, title),
+                        staffCardElement('p', { className: 'osc-ornate-centerline' }, centerLine)
+                    )
+                )
+            ),
+            staffCardElement('div', { className: 'osc-card-body' },
+                staffCardElement('div', { className: 'osc-card-badge' },
+                    staffCardElement('i', { className: 'fa-solid ' + badgeIcon })
+                ),
+                staffCardElement('div', { className: 'osc-card-info' },
+                    infoRows.map(function (row) {
+                        return staffCardElement('div', { className: 'osc-card-row', key: row.label },
+                            staffCardElement('span', { className: 'lbl' }, row.label + ':'),
+                            staffCardElement('span', { className: 'val' }, row.value || '-')
+                        );
+                    })
+                )
+            ),
+            staffCardElement('div', { className: 'osc-card-footer' },
+                staffCardElement('span', null, center.displayMunicipality),
+                staffCardElement('span', null, subtitle)
+            )
+        );
+    }
+
+    if (config.template === 'premium') {
+        var premiumVars = buildPremiumStyleVars(config);
+        return staffCardElement('div', {
+            className: 'osc-card osc-card--premium',
+            style: Object.assign({ fontSize: fontSize }, premiumVars)
+        },
+            staffCardElement('div', { className: 'osc-card-header' },
+                staffCardElement('div', { className: 'osc-premium-glow' }),
+                staffCardElement('div', { className: 'osc-premium-logo-watermark' },
+                    staffCardElement(StaffCardLogo, null)
+                ),
+                staffCardElement('div', { className: 'osc-premium-head' },
+                    staffCardElement('div', { className: 'osc-premium-logo-side' },
+                        staffCardElement(StaffCardLogo, null)
+                    ),
+                    staffCardElement('div', { className: 'osc-card-brand-text osc-card-brand-text--premium' },
+                        staffCardElement('div', { className: 'osc-premium-divider' }),
+                        staffCardElement('h3', { style: titleStyle }, title),
+                        staffCardElement('p', { className: 'osc-premium-centerline' }, centerLine),
+                        staffCardElement('div', { className: 'osc-premium-subline' }, center.displayProvince + ' - ' + center.displayMunicipality)
+                    ),
+                    staffCardElement('div', { className: 'osc-premium-logo-side' },
+                        staffCardElement(StaffCardLogo, null)
+                    )
+                )
+            ),
+            staffCardElement('div', { className: 'osc-card-body' },
+                staffCardElement('div', { className: 'osc-card-badge' },
+                    staffCardElement('i', { className: 'fa-solid ' + badgeIcon })
+                ),
+                staffCardElement('div', { className: 'osc-card-info' },
+                    infoRows.map(function (row) {
+                        return staffCardElement('div', { className: 'osc-card-row', key: row.label },
+                            staffCardElement('span', { className: 'lbl' }, row.label + ':'),
+                            staffCardElement('span', { className: 'val' }, row.value || '-')
+                        );
+                    })
+                )
+            ),
+            staffCardElement('div', { className: 'osc-card-footer' },
+                staffCardElement('span', null, center.displayMunicipality),
+                staffCardElement('span', null, subtitle)
+            )
+        );
+    }
+
+    const headerStyle = {
+        background: config.template === 'modern'
+            ? 'linear-gradient(135deg, ' + (config.headerColor || '#0f172a') + ', ' + (config.headerColor || '#0f172a') + 'cc)'
+            : (config.headerColor || '#0f172a'),
+        color: config.titleColor || '#ffffff'
+    };
+
+    return staffCardElement('div', {
+        className: 'osc-card' + (config.template === 'modern' ? ' osc-card--modern' : ''),
+        style: { fontSize: fontSize }
+    },
+        staffCardElement('div', { className: 'osc-card-header', style: headerStyle },
+            staffCardElement('div', { className: 'osc-card-brand' },
+                staffCardElement(StaffCardLogo, null),
+                staffCardElement('div', { className: 'osc-card-brand-text' },
+                    staffCardElement('h3', { style: titleStyle }, title),
+                    staffCardElement('p', null, centerLine)
+                )
+            ),
+            config.template === 'modern'
+                ? staffCardElement('div', { style: { fontSize: '0.55rem', fontWeight: 800 } }, center.displaySession)
+                : null
+        ),
+        staffCardElement('div', { className: 'osc-card-body' },
+            staffCardElement('div', { className: 'osc-card-badge' },
+                staffCardElement('i', { className: 'fa-solid ' + badgeIcon })
+            ),
+            staffCardElement('div', { className: 'osc-card-info' },
+                infoRows.map(function (row) {
+                    return staffCardElement('div', { className: 'osc-card-row', key: row.label },
+                        staffCardElement('span', { className: 'lbl' }, row.label + ':'),
+                        staffCardElement('span', { className: 'val' }, row.value || '-')
+                    );
+                })
+            )
+        ),
+        staffCardElement('div', { className: 'osc-card-footer' },
+            staffCardElement('span', null, center.displayProvince),
+            staffCardElement('span', null, subtitle)
+        )
+    );
+}
+
+function buildInfoRowsMarkup(record, center) {
+    const rows = getStaffCardInfoRows(record, center);
+
+    return rows.map(function (row) {
+        return '<div class="osc-card-row"><span class="lbl">' + escapeStaffHtml(row.label) + ':</span><span class="val">' + escapeStaffHtml(row.value || '-') + '</span></div>';
+    }).join('');
+}
+
+function buildPrintCardMarkup(record, config, center) {
+    const title = getCardTitle(config, record.entityType);
+    const badgeIcon = record.entityType === 'member' ? 'fa-users-gear' : 'fa-user-shield';
+    const subtitle = center.displayExam + ' - ' + center.displaySession;
+    const infoRows = buildInfoRowsMarkup(record, center);
+    const centerLine = getCenterLine(center);
+
+    if (config.template === 'official') {
+        return '' +
+            '<div class="osc-card osc-card--official" style="font-size:' + getCardFontSize(config.fontSize) + ';">' +
+            '  <div class="osc-card-header">' +
+            '    <div class="osc-official-head">' +
+            '      <div class="osc-official-logo-wrap">' + buildPrintLogoMarkup() + '</div>' +
+            '      <div class="osc-card-brand-text osc-card-brand-text--official">' +
+            '        <div class="osc-official-top">' + escapeStaffHtml(center.ministry) + '</div>' +
+            '        <div class="osc-official-sub">' + escapeStaffHtml(center.office) + '</div>' +
+            '        <div class="osc-official-sub">' + escapeStaffHtml(center.displayCenter + ' - ' + center.displayProvince) + '</div>' +
+            '      </div>' +
+            '      <div class="osc-official-logo-wrap">' + buildPrintLogoMarkup() + '</div>' +
+            '    </div>' +
+            '    <div class="osc-official-title" style="background:#22c55e;color:#111827;">' + escapeStaffHtml(title) + '</div>' +
+            '  </div>' +
+            '  <div class="osc-card-body">' +
+            '    <div class="osc-card-badge"><i class="fa-solid ' + escapeStaffHtml(badgeIcon) + '"></i></div>' +
+            '    <div class="osc-card-info">' + infoRows + '</div>' +
+            '  </div>' +
+            '  <div class="osc-card-footer"><span>' + escapeStaffHtml(center.displayProvince) + '</span><span>' + escapeStaffHtml(subtitle) + '</span></div>' +
+            '</div>';
+    }
+
+    if (config.template === 'ornate') {
+        return '' +
+            '<div class="osc-card osc-card--ornate" style="font-size:' + getCardFontSize(config.fontSize) + ';--ornate-accent:' + escapeStaffHtml(config.headerColor || '#0f172a') + ';--ornate-title:' + escapeStaffHtml(config.titleColor || '#ffffff') + ';">' +
+            '  <div class="osc-card-header">' +
+            '    <div class="osc-ornate-corner osc-ornate-corner--right"></div>' +
+            '    <div class="osc-ornate-corner osc-ornate-corner--left"></div>' +
+            '    <div class="osc-ornate-center-logo">' + buildPrintLogoMarkup() + '</div>' +
+            '    <div class="osc-ornate-side-logo">' + buildPrintLogoMarkup() + '</div>' +
+            '    <div class="osc-card-brand osc-card-brand--ornate">' +
+            '      <div class="osc-card-brand-text osc-card-brand-text--ornate">' +
+            '        <div class="osc-ornate-kicker">' + escapeStaffHtml(center.displayExam) + '</div>' +
+            '        <h3 style="color:' + escapeStaffHtml(config.titleColor || '#ffffff') + ';">' + escapeStaffHtml(title) + '</h3>' +
+            '        <p class="osc-ornate-centerline">' + escapeStaffHtml(centerLine) + '</p>' +
+            '      </div>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="osc-card-body">' +
+            '    <div class="osc-card-badge"><i class="fa-solid ' + escapeStaffHtml(badgeIcon) + '"></i></div>' +
+            '    <div class="osc-card-info">' + infoRows + '</div>' +
+            '  </div>' +
+            '  <div class="osc-card-footer"><span>' + escapeStaffHtml(center.displayMunicipality) + '</span><span>' + escapeStaffHtml(subtitle) + '</span></div>' +
+            '</div>';
+    }
+
+    if (config.template === 'premium') {
+        var premiumPrintVars = buildPremiumStyleVars(config);
+        var premiumVarsText = Object.keys(premiumPrintVars).map(function (key) {
+            return key + ':' + escapeStaffHtml(premiumPrintVars[key]);
+        }).join(';');
+        return '' +
+            '<div class="osc-card osc-card--premium" style="font-size:' + getCardFontSize(config.fontSize) + ';' + premiumVarsText + ';">' +
+            '  <div class="osc-card-header">' +
+            '    <div class="osc-premium-glow"></div>' +
+            '    <div class="osc-premium-logo-watermark">' + buildPrintLogoMarkup() + '</div>' +
+            '    <div class="osc-premium-head">' +
+            '      <div class="osc-premium-logo-side">' + buildPrintLogoMarkup() + '</div>' +
+            '      <div class="osc-card-brand-text osc-card-brand-text--premium">' +
+            '        <div class="osc-premium-divider"></div>' +
+            '        <h3 style="color:' + escapeStaffHtml(config.titleColor || '#ffffff') + ';">' + escapeStaffHtml(title) + '</h3>' +
+            '        <p class="osc-premium-centerline">' + escapeStaffHtml(centerLine) + '</p>' +
+            '        <div class="osc-premium-subline">' + escapeStaffHtml(center.displayProvince + ' - ' + center.displayMunicipality) + '</div>' +
+            '      </div>' +
+            '      <div class="osc-premium-logo-side">' + buildPrintLogoMarkup() + '</div>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="osc-card-body">' +
+            '    <div class="osc-card-badge"><i class="fa-solid ' + escapeStaffHtml(badgeIcon) + '"></i></div>' +
+            '    <div class="osc-card-info">' + infoRows + '</div>' +
+            '  </div>' +
+            '  <div class="osc-card-footer"><span>' + escapeStaffHtml(center.displayMunicipality) + '</span><span>' + escapeStaffHtml(subtitle) + '</span></div>' +
+            '</div>';
+    }
+
+    const headerStyle = config.template === 'modern'
+        ? 'background:linear-gradient(135deg,' + escapeStaffHtml(config.headerColor || '#0f172a') + ',' + escapeStaffHtml((config.headerColor || '#0f172a') + 'cc') + ');color:' + escapeStaffHtml(config.titleColor || '#ffffff') + ';'
+        : 'background:' + escapeStaffHtml(config.headerColor || '#0f172a') + ';color:' + escapeStaffHtml(config.titleColor || '#ffffff') + ';';
+
+    return '' +
+        '<div class="osc-card' + (config.template === 'modern' ? ' osc-card--modern' : '') + '" style="font-size:' + getCardFontSize(config.fontSize) + ';">' +
+        '  <div class="osc-card-header" style="' + headerStyle + '">' +
+        '    <div class="osc-card-brand">' +
+        '      ' + buildPrintLogoMarkup() +
+        '      <div class="osc-card-brand-text"><h3 style="color:' + escapeStaffHtml(config.titleColor || '#ffffff') + ';">' + escapeStaffHtml(title) + '</h3><p>' + escapeStaffHtml(centerLine) + '</p></div>' +
+        '    </div>' +
+        (config.template === 'modern' ? '<div style="font-size:0.55rem;font-weight:800;">' + escapeStaffHtml(center.displaySession) + '</div>' : '') +
+        '  </div>' +
+        '  <div class="osc-card-body">' +
+        '    <div class="osc-card-badge"><i class="fa-solid ' + escapeStaffHtml(badgeIcon) + '"></i></div>' +
+        '    <div class="osc-card-info">' + infoRows + '</div>' +
+        '  </div>' +
+        '  <div class="osc-card-footer"><span>' + escapeStaffHtml(center.displayProvince) + '</span><span>' + escapeStaffHtml(subtitle) + '</span></div>' +
+        '</div>';
+}
+
+function buildPrintBackCardMarkup(record, scheduleContext, config) {
+    var scheduleData = buildTeacherScheduleMatrix(record, scheduleContext || {}, config || {});
+    var periods = scheduleData.periods || [];
+    var days = scheduleData.days || [];
+    var subtitle = record.entityType === 'member'
+        ? 'ظهر البطاقة متاح للحراس فقط'
+        : (scheduleData.matchedTeacher ? (scheduleContext && scheduleContext.trimesterLabel ? scheduleContext.trimesterLabel : 'جدول الحراسة') : 'لم يتم العثور على توقيت مطابق');
+    var metaLine = record.entityType === 'member'
+        ? 'عضو مركز - لا يوجد جدول حراسة مرتبط'
+        : ((record.subject || '-') + ' | ' + (record.role || '-'));
+    var headerCells = days.map(function (day) {
+        var formatted = formatStaffCardDateShort(day.date);
+        return '' +
+            '<th>' +
+            '  <div class="osc-card-back-day-name">' + escapeStaffHtml(formatted.dayName) + '</div>' +
+            '  <div class="osc-card-back-day-date">' + escapeStaffHtml(formatted.dateFormatted) + '</div>' +
+            '</th>';
+    }).join('');
+    var bodyRows = periods.map(function (period) {
+        var firstDay = days[0] || null;
+        var periodTime = firstDay ? scheduleData.getPeriodTime(firstDay, period.key) : '';
+        var cells = days.map(function (day) {
+            return '<td>' + escapeStaffHtml(scheduleData.getCellValue(day, period.key) || '') + '</td>';
+        }).join('');
+
+        return '' +
+            '<tr>' +
+            '  <td class="osc-card-back-period-cell">' +
+            '    <div class="osc-card-back-period-label">' + escapeStaffHtml(period.label) + '</div>' +
+            (periodTime ? '<div class="osc-card-back-period-time">' + escapeStaffHtml(periodTime) + '</div>' : '') +
+            '  </td>' +
+                 cells +
+            '</tr>';
+    }).join('');
+    var emptyColspan = Math.max(days.length + 1, 2);
+    var emptyMessage = record.entityType === 'member'
+        ? 'لا يوجد توقيت حراسة لأعضاء المركز'
+        : (scheduleData.matchedTeacher ? 'لا توجد تكليفات مسجلة لهذا الأستاذ' : 'لم يتم العثور على الأستاذ داخل جدول الحراسة');
+
+    return '' +
+        '<div class="osc-card osc-card-back">' +
+        '  <div class="osc-card-back-header">' +
+        '    <div class="osc-card-back-title">ظهر البطاقة - جدول توقيت الأستاذ</div>' +
+        '    <div class="osc-card-back-subtitle">' + escapeStaffHtml(record.fullName || '-') + '</div>' +
+        '    <div class="osc-card-back-meta">' + escapeStaffHtml(metaLine) + '</div>' +
+        '    <div class="osc-card-back-kicker">' + escapeStaffHtml(subtitle) + '</div>' +
+        '  </div>' +
+        '  <div class="osc-card-back-body">' +
+        '    <table class="osc-card-back-table">' +
+        '      <thead>' +
+        '        <tr>' +
+        '          <th class="osc-card-back-corner">الفترة / اليوم</th>' +
+                     headerCells +
+        '        </tr>' +
+        '      </thead>' +
+        '      <tbody>' +
+                (bodyRows || ('<tr><td colspan="' + emptyColspan + '" class="osc-card-back-empty">' + escapeStaffHtml(emptyMessage) + '</td></tr>')) +
+        '      </tbody>' +
+        '    </table>' +
+        '  </div>' +
+        '</div>';
+}
+
+function openStaffCardsPrint(records, config, center, scheduleContext) {
+    var recordPages = chunkStaffCardRecords(records, STAFF_CARD_PRINT_PAGE_SIZE);
+    var pagesMarkup = recordPages.map(function (pageRecords) {
+        var frontCards = pageRecords.map(function (record) {
+            return buildPrintCardMarkup(record, config, center);
+        }).join('');
+        var frontPageMarkup = '<div class="osc-print-page">' + frontCards + '</div>';
+
+        if (!config.printBack) {
+            return frontPageMarkup;
+        }
+
+        var backCards = pageRecords.map(function (record) {
+            return buildPrintBackCardMarkup(record, scheduleContext, config);
+        }).join('');
+
+        return frontPageMarkup + '<div class="osc-print-page osc-print-page--back">' + backCards + '</div>';
+    }).join('');
+
+    const html = '' +
+        '<!DOCTYPE html>' +
+        '<html lang="ar" dir="rtl">' +
+        '<head>' +
+        '  <meta charset="UTF-8">' +
+        '  <base href="' + escapeStaffHtml(window.location.href) + '">' +
+        '  <title>بطاقات الحراس</title>' +
+        '  <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">' +
+        '  <style>' +
+        '    :root{--osc-print-gap:0.35cm;--osc-print-card-width:8.5cm;--osc-print-card-min-height:6cm;--osc-print-card-height:6cm;--osc-print-page-height:27.8cm;}' +
+        '    body{font-family:"Cairo","Arial",sans-serif;background:#fff;margin:0;padding:0.2cm;direction:rtl;}' +
+        '    .osc-print-grid{display:flex;flex-wrap:wrap;gap:var(--osc-print-gap);justify-content:space-between;align-content:flex-start;}' +
+        '    .osc-print-page{min-height:var(--osc-print-page-height);display:grid;grid-template-columns:repeat(2,var(--osc-print-card-width));grid-auto-rows:var(--osc-print-card-height);gap:var(--osc-print-gap);justify-content:space-between;align-content:start;box-sizing:border-box;page-break-after:always;break-after:page;}' +
+        '    .osc-print-page:last-child{page-break-after:auto;break-after:auto;}' +
+        '    .osc-card{width:var(--osc-print-card-width);height:var(--osc-print-card-height);min-height:var(--osc-print-card-height);border-radius:8px;overflow:hidden;position:relative;background:#fff;border:1px solid #d1d5db;box-sizing:border-box;break-inside:avoid;display:flex;flex-direction:column;}' +
+        '    .osc-card-header{padding:8px 10px;color:#fff;position:relative;}' +
+        '    .osc-card-brand{display:flex;align-items:center;gap:8px;text-align:right;}' +
+        '    .osc-card-brand-text{flex:1;min-width:0;}' +
+        '    .osc-card-logo{display:block;width:42px;height:42px;object-fit:contain;flex-shrink:0;background:transparent;}' +
+        '    .osc-card-header h3{margin:0;font-size:.9em;font-weight:800;line-height:1.3;}' +
+        '    .osc-card-header p{margin:0;font-size:.55em;font-weight:700;opacity:.95;}' +
+        '    .osc-card-body{display:flex;flex-direction:row-reverse;gap:10px;padding:8px 10px;}' +
+        '    .osc-card-badge{width:68px;min-height:86px;border-radius:8px;background:#f8fafc;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:1.45rem;flex-shrink:0;}' +
+        '    .osc-card-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px;}' +
+        '    .osc-card-row{display:flex;align-items:baseline;gap:4px;font-size:.7em;line-height:1.55;}' +
+        '    .osc-card-row .lbl{color:#000000;font-weight:900;white-space:nowrap;}' +
+        '    .osc-card-row .val{font-weight:900;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+        '    .osc-card-footer{padding:5px 10px 8px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f1f5f9;font-size:.52rem;color:#475569;font-weight:800;}' +
+        '    .osc-card--modern .osc-card-header{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:right;}' +
+        '    .osc-card--modern .osc-card-brand{flex:1;min-width:0;}' +
+        '    .osc-card--ornate{border:1px solid rgba(191,161,74,.75);background:linear-gradient(145deg,rgba(255,252,245,.99),rgba(244,236,214,.96)),radial-gradient(circle at top right,rgba(212,175,55,.18),transparent 42%);position:relative;box-shadow:0 6px 18px rgba(104,76,8,.16),0 2px 5px rgba(0,0,0,.06);}' +
+        '    .osc-card--ornate:before,.osc-card--ornate:after{content:"";position:absolute;inset:8px;border:1px solid rgba(191,161,74,.45);border-radius:6px;pointer-events:none;}' +
+        '    .osc-card--ornate:after{inset:14px;border-style:dashed;border-color:rgba(15,23,42,.12);}' +
+        '    .osc-card--ornate .osc-card-header{background:linear-gradient(135deg,var(--ornate-accent,#0f172a),#b9912f),radial-gradient(circle at top,rgba(255,255,255,.22),transparent 48%);color:var(--ornate-title,#ffffff);position:relative;padding:12px 14px 10px;overflow:hidden;border-bottom:1px solid rgba(191,161,74,.35);}' +
+        '    .osc-card--ornate .osc-card-brand{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;min-height:60px;padding-inline:46px;}' +
+        '    .osc-card--ornate .osc-card-logo{width:44px;height:44px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.18));}' +
+        '    .osc-card--ornate .osc-card-brand-text{padding:0;background:transparent;}' +
+        '    .osc-card--ornate .osc-card-brand-text--ornate{text-align:center;}' +
+        '    .osc-ornate-side-logo{position:absolute;top:12px;right:14px;display:flex;align-items:center;justify-content:center;z-index:1;}' +
+        '    .osc-ornate-center-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.12;z-index:0;}' +
+        '    .osc-ornate-center-logo .osc-card-logo{width:72px;height:72px;filter:none;}' +
+        '    .osc-card--ornate .osc-card-header h3{letter-spacing:.2px;text-shadow:0 1px 2px rgba(0,0,0,.18);font-size:1em;line-height:1.2;}' +
+        '    .osc-card--ornate .osc-card-header p{opacity:.98;}' +
+        '    .osc-ornate-centerline{color:rgba(255,248,220,.96);font-size:.6em;margin-top:3px;}' +
+        '    .osc-ornate-kicker{display:inline-block;margin-bottom:5px;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.42);background:rgba(255,255,255,.14);font-size:.5rem;font-weight:800;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}' +
+        '    .osc-ornate-corner{position:absolute;top:10px;width:24px;height:24px;opacity:.35;border-top:2px solid rgba(255,255,255,.85);}' +
+        '    .osc-ornate-corner--right{right:10px;border-right:2px solid rgba(255,255,255,.85);border-top-right-radius:12px;}' +
+        '    .osc-ornate-corner--left{left:10px;border-left:2px solid rgba(255,255,255,.85);border-top-left-radius:12px;}' +
+        '    .osc-card--ornate .osc-card-body{margin:8px 10px 0;padding:10px;border-radius:12px;border:1px solid rgba(191,161,74,.26);background:rgba(255,255,255,.56);align-items:center;gap:12px;}' +
+        '    .osc-card--ornate .osc-card-badge{border-color:rgba(191,161,74,.55);background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(250,245,230,.98));color:var(--ornate-accent,#0f172a);box-shadow:inset 0 0 0 2px rgba(255,255,255,.8),0 4px 10px rgba(104,76,8,.10);width:60px;min-height:78px;}' +
+        '    .osc-card--ornate .osc-card-info{gap:5px;}' +
+        '    .osc-card--ornate .osc-card-row .lbl{color:#8a6a16;}' +
+        '    .osc-card--ornate .osc-card-row .val{color:#3b2f0d;}' +
+        '    .osc-card--ornate .osc-card-footer{border-top-color:rgba(191,161,74,.3);background:linear-gradient(180deg,rgba(255,255,255,0),rgba(244,236,214,.78));color:#7c5f12;padding:4px 12px 8px;}' +
+        '    .osc-card--official{border:1px solid #cbd5e1;}' +
+        '    .osc-card--official .osc-card-header{background:#fff !important;color:#0f172a;border-bottom:1px solid #e2e8f0;padding:8px 10px 6px;text-align:center;}' +
+        '    .osc-card--official .osc-official-head{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;}' +
+        '    .osc-card--official .osc-official-logo-wrap{display:flex;align-items:center;justify-content:center;}' +
+        '    .osc-card--official .osc-card-brand-text--official{text-align:center;}' +
+        '    .osc-card--official .osc-card-logo{width:38px;height:38px;}' +
+        '    .osc-card--official .osc-official-top{font-weight:800;font-size:.6rem;}' +
+        '    .osc-card--official .osc-official-sub{font-weight:700;font-size:.5rem;color:#475569;margin-top:2px;}' +
+        '    .osc-card--official .osc-official-title{margin-top:6px;padding:4px 10px;border-radius:999px;display:inline-block;font-size:.68rem;font-weight:900;border:1px solid #16a34a;box-shadow:inset 0 1px 0 rgba(255,255,255,.28);}' +
+        '    .osc-card--premium{border:1px solid var(--premium-border,rgba(15,76,129,.22));background:radial-gradient(circle at top left,var(--premium-glow,rgba(56,189,248,.18)),transparent 30%),radial-gradient(circle at bottom right,var(--premium-glow-soft,rgba(245,158,11,.16)),transparent 28%),linear-gradient(145deg,#ffffff,#f8fafc 55%,var(--premium-accent-muted,#eef6ff));box-shadow:0 10px 24px var(--premium-glow-soft,rgba(15,76,129,.12)),0 2px 6px rgba(15,23,42,.06);overflow:hidden;}' +
+        '    .osc-card--premium:before{content:"";position:absolute;inset:8px;border:1px solid rgba(255,255,255,.55);border-radius:10px;pointer-events:none;}' +
+        '    .osc-card--premium .osc-card-header{background:linear-gradient(135deg,var(--premium-accent,#0f172a),var(--premium-accent-soft,#155e75) 55%,var(--premium-accent-deep,#0f4c81)),radial-gradient(circle at top,rgba(255,255,255,.18),transparent 44%);color:var(--premium-title,#ffffff);position:relative;padding:10px 12px 12px;overflow:hidden;border-bottom:1px solid rgba(255,255,255,.1);}' +
+        '    .osc-premium-glow{position:absolute;inset:auto -16px -28px auto;width:96px;height:96px;background:radial-gradient(circle,rgba(255,255,255,.2),transparent 68%);pointer-events:none;}' +
+        '    .osc-premium-logo-watermark{position:absolute;inset:8px auto auto 12px;opacity:.08;pointer-events:none;}' +
+        '    .osc-premium-logo-watermark .osc-card-logo{width:58px;height:58px;filter:none;}' +
+        '    .osc-premium-head{position:relative;z-index:1;display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:10px;min-height:66px;}' +
+        '    .osc-premium-logo-side{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(3px);flex-shrink:0;}' +
+        '    .osc-premium-logo-side .osc-card-logo{width:30px;height:30px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.16));}' +
+        '    .osc-card-brand-text--premium{text-align:center;width:100%;max-width:none;}' +
+        '    .osc-premium-kicker{font-size:.47rem;font-weight:800;color:rgba(255,255,255,.8);line-height:1.35;margin-bottom:4px;}' +
+        '    .osc-premium-divider{width:38px;height:2px;border-radius:999px;background:linear-gradient(90deg,rgba(251,191,36,.95),rgba(255,255,255,.55));margin:0 auto 5px;}' +
+        '    .osc-card--premium .osc-card-header h3{margin:0;font-size:1.02rem;letter-spacing:.2px;text-shadow:0 1px 2px rgba(0,0,0,.18);line-height:1.15;}' +
+        '    .osc-premium-centerline{display:inline-flex;align-items:center;justify-content:center;max-width:100%;margin-top:6px !important;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.93);font-size:.53rem !important;line-height:1.2 !important;box-sizing:border-box;}' +
+        '    .osc-premium-subline{font-size:.47rem;font-weight:800;color:rgba(255,255,255,.78);margin-top:5px;line-height:1.3;text-align:center;}' +
+        '    .osc-card--premium .osc-card-body{margin:8px 10px 0;padding:9px 10px;border-radius:14px;background:rgba(255,255,255,.78);border:1px solid var(--premium-surface-border,rgba(191,219,254,.75));box-shadow:inset 0 1px 0 rgba(255,255,255,.9);align-items:center;gap:12px;}' +
+        '    .osc-card--premium .osc-card-badge{width:60px;min-height:80px;border-color:var(--premium-badge-border,rgba(14,165,233,.28));background:linear-gradient(180deg,rgba(255,255,255,.98),var(--premium-accent-muted,rgba(239,246,255,.98)));color:var(--premium-accent,#0f172a);box-shadow:inset 0 0 0 2px rgba(255,255,255,.85),0 6px 12px var(--premium-glow-soft,rgba(14,165,233,.08));}' +
+        '    .osc-card--premium .osc-card-info{gap:5px;}' +
+        '    .osc-card--premium .osc-card-row{padding:2px 0;}' +
+        '    .osc-card--premium .osc-card-row .lbl{color:var(--premium-label,#0f4c81);}' +
+        '    .osc-card--premium .osc-card-row .val{color:#0f172a;}' +
+        '    .osc-card--premium .osc-card-footer{margin-top:auto;border-top:1px solid var(--premium-surface-border,rgba(191,219,254,.85));background:linear-gradient(180deg,rgba(255,255,255,0),var(--premium-accent-muted,rgba(239,246,255,.9)));color:var(--premium-footer-text,#0f4c81);padding:5px 11px 8px;}' +
+        '    .osc-card-back{width:calc(var(--osc-print-card-width) - 0.16cm);height:calc(var(--osc-print-card-height) - 0.16cm);min-height:calc(var(--osc-print-card-height) - 0.16cm);margin:0.08cm auto;border-color:#bfdbfe;background:linear-gradient(135deg,#ffffff,#f8fbff);}' +
+        '    .osc-card-back-header{padding:7px 9px 5px;border-bottom:1px solid #dbeafe;background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(14,165,233,.12));text-align:center;}' +
+        '    .osc-card-back-title{font-size:.76rem;font-weight:900;color:#0f4c81;line-height:1.2;}' +
+        '    .osc-card-back-subtitle{font-size:.7rem;font-weight:900;color:#0f172a;margin-top:2px;line-height:1.25;}' +
+        '    .osc-card-back-meta{font-size:.52rem;font-weight:800;color:#475569;margin-top:2px;line-height:1.35;}' +
+        '    .osc-card-back-kicker{font-size:.5rem;font-weight:800;color:#1d4ed8;margin-top:2px;line-height:1.3;}' +
+        '    .osc-card-back-body{flex:1;padding:6px 7px 7px;display:flex;}' +
+        '    .osc-card-back-table{width:100%;height:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff;}' +
+        '    .osc-card-back-table th,.osc-card-back-table td{border-left:1px solid #dbeafe;border-bottom:1px solid #dbeafe;padding:4px 3px;text-align:center;vertical-align:middle;font-size:.52rem;font-weight:800;color:#0f172a;line-height:1.25;}' +
+        '    .osc-card-back-table th:last-child,.osc-card-back-table td:last-child{border-left:none;}' +
+        '    .osc-card-back-table tbody tr:last-child td{border-bottom:none;}' +
+        '    .osc-card-back-table thead th{background:linear-gradient(135deg,rgba(15,76,129,.12),rgba(56,189,248,.16));font-weight:900;}' +
+        '    .osc-card-back-corner{width:26%;}' +
+        '    .osc-card-back-day-name{font-size:.5rem;font-weight:900;line-height:1.1;}' +
+        '    .osc-card-back-day-date{font-size:.47rem;font-weight:700;color:#475569;margin-top:1px;line-height:1.1;}' +
+        '    .osc-card-back-period-cell{background:#f8fafc !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+        '    .osc-card-back-period-label{font-size:.5rem;font-weight:900;line-height:1.15;}' +
+        '    .osc-card-back-period-time{font-size:.44rem;font-weight:700;color:#64748b;margin-top:1px;line-height:1.15;}' +
+        '    .osc-card-back-empty{font-size:.58rem;font-weight:800;color:#64748b;}' +
+        '    @page{size:A4;margin:0.6cm;}' +
+        '    @media print{ *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;} body{padding:0;} .osc-print-grid{gap:0.3cm;justify-content:space-between;align-content:flex-start;} .osc-print-page{gap:0.3cm;justify-content:space-between;align-content:flex-start;} .osc-card{width:var(--osc-print-card-width);height:var(--osc-print-card-height);min-height:var(--osc-print-card-height);page-break-inside:avoid;break-inside:avoid;box-shadow:none;} .osc-card:not(.osc-card--ornate):not(.osc-card-back){border:1px solid #ccc;}}' +
+        '  </style>' +
+        (window.PrintToolbarHelper ? window.PrintToolbarHelper.getHeadContent() : '') +
+        '</head>' +
+        '<body>' +
+        (window.PrintToolbarHelper ? window.PrintToolbarHelper.getToolbarHtml({ advanced: false }) : '') +
+             pagesMarkup +
+        (window.PrintToolbarHelper ? window.PrintToolbarHelper.getScriptHtml({ advanced: false }) : '') +
+        '</body>' +
+        '</html>';
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        Swal.fire('تنبيه', 'تعذر فتح نافذة الطباعة', 'warning');
+        return;
+    }
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+}
+
+function OfficialStaffCardsApp() {
+    const [isLoading, setIsLoading] = useState(true);
+    const [activeSidebarTab, setActiveSidebarTab] = useState('records');
+    const [activeGroup, setActiveGroup] = useState('proctors');
+    const [centerData, setCenterData] = useState(getOfficialCenterDisplay({}));
+    const [proctorRecords, setProctorRecords] = useState([]);
+    const [memberRecords, setMemberRecords] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedIds, setSelectedIds] = useState({});
+    const [config, setConfig] = useState(cloneStaffCardConfig());
+
+    useEffect(function () {
+        loadData();
+    }, []);
+
+    const currentRecords = activeGroup === 'members' ? memberRecords : proctorRecords;
+
+    const filteredRecords = useMemo(function () {
+        const q = String(searchTerm || '').trim().toLowerCase();
+        if (!q) return currentRecords;
+        return currentRecords.filter(function (record) {
+            return [
+                record.fullName,
+                record.role,
+                record.subject,
+                record.institution,
+                record.note,
+                record.phone
+            ].join(' ').toLowerCase().indexOf(q) !== -1;
+        });
+    }, [currentRecords, searchTerm]);
+
+    const selectedRecords = useMemo(function () {
+        return currentRecords.filter(function (record) {
+            return !!selectedIds[record.id];
+        });
+    }, [currentRecords, selectedIds]);
+
+    const previewRecords = selectedRecords.length > 0 ? selectedRecords : (filteredRecords.length > 0 ? [filteredRecords[0]] : []);
+
+    async function loadData() {
+        try {
+            setIsLoading(true);
+            const currentTrimester = normalizeStoredTrimesterValue(await readOfficialSupervisionStorage(OFFICIAL_SUPERVISION_STORAGE_KEYS.TRIMESTER, false));
+            const center = getOfficialCenterDisplay(await DB.getOfficialCenter() || {}, currentTrimester);
+            const proctors = await DB.getExamProctors() || [];
+            const members = await DB.getOfficialCenterMembers() || [];
+
+            setCenterData(center);
+            setProctorRecords(proctors.map(function (proctor, index) {
+                return buildProctorRecord(proctor, center, index);
+            }));
+            setMemberRecords(members.map(function (member, index) {
+                return buildMemberRecord(member, center, index);
+            }));
+        } catch (error) {
+            console.error('Official staff cards load error:', error);
+            Swal.fire('خطأ', 'تعذر تحميل بيانات البطاقات', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    function updateConfig(name, value) {
+        setConfig(function (prev) {
+            const next = Object.assign({}, prev);
+            next[name] = value;
+            return next;
+        });
+    }
+
+    function toggleRecord(id) {
+        setSelectedIds(function (prev) {
+            const next = Object.assign({}, prev);
+            next[id] = !next[id];
+            return next;
+        });
+    }
+
+    function toggleAllFiltered() {
+        const allSelected = filteredRecords.length > 0 && filteredRecords.every(function (record) {
+            return !!selectedIds[record.id];
+        });
+        setSelectedIds(function (prev) {
+            const next = Object.assign({}, prev);
+            filteredRecords.forEach(function (record) {
+                next[record.id] = !allSelected;
+            });
+            return next;
+        });
+    }
+
+    function clearSelection() {
+        setSelectedIds({});
+    }
+
+    async function handlePrint() {
+        if (selectedRecords.length === 0) {
+            Swal.fire('تنبيه', 'يرجى تحديد بطاقة واحدة على الأقل للطباعة', 'warning');
+            return;
+        }
+
+        var scheduleContext = null;
+        if (config.printBack) {
+            try {
+                scheduleContext = await loadOfficialSupervisionScheduleContext();
+            } catch (error) {
+                console.error('Official supervision schedule load error:', error);
+                Swal.fire('خطأ', 'تعذر تحميل جدول الحراسة لظهر البطاقات', 'error');
+                return;
+            }
+        }
+
+        openStaffCardsPrint(selectedRecords, config, centerData, scheduleContext);
+    }
+
+    return staffCardElement('div', { className: 'osc-page' },
+        staffCardElement('div', { className: 'osc-page-header' },
+            staffCardElement('div', { className: 'osc-page-header-icon' }, staffCardElement('i', { className: 'fa-solid fa-id-card' })),
+            staffCardElement('div', null,
+                staffCardElement('h1', null, 'بطاقات الحراس وأعضاء المركز'),
+                staffCardElement('p', null, 'إنشاء وطباعة بطاقات الأساتذة الحراس وأعضاء مركز الامتحانات الرسمية')
+            )
+        ),
+
+        staffCardElement('div', { className: 'osc-grid' },
+            staffCardElement('div', { className: 'osc-panel' },
+                staffCardElement('div', { className: 'osc-panel-header' },
+                    staffCardElement('i', { className: 'fa-solid fa-eye' }),
+                    'معاينة البطاقات'
+                ),
+                        staffCardElement('div', { className: 'osc-panel-body' },
+                            staffCardElement('div', { className: 'osc-preview-area' },
+                                staffCardElement('div', { className: 'osc-preview-label' },
+                                    staffCardElement('i', { className: 'fa-solid fa-print' }),
+                                    selectedRecords.length > 0 ? ('عدد المحدد: ' + selectedRecords.length) : 'معاينة أول بطاقة متاحة'
+                                ),
+                                config.printBack && activeGroup === 'proctors'
+                                    ? staffCardElement('div', {
+                                        className: 'osc-preview-note'
+                                    }, 'سيتم طباعة جدول توقيت الأستاذ في ظهر البطاقة بنفس ترتيب البطاقات.')
+                                    : null,
+                                previewRecords.length > 0
+                                    ? staffCardElement('div', { className: 'osc-print-grid' },
+                                        previewRecords.map(function (record) {
+                                            return staffCardElement(StaffCard, {
+                                        key: record.id,
+                                        record: record,
+                                        center: centerData,
+                                        config: config
+                                    });
+                                })
+                            )
+                            : staffCardElement('div', { className: 'osc-empty-preview' }, isLoading ? 'جارٍ التحميل...' : 'لا توجد بيانات للعرض حالياً')
+                    )
+                )
+            ),
+
+            staffCardElement('div', { className: 'no-print' },
+                staffCardElement('div', { className: 'osc-panel' },
+                    staffCardElement('div', { className: 'osc-panel-body' },
+                        staffCardElement('div', { className: 'osc-sidebar-tabs' },
+                            staffCardElement('div', {
+                                className: 'osc-sidebar-tab' + (activeSidebarTab === 'records' ? ' active' : ''),
+                                onClick: function () { setActiveSidebarTab('records'); }
+                            }, staffCardElement('i', { className: 'fas fa-users', style: { marginLeft: '6px' } }), 'البيانات'),
+                            staffCardElement('div', {
+                                className: 'osc-sidebar-tab' + (activeSidebarTab === 'design' ? ' active' : ''),
+                                onClick: function () { setActiveSidebarTab('design'); }
+                            }, staffCardElement('i', { className: 'fas fa-paint-brush', style: { marginLeft: '6px' } }), 'التصميم'),
+                            staffCardElement('div', {
+                                className: 'osc-sidebar-tab' + (activeSidebarTab === 'actions' ? ' active' : ''),
+                                onClick: function () { setActiveSidebarTab('actions'); }
+                            }, staffCardElement('i', { className: 'fas fa-print', style: { marginLeft: '6px' } }), 'الطباعة')
+                        ),
+
+                        activeSidebarTab === 'records' && staffCardElement('div', null,
+                            staffCardElement('div', { className: 'osc-type-tabs' },
+                                staffCardElement('button', {
+                                    type: 'button',
+                                    className: 'osc-type-tab' + (activeGroup === 'proctors' ? ' active' : ''),
+                                    onClick: function () { setActiveGroup('proctors'); }
+                                }, 'الحراس'),
+                                staffCardElement('button', {
+                                    type: 'button',
+                                    className: 'osc-type-tab' + (activeGroup === 'members' ? ' active' : ''),
+                                    onClick: function () { setActiveGroup('members'); }
+                                }, 'أعضاء المركز')
+                            ),
+                            staffCardElement('div', { className: 'osc-search-wrap' },
+                                staffCardElement('i', { className: 'fa-solid fa-magnifying-glass' }),
+                                staffCardElement('input', {
+                                    type: 'text',
+                                    value: searchTerm,
+                                    placeholder: 'ابحث بالاسم أو الصفة أو المؤسسة',
+                                    onChange: function (event) { setSearchTerm(event.target.value); }
+                                })
+                            ),
+                            staffCardElement('div', { className: 'osc-record-list' },
+                                staffCardElement('div', { className: 'osc-select-all', onClick: toggleAllFiltered },
+                                    staffCardElement('i', { className: 'fa-solid fa-check-double' }),
+                                    filteredRecords.length > 0 && filteredRecords.every(function (record) { return !!selectedIds[record.id]; })
+                                        ? 'إلغاء تحديد الكل'
+                                        : 'تحديد الكل'
+                                ),
+                                filteredRecords.map(function (record) {
+                                    return staffCardElement('label', {
+                                        className: 'osc-record-item',
+                                        key: record.id
+                                    },
+                                        staffCardElement('input', {
+                                            type: 'checkbox',
+                                            checked: !!selectedIds[record.id],
+                                            onChange: function () { toggleRecord(record.id); }
+                                        }),
+                                        staffCardElement('span', { className: 'osc-record-name' }, record.fullName),
+                                        staffCardElement('span', { className: 'osc-record-meta' }, record.role || '-')
+                                    );
+                                })
+                            ),
+                            staffCardElement('div', {
+                                style: { marginTop: '8px', color: '#64748b', fontSize: '0.78rem', fontWeight: 800 }
+                            }, 'الإجمالي: ' + currentRecords.length + ' | المحدد: ' + selectedRecords.length)
+                        ),
+
+                        activeSidebarTab === 'design' && staffCardElement('div', null,
+                            staffCardElement('div', { className: 'osc-field' },
+                                staffCardElement('label', null, 'قالب البطاقة'),
+                                staffCardElement('select', {
+                                    value: config.template,
+                                    onChange: function (event) { updateConfig('template', event.target.value); }
+                                }, STAFF_CARD_TEMPLATES.map(function (template) {
+                                    return staffCardElement('option', { key: template.id, value: template.id }, template.label);
+                                }))
+                            ),
+                            staffCardElement('div', { className: 'osc-row' },
+                                staffCardElement('div', { className: 'osc-field' },
+                                    staffCardElement('label', null, 'لون الشريط'),
+                                    staffCardElement('input', {
+                                        type: 'color',
+                                        value: config.headerColor,
+                                        onChange: function (event) { updateConfig('headerColor', event.target.value); }
+                                    })
+                                ),
+                                staffCardElement('div', { className: 'osc-field' },
+                                    staffCardElement('label', null, 'لون العنوان'),
+                                    staffCardElement('input', {
+                                        type: 'color',
+                                        value: config.titleColor,
+                                        onChange: function (event) { updateConfig('titleColor', event.target.value); }
+                                    })
+                                )
+                            ),
+                            staffCardElement('div', { className: 'osc-field' },
+                                staffCardElement('label', null, 'عنوان مخصص'),
+                                staffCardElement('input', {
+                                    type: 'text',
+                                    value: config.customTitle,
+                                    placeholder: 'اتركه فارغاً لاستخدام العنوان الافتراضي',
+                                    onChange: function (event) { updateConfig('customTitle', event.target.value); }
+                                })
+                            ),
+                            staffCardElement('div', { className: 'osc-field' },
+                                staffCardElement('label', null, 'حجم الخط'),
+                                staffCardElement('select', {
+                                    value: config.fontSize,
+                                    onChange: function (event) { updateConfig('fontSize', event.target.value); }
+                                },
+                                    staffCardElement('option', { value: 'small' }, 'صغير'),
+                                    staffCardElement('option', { value: 'medium' }, 'متوسط'),
+                                    staffCardElement('option', { value: 'large' }, 'كبير')
+                                )
+                            )
+                        ),
+
+                        activeSidebarTab === 'actions' && staffCardElement('div', null,
+                            staffCardElement('div', {
+                                style: {
+                                    marginBottom: '12px',
+                                    color: '#475569',
+                                    fontWeight: 800,
+                                    lineHeight: '1.8'
+                                }
+                            },
+                                staffCardElement('div', null, 'المركز: ' + centerData.displayCenter),
+                                staffCardElement('div', null, 'الامتحان: ' + centerData.displayExam),
+                                staffCardElement('div', null, 'الدورة: ' + centerData.displaySession)
+                            ),
+                            staffCardElement('div', { className: 'osc-field' },
+                                staffCardElement('label', null, 'خيارات الطباعة'),
+                                staffCardElement('label', { className: 'osc-check-option' },
+                                    staffCardElement('input', {
+                                        type: 'checkbox',
+                                        checked: !!config.printBack,
+                                        onChange: function (event) { updateConfig('printBack', !!event.target.checked); }
+                                    }),
+                                    staffCardElement('div', null,
+                                        staffCardElement('div', { className: 'osc-check-title' }, 'طباعة جدول التوقيت في ظهر البطاقة'),
+                                        staffCardElement('div', { className: 'osc-check-meta' }, 'تُطبع الصفحات الأمامية والخلفية بنفس الترتيب، ويُطبّق الظهر على بطاقات الحراس فقط.')
+                                    )
+                                )
+                            ),
+                            config.printBack ? staffCardElement('div', { className: 'osc-field' },
+                                staffCardElement('label', { className: 'osc-check-option' },
+                                    staffCardElement('input', {
+                                        type: 'checkbox',
+                                        checked: !!config.showBackRooms,
+                                        onChange: function (event) { updateConfig('showBackRooms', !!event.target.checked); }
+                                    }),
+                                    staffCardElement('div', null,
+                                        staffCardElement('div', { className: 'osc-check-title' }, 'إظهار القاعة في ظهر البطاقة'),
+                                        staffCardElement('div', { className: 'osc-check-meta' }, 'عند إلغاء هذا الخيار ستظهر العلامة المعتمدة بدل اسم القاعة في جدول التوقيت.')
+                                    )
+                                )
+                            ) : null,
+                            staffCardElement('div', { className: 'osc-btn-group' },
+                                staffCardElement('button', {
+                                    type: 'button',
+                                    className: 'osc-btn osc-btn-success',
+                                    onClick: handlePrint
+                                }, staffCardElement('i', { className: 'fa-solid fa-print' }), 'طباعة المحدد'),
+                                staffCardElement('button', {
+                                    type: 'button',
+                                    className: 'osc-btn osc-btn-outline',
+                                    onClick: clearSelection
+                                }, staffCardElement('i', { className: 'fa-solid fa-eraser' }), 'مسح التحديد')
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    );
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.Auth && typeof window.Auth.checkAuth === 'function') {
+        window.Auth.checkAuth();
+    }
+    const root = document.getElementById('root');
+    if (root) ReactDOM.render(staffCardElement(OfficialStaffCardsApp), root);
+});

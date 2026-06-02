@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <script>
+        (function () {
+            var theme = 'light';
+            var themePreset = 'default';
+            try {
+                theme = localStorage.getItem('theme') || 'light';
+                themePreset = localStorage.getItem('themePreset') || 'default';
+            } catch (e) { }
+            document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme-preset', themePreset || 'default');
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بطاقات التلاميذ - إدارتي+</title>
+
+    <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../core/academic-utils.js"></script>
+
+    <script src="../assets/js/jsbarcode-local.js"></script>
+
+    <style>
+        @font-face { font-family: 'Cairo'; src: url('../assets/fonts/Cairo-Regular.ttf') format('truetype'); font-weight: normal; }
+        @font-face { font-family: 'Cairo'; src: url('../assets/fonts/Cairo-Bold.ttf') format('truetype'); font-weight: bold; }
+        body { font-family: 'Cairo', sans-serif !important; background-color: var(--bg-color); color: var(--primary-color); margin: 0; padding: 0; }
+
+        /* ============ Layout ============ */
+        .sc-page { max-width: 1440px; margin: 0 auto; padding: 20px 28px 50px; }
+
+        .sc-page-header {
+            display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+            padding: 16px 20px; border-radius: 12px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .sc-page-header-icon {
+            width: 48px; height: 48px; border-radius: 10px;
+            background: #1e293b;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        .sc-page-header h1 { font-size: 1.25rem; font-weight: 800; margin: 0; color: var(--primary-color); }
+        .sc-page-header p { font-size: 0.85rem; color: #64748b; margin: 2px 0 0; font-weight: 600; }
+
+        .sc-grid { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
+        @media (max-width: 1024px) { .sc-grid { grid-template-columns: 1fr; } }
+
+        /* ============ Panels ============ */
+        .sc-panel {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            overflow: hidden; margin-bottom: 16px; transition: box-shadow 0.2s;
+        }
+        .sc-panel-header {
+            padding: 12px 16px; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; gap: 10px;
+            font-weight: 800; font-size: 0.9rem; color: var(--primary-color);
+            background: rgba(241, 245, 249, 0.5);
+        }
+        .sc-panel-header i { color: #475569; font-size: 0.9rem; }
+        .sc-panel-body { padding: 16px; }
+
+        /* ============ Sidebar Tabs ============ */
+        .sc-sidebar-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: #f1f5f9; padding: 4px; border-radius: 10px; }
+        .sc-sidebar-tab {
+            flex: 1; padding: 8px 12px; text-align: center; font-size: 0.8rem; font-weight: 800; color: #64748b;
+            cursor: pointer; border-radius: 6px; transition: all 0.2s; white-space: nowrap;
+        }
+        .sc-sidebar-tab:hover { color: #1e293b; }
+        .sc-sidebar-tab.active { background: #fff; color: #2563eb; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+
+        /* ============ Search Input ============ */
+        .sc-search-wrap { position: relative; margin-bottom: 12px; }
+        .sc-search-wrap i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem; }
+        .sc-search-wrap input { 
+            width: 100%; padding: 8px 12px 8px 32px; border: 1.5px solid var(--border-color); 
+            border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 0.85rem; font-weight: 700;
+            background: var(--bg-color); color: var(--primary-color); transition: border-color 0.2s; box-sizing: border-box;
+        }
+        .sc-search-wrap input:focus { border-color: #2563eb; outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+        /* ============ Form Controls ============ */
+        .sc-field { margin-bottom: 12px; }
+        .sc-field label { display: block; font-size: 0.78rem; font-weight: 800; color: #475569; margin-bottom: 5px; }
+        .sc-field select, .sc-field input[type="text"], .sc-field input[type="color"] {
+            width: 100%; padding: 8px 12px; border: 1.5px solid var(--border-color); border-radius: 8px;
+            font-family: 'Cairo', sans-serif; font-size: 0.85rem; font-weight: 700;
+            background: var(--bg-color); color: var(--primary-color);
+            transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box;
+        }
+        .sc-field select:focus, .sc-field input:focus { border-color: #2563eb; outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .sc-field input[type="color"] { padding: 2px; height: 36px; cursor: pointer; border-radius: 8px; }
+
+        .sc-row { display: flex; gap: 10px; }
+        .sc-row > .sc-field { flex: 1; min-width: 0; }
+
+        /* ============ Card Type Tabs ============ */
+        .sc-type-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .sc-type-tab {
+            padding: 8px 14px; border-radius: 8px; border: 1.5px solid var(--border-color);
+            background: var(--bg-color); color: #64748b; font-size: 0.8rem; font-weight: 800;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .sc-type-tab:hover { border-color: #94a3b8; color: #334155; }
+        .sc-type-tab.active {
+            background: #f1f5f9; color: #1e293b;
+            border-color: #cbd5e1;
+            font-weight: 900;
+        }
+
+        /* ============ Buttons ============ */
+        .sc-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px;
+            border-radius: 8px; border: none; font-family: 'Cairo', sans-serif;
+            font-size: 0.85rem; font-weight: 800; cursor: pointer; transition: all 0.2s;
+        }
+        .sc-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .sc-btn-primary { background: #1e293b; color: #fff; }
+        .sc-btn-success { background: #2563eb; color: #fff; }
+        .sc-btn-outline { background: var(--card-bg); color: var(--primary-color); border: 1.5px solid var(--border-color); }
+        .sc-btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+        /* ============ Student Selector ============ */
+        .sc-student-list { max-height: 280px; overflow-y: auto; border: 1.5px solid var(--border-color); border-radius: 8px; margin-top: 8px; }
+        .sc-student-list::-webkit-scrollbar { width: 5px; }
+        .sc-student-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sc-student-item {
+            display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color); cursor: pointer;
+            transition: background 0.15s; font-size: 0.82rem; font-weight: 700;
+        }
+        .sc-student-item:hover { background: rgba(241, 245, 249, 0.8); }
+        .sc-student-item:last-child { border-bottom: none; }
+        .sc-student-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer; flex-shrink: 0; }
+        .sc-student-item .sc-student-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sc-student-item .sc-student-class { font-size: 0.7rem; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 4px; white-space: nowrap; font-weight: 800; }
+        .sc-select-all {
+            display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+            background: #f8fafc;
+            border-bottom: 1.5px solid var(--border-color);
+            font-size: 0.8rem; font-weight: 800; color: #475569; cursor: pointer;
+        }
+        .sc-select-all:hover { color: #1e293b; background: #f1f5f9; }
+        .sc-student-count {
+            font-size: 0.75rem; color: #64748b; font-weight: 800; margin-top: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        /* ============ Preview Area ============ */
+        .sc-preview-area {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 32px 24px; min-height: 500px; border-radius: 12px;
+            background-color: transparent;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .sc-preview-label {
+            font-size: 0.8rem; font-weight: 800; color: #475569;
+            margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+            padding: 6px 14px; border-radius: 6px;
+            background: #fff; border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        /* ============ Badge Card ============ */
+        .sc-badge {
+            width: 8.5cm; height: 5.5cm; border-radius: 8px;
+            overflow: hidden; position: relative;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.05);
+            font-family: 'Cairo', sans-serif; direction: rtl; background: #fff;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .sc-badge:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        .sc-badge-header { padding: 6px 10px; text-align: center; color: #fff; position: relative; z-index: 1; }
+        .sc-badge-header h3 { margin: 0; font-size: 0.9em; font-weight: 800; line-height: 1.3; }
+        .sc-badge-header p { margin: 0; font-size: 0.55em; font-weight: 700; opacity: 0.9; }
+        .sc-badge-body { display: flex; flex-direction: row-reverse; gap: 10px; padding: 6px 10px; flex: 1; }
+        .sc-badge-photo {
+            width: 65px; height: 80px; border-radius: 6px;
+            border: 1.5px solid #e2e8f0; background: #f8fafc;
+            display: flex; align-items: center; justify-content: center;
+            color: #94a3b8; font-size: 1.5rem; flex-shrink: 0;
+            cursor: pointer; position: relative; overflow: hidden;
+        }
+        .sc-badge-photo:hover::after {
+            content: '\f030'; font-family: 'Font Awesome 5 Free'; font-weight: 900;
+            position: absolute; inset: 0; background: rgba(0,0,0,0.6);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+        }
+        .sc-badge-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .sc-badge-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+        .sc-badge-row { display: flex; align-items: baseline; gap: 4px; font-size: 0.65em; line-height: 1.5; }
+        .sc-badge-row .lbl { color: #475569; font-weight: 800; white-space: nowrap; }
+        .sc-badge-row .val { font-weight: 900; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sc-badge-footer { padding: 4px 10px 6px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f1f5f9; }
+        .sc-badge-barcode svg { height: 24px; width: auto; }
+        .sc-badge-stamp { font-size: 0.45em; color: #94a3b8; font-weight: 700; text-align: left; }
+
+        /* ============ Template: Modern ============ */
+        .sc-badge--modern { display: flex; flex-direction: column; border-radius: 8px; }
+        .sc-badge--modern-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 4px 10px; color: #fff; border-radius: 8px 8px 0 0;
+        }
+        .sc-badge--modern-body { display: flex; flex-direction: row-reverse; gap: 10px; padding: 6px 10px; flex: 1; }
+        .sc-badge--modern-details { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px; }
+        .sc-badge--modern .sc-badge-photo { width: 60px; height: 75px; border-radius: 6px; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        .sc-badge--modern .sc-badge-footer { padding: 3px 10px 6px; }
+
+        /* ============ Template: Formal ============ */
+        .sc-badge--formal { border: 2px solid; border-radius: 6px; padding: 2px; }
+        .sc-badge--formal-inner { border: 1px solid; border-radius: 4px; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+        .sc-badge--formal .sc-badge-body { padding: 4px 8px; }
+        .sc-badge--formal .sc-badge-photo { width: 60px; height: 75px; border-radius: 4px; }
+        .sc-badge--formal .sc-badge-footer { margin-top: auto; padding: 3px 8px 5px; border-top: 1px solid #f1f5f9; }
+
+        /* ============ Template: Official ============ */
+        .sc-badge--official { display: flex; flex-direction: column; border-radius: 6px; border: 1px solid #cbd5e1; height: 6.2cm; }
+        .sc-badge--official-header { text-align: center; padding: 6px 10px 4px; border-bottom: 1.5px solid #e2e8f0; }
+        .sc-badge--official-republic { font-weight: 800; font-size: 0.65em; color: #0f172a; letter-spacing: 0.5px; }
+        .sc-badge--official-ministry { font-weight: 700; font-size: 0.55em; color: #334155; margin-top: 2px; }
+        .sc-badge--official-directorate { font-weight: 700; font-size: 0.5em; color: #64748b; margin-top: 1px; }
+        .sc-badge--official-title { font-weight: 800; font-size: 0.9em; margin-top: 6px; }
+        .sc-badge--official-inst { font-size: 0.5em; color: #64748b; font-weight: 700; margin-top: 1px; }
+        .sc-badge--official .sc-badge-body { padding: 4px 10px; }
+        .sc-badge--official .sc-badge-photo { width: 60px; height: 75px; border-radius: 4px; }
+        .sc-badge--official .sc-badge-footer { margin-top: auto; padding: 3px 10px 5px; border-top: none; }
+
+        /* ============ Print Preview Grid ============ */
+        .sc-print-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+
+        /* ============ Print Styles ============ */
+        @media print {
+            body * { visibility: hidden; }
+            .sc-print-area, .sc-print-area * { visibility: visible; }
+            .sc-print-area { position: absolute; top: 0; left: 0; width: 100%; }
+            .sc-badge { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+            .no-print { display: none !important; }
+        }
+
+        /* ============ Dark Mode ============ */
+        html[data-theme="dark"] .sc-page-header { background: #0f172a; border-color: #1e293b; }
+        html[data-theme="dark"] .sc-panel { background: var(--card-bg); border-color: var(--border-color); }
+        html[data-theme="dark"] .sc-panel-header { background: rgba(15,23,42,0.5); }
+        html[data-theme="dark"] .sc-sidebar-tabs { background: #0f172a; }
+        html[data-theme="dark"] .sc-sidebar-tab:hover { color: #f1f5f9; }
+        html[data-theme="dark"] .sc-sidebar-tab.active { background: #1e293b; color: #3b82f6; }
+        html[data-theme="dark"] .sc-type-tab.active { background: #1e293b; color: #f8fafc; border-color: #475569; }
+        html[data-theme="dark"] .sc-type-tab:hover { border-color: #475569; color: #f8fafc; }
+        html[data-theme="dark"] .sc-badge { background: #0f172a; box-shadow: 0 4px 16px rgba(0,0,0,0.5); border: 1px solid #1e293b; }
+        html[data-theme="dark"] .sc-badge-row .val { color: #f8fafc; }
+        html[data-theme="dark"] .sc-badge-row .lbl { color: #94a3b8; }
+        html[data-theme="dark"] .sc-badge-photo { background: #1e293b; border-color: #334155; }
+        html[data-theme="dark"] .sc-badge-footer { border-top-color: #1e293b; }
+        html[data-theme="dark"] .sc-preview-area { background-image: radial-gradient(#334155 1px, transparent 1px); }
+        html[data-theme="dark"] .sc-preview-label { background: #0f172a; border-color: #1e293b; color: #94a3b8; }
+        html[data-theme="dark"] .sc-student-item .sc-student-class { background: #1e293b; color: #94a3b8; }
+        html[data-theme="dark"] .sc-student-item:hover { background: rgba(15,23,42,0.6); }
+        html[data-theme="dark"] .sc-select-all { background: rgba(15,23,42,0.4); border-bottom-color: var(--border-color); color: #94a3b8; }
+        html[data-theme="dark"] .sc-select-all:hover { color: #f1f5f9; background: #0f172a; }
+        html[data-theme="dark"] .sc-student-list::-webkit-scrollbar-thumb { background: #334155; }
+        
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+
+    <div id="student-cards-root"></div>
+
+    <script src="student_cards.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            NavbarManager.init();
+            NavbarManager.render();
+            NavbarManager.loadNavbarFix();
+            NavbarManager.loadThemeManager();
+            NavbarManager.loadUpdateManager();
+            NavbarManager.loadNotificationManager();
+        });
+    </script>
+</body>
+</html>

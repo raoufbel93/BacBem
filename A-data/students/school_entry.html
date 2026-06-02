@@ -1,0 +1,317 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحضير الدخول المدرسي - تحليل النتائج</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <style>
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .page-header h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+
+        .btn-print {
+            padding: 10px 20px;
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .section-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            padding: 8px 10px;
+        }
+
+        .stats-table thead th {
+            background-color: var(--primary-color);
+            background: linear-gradient(135deg, #2c3e50, #1e293b);
+            color: white;
+            font-weight: bold;
+        }
+
+        .stats-table tbody tr:nth-child(even) {
+            background-color: var(--bg-color);
+        }
+
+        .stats-table tbody tr:hover {
+            background-color: var(--secondary-color)15;
+        }
+
+        .stats-table .category-row {
+            background-color: var(--bg-color) !important;
+            opacity: 0.9;
+            font-weight: bold;
+        }
+
+        .stats-table .total-row {
+            background-color: #d5f5e3 !important;
+            font-weight: bold;
+        }
+
+        .stats-table .sub-row td:first-child {
+            padding-right: 30px;
+            font-weight: normal;
+        }
+
+        .input-cell {
+            width: 60px;
+            padding: 4px;
+            text-align: center;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 4px;
+            background: var(--card-bg);
+            color: var(--primary-color);
+        }
+
+        .year-selector {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg-color);
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .year-selector label {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .year-selector input {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        @media print {
+
+            .navbar,
+            .page-header,
+            .year-selector,
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: var(--card-bg);
+            }
+
+            .page-container {
+                padding: 0;
+            }
+
+            .stats-section {
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+
+            .stats-table th {
+                background-color: #eee !important;
+                color: var(--primary-color) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+
+    <div class="page-container">
+        <div class="page-header no-print">
+            <h1><span data-icon="calendar"></span> تحضير الدخول المدرسي</h1>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-print" style="background: #27ae60;" onclick="exportSchoolEntryToExcel()">
+                    <span><i class="fas fa-file-excel"></i> تصدير Excel</span>
+                </button>
+                <button class="btn-print" onclick="printReport()">
+                    <span><span data-icon="print"></span> طباعة التقرير</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Year and Trimester Selector -->
+        <div class="year-selector no-print">
+            <label>السنة الدراسية الحالية:</label>
+            <input type="text" id="currentYear" value="2025/2026" style="width: 120px;">
+            <label>السنة الدراسية القادمة:</label>
+            <input type="text" id="nextYear" value="2026/2027" style="width: 120px;">
+            <label for="trimesterSelect">الفصل الدراسي:</label>
+            <select id="trimesterSelect" class="form-control">
+                <option value="1">الفصل الأول</option>
+                <option value="2">الفصل الثاني</option>
+                <option value="3">الفصل الثالث</option>
+                <option value="1+2">الفصل 1 + 2 (معدل الفصلين)</option>
+                <option value="annual">المعدل السنوي</option>
+            </select>
+            <button class="btn-print" style="background: #27ae60;" onclick="updateTables()"><span
+                    data-icon="refresh"></span> تحديث</button>
+        </div>
+
+        <!-- Max Class Size per Level -->
+        <div class="year-selector no-print" style="background: #e8f4fc;">
+            <strong style="margin-left: 15px;"><span data-icon="scale"></span> أقصى تعداد في القسم:</strong>
+            <label>أولى:</label>
+            <input type="number" id="maxClass1" value="30" style="width: 60px;" oninput="updateMaxClassSize()">
+            <label>ثانية:</label>
+            <input type="number" id="maxClass2" value="30" style="width: 60px;" oninput="updateMaxClassSize()">
+            <label>ثالثة:</label>
+            <input type="number" id="maxClass3" value="30" style="width: 60px;" oninput="updateMaxClassSize()">
+            <label>رابعة:</label>
+            <input type="number" id="maxClass4" value="30" style="width: 60px;" oninput="updateMaxClassSize()">
+        </div>
+
+        <!-- Alert for missing data -->
+        <div id="dataAlert" class="no-print"
+            style="display: none; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <span data-icon="warning"></span> <strong>تنبيه:</strong> لا توجد بيانات نتائج محفوظة. يرجى استيراد النتائج
+            من صفحة <a href="../analysis/import_data.html" style="color: var(--secondary-color);">استيراد النتائج</a> أولاً.
+        </div>
+
+        <!-- Print Header (hidden on screen) -->
+        <div id="printHeader" style="display: none;"></div>
+
+        <!-- Table 1: Current Situation -->
+        <div class="stats-section" id="currentSituationSection">
+            <div class="section-title"><span data-icon="chart"></span> الوضعية الحالية: <span
+                    id="currentYearDisplay">2025/2026</span></div>
+            <table class="stats-table" id="currentTable">
+                <thead id="currentTableHeader">
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="20%">البند</th>
+                        <th>أولى متوسط</th>
+                        <th>ثانية متوسط</th>
+                        <th>ثالثة متوسط</th>
+                        <th>رابعة متوسط</th>
+                        <th>المجموع</th>
+                    </tr>
+                </thead>
+                <tbody id="currentTableBody">
+                    <!-- Filled by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table 2: Projected Organization -->
+        <div class="stats-section" id="projectedSection">
+            <div class="section-title"><span data-icon="list"></span> التنظيم التربوي المرتقب للسنة: <span
+                    id="nextYearDisplay">2026/2027</span>
+                بناءً على نتائج <span id="trimesterDisplay">الفصل الأول</span></div>
+            <table class="stats-table" id="projectedTable">
+                <thead id="projectedTableHeader">
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="20%">البند</th>
+                        <th>أولى متوسط</th>
+                        <th>ثانية متوسط</th>
+                        <th>ثالثة متوسط</th>
+                        <th>رابعة متوسط</th>
+                        <th>المجموع</th>
+                    </tr>
+                </thead>
+                <tbody id="projectedTableBody">
+                    <!-- Filled by JS -->
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script src="../assets/js/navbar_fix.js"></script>
+    <script src="../assets/js/fullscreen_toggle.js"></script>
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../assets/js/xlsx-js-style.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <script src="../assets/js/excel_export_helper.js"></script>
+    <script src="school_entry.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الاقتراحات والتبليغ عن الأخطاء</title>
+    <link rel="stylesheet" href="../style.css">
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <!-- Navbar Dependencies -->
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js?v=2"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof IconManager !== 'undefined') IconManager.render();
+            loadInstitutionData();
+        });
+    </script>
+    <style>
+        body {
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            padding-top: 80px; /* Default for non-shell */
+            font-family: "Cairo", sans-serif !important;
+        }
+
+        body.shell-mode {
+            padding-top: 0 !important;
+            margin: 0 !important;
+        }
+
+        .feedback-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        /* Left Info Section */
+        .info-card {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            border-radius: 28px;
+            padding: 45px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: sticky;
+            top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-card h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            letter-spacing: -1px;
+        }
+
+        .info-card p {
+            color: #cbd5e1;
+            line-height: 1.8;
+            font-size: 1.15rem;
+            margin-bottom: 40px;
+        }
+
+        .contact-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .method {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .method:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-10px);
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .method-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(59, 130, 246, 0.15);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3b82f6;
+            font-size: 1.4rem;
+        }
+
+        /* Right Form Section */
+        .feedback-card {
+            background: var(--card-bg);
+            border-radius: 28px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-body {
+            padding: 50px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1.05rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            font-family: inherit;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+            color: var(--primary-color);
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2563eb;
+            background: var(--card-bg);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        select.form-control {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 20px center;
+            background-size: 18px;
+        }
+
+        textarea.form-control {
+            min-height: 220px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 18px;
+            font-weight: 800;
+            font-size: 1.15rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-3px);
+            box-shadow: 0 20px 35px -10px rgba(37, 99, 235, 0.4);
+        }
+
+        .spinner {
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 950px) {
+            .feedback-grid { grid-template-columns: 1fr; gap: 30px; }
+            .info-card { position: static; padding: 35px; }
+            .feedback-body { padding: 35px; }
+            .info-card h1 { font-size: 2rem; }
+        }
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="feedback-wrapper">
+        <div class="feedback-grid">
+            <!-- Left Info Section -->
+            <div class="info-card">
+                <h1>رأيك يهمنا <span data-icon="sparkles"></span></h1>
+                <p>نحن نسعى دائماً لتطوير "إدارتي+" لتلبي كافة احتياجاتك المهنية. ملاحظاتك واقتراحاتك هي المحرك الأساسي لتطورنا المستمر.</p>
+
+                <div class="contact-methods">
+                    <div class="method">
+                        <div class="method-icon"><i data-lucide="mail"></i></div>
+                        <div>
+                            <div style="font-weight: 800; color: white; font-size: 1.1rem;">الدعم الفني</div>
+                            <div style="font-size: 0.95rem; color: #94a3b8;">benkreddamaamar@gmail.com</div>
+                        </div>
+                    </div>
+                    <div class="method">
+                        <div class="method-icon"><i data-lucide="message-circle"></i></div>
+                        <div>
+                            <div style="font-weight: 800; color: white; font-size: 1.1rem;">تواصل مباشر</div>
+                            <a href="https://www.facebook.com/profile.php?id=61580202407300" target="_blank" style="font-size: 0.95rem; color: #3b82f6; text-decoration: none;">صفحة الفيسبوك الرسمية</a>
+                        </div>
+                    </div>
+                    <div class="method">
+                        <div class="method-icon"><i data-lucide="shield-check"></i></div>
+                        <div>
+                            <div style="font-weight: 800; color: white; font-size: 1.1rem;">خصوصية البيانات</div>
+                            <div style="font-size: 0.95rem; color: #94a3b8;">تصل رسالتك مباشرة للمطورين بخصوصية تامة</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Form Section -->
+            <div class="feedback-card">
+                <div class="feedback-body">
+                    <form id="feedbackForm" onsubmit="submitForm(event)">
+                        <div class="form-group">
+                            <label for="messageType">
+                                <i data-lucide="tag"></i> تصنيف الرسالة
+                            </label>
+                            <select id="messageType" class="form-control" required>
+                                <option value="suggestion" selected>💡 اقتراح تحسين أو ميزة جديدة</option>
+                                <option value="bug">🐞 التبليغ عن خطأ تقني</option>
+                                <option value="other">📝 استفسار أو أمر آخر</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="messageContent">
+                                <i data-lucide="edit-3"></i> تفاصيل الرسالة
+                            </label>
+                            <textarea id="messageContent" class="form-control" placeholder="يرجى كتابة تفاصيل الاقتراح أو شرح المشكلة التي واجهتها بدقة..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i data-lucide="send"></i> إرسال الملاحظات
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION
+        var FEEDBACK_API_URL = 'https://idarati.amanidev.com/api.php?action=feedback';
+        let institutionData = { wilaya: 'غير محدد', institutionName: 'غير محدد' };
+        let APP_VERSION = '2.2.10';
+
+        async function loadInstitutionData() {
+            try {
+                const settings = await DB.getSettings();
+                if (settings) {
+                    institutionData.wilaya = settings.wilaya || 'غير محدد';
+                    institutionData.institutionName = settings.institutionName || 'غير محدد';
+                }
+            } catch (e) { console.error('Error loading settings:', e); }
+        }
+
+        function submitForm(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnContent = submitBtn.innerHTML;
+            const messageType = document.getElementById('messageType').value;
+            const content = document.getElementById('messageContent').value;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> جاري الإرسال...';
+
+            let userEmail = '';
+            if (typeof Auth !== 'undefined' && Auth.getUser) {
+                const user = Auth.getUser();
+                if (user && user.email) userEmail = user.email;
+            }
+
+            const payload = {
+                timestamp: new Date().toISOString(),
+                type: messageType,
+                content: content,
+                wilaya: institutionData.wilaya,
+                institutionName: institutionData.institutionName,
+                version: APP_VERSION,
+                user_email: userEmail
+            };
+
+            var renderer = window.ipcRenderer || (window.require ? window.require('electron').ipcRenderer : null);
+
+            if (renderer) {
+                renderer.invoke('proxy-http-request', {
+                    url: FEEDBACK_API_URL, method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(handleResult).catch(handleError).finally(finish);
+            } else {
+                fetch(FEEDBACK_API_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(r => r.json()).then(handleResult).catch(handleError).finally(finish);
+            }
+
+            function handleResult(result) {
+                const data = result.data || result;
+                if (data.result === 'success' || data.status === 'success') {
+                    Swal.fire({
+                        title: 'تم الإرسال بنجاح!',
+                        text: 'شكراً لك على تواصلك معنا، سيتم دراسة ملاحظاتك بعناية.',
+                        icon: 'success',
+                        timer: 2500,
+                        showConfirmButton: false
+                    }).then(() => window.history.back());
+                } else { throw new Error(data.message || 'فشل الإرسال.'); }
+            }
+
+            function handleError(err) {
+                Swal.fire({ title: 'فشل الإرسال', text: err.message || 'تأكد من اتصالك بالإنترنت وحاول مجدداً.', icon: 'error', confirmButtonText: 'حسناً' });
+            }
+
+            function finish() {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnContent;
+            }
+        }
+    </script>
+</body>
+
+</html>

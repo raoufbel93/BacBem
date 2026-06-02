@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>توزيع القاعات - الامتحانات الرسمية</title>
+    <link rel="stylesheet" href="../assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../style.css">
+
+    <!-- Grid.js Styles -->
+    <link rel="stylesheet" href="../assets/css/mermaid.min.css">
+    <script src="../db.js"></script>
+    <script src="../auth.js"></script>
+    <script src="../assets/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/icon_manager.js"></script>
+    <script>
+        if (typeof module === 'object') {
+            window.module = module;
+            module = undefined;
+        }
+        if (typeof exports === 'object') {
+            window.exports = exports;
+            exports = undefined;
+        }
+    </script>
+    <script src="../assets/js/xlsx-js-style.min.js"></script>
+    <script>
+        if (window.module) module = window.module;
+        if (window.exports) exports = window.exports;
+    </script>
+    <script src="../assets/js/excel_export_helper.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof IconManager !== 'undefined') IconManager.render();
+        });
+    </script>
+    <style>
+        /* Global Structure Overrides */
+        body {
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+        }
+
+        /* ========== Page Header ========== */
+        .page-header {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .page-header .header-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            flex-shrink: 0;
+        }
+
+        .page-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: 0;
+            color: #fff;
+        }
+
+        .page-header p {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin: 4px 0 0 0;
+            font-weight: 500;
+        }
+
+        /* ========== Main Card ========== */
+        .main-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        /* ========== Top Bar ========== */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .top-bar-controls {
+            display: flex;
+            align-items: center;
+        }
+
+        .top-bar-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* ========== Stats Cards ========== */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--primary-color);
+            padding: 15px 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card .number {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #3b82f6;
+        }
+
+        .stat-card .label {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* ========== Search and Filter ========== */
+        .search-filter-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            background: var(--bg-color);
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        .config-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .config-group label {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .config-group select,
+        .config-group input {
+            padding: 11px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            color: var(--primary-color);
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .config-group input:focus,
+        .config-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* ========== Table ========== */
+        .data-table-wrapper {
+            overflow: visible !important;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+            min-height: 400px;
+            border: 1px solid var(--border-color);
+        }
+
+        .teachers-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.95rem;
+            overflow: visible !important;
+        }
+
+        .teachers-table th,
+        .teachers-table td {
+            padding: 10px 12px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .teachers-table th {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            font-weight: 700;
+            color: #f8fafc;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border: none;
+        }
+
+        .teachers-table tbody tr {
+            background: var(--card-bg);
+            transition: all 0.2s ease;
+        }
+
+        .teachers-table tbody tr:nth-child(even) {
+            background-color: var(--bg-color);
+        }
+
+        .teachers-table tbody tr:hover {
+            background: var(--table-row-hover);
+            transform: none;
+            box-shadow: none;
+            z-index: 10;
+            position: relative;
+        }
+
+        .teachers-table tbody tr.reserve-row {
+            background: #fff3cd;
+        }
+
+        .teachers-table tbody tr.reserve-row td {
+            background: transparent;
+        }
+
+        /* Supervision Specific */
+        .room-select {
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .note-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        /* ========== Buttons ========== */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.92rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+            letter-spacing: 0.3px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #94a3b8, #64748b);
+            color: white;
+        }
+
+        html[data-theme="dark"] .top-bar h3 {
+            color: var(--text-muted) !important;
+        }
+
+        html[data-theme="dark"] .stat-card .label {
+            color: var(--text-muted);
+        }
+
+        html[data-theme="dark"] .stat-card .number {
+            color: var(--heading-color);
+        }
+
+        html[data-theme="dark"] .teachers-table tbody tr.reserve-row,
+        html[data-theme="dark"] .teachers-table tbody tr.reserve-row td,
+        html[data-theme="dark"] .gridjs-tr.reserve-row .gridjs-td {
+            background: rgba(245, 158, 11, 0.18) !important;
+        }
+
+        html[data-theme="dark"] .teachers-table tbody tr:hover,
+        html[data-theme="dark"] .teachers-table tbody tr:hover td,
+        html[data-theme="dark"] .gridjs-tr:hover .gridjs-td {
+            background-color: var(--table-row-hover) !important;
+            color: var(--text-color) !important;
+        }
+
+        /* Print Styles */
+        .print-only {
+            display: none;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block !important;
+            }
+
+            .main-card {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+
+            .page-header {
+                display: none !important;
+            }
+
+            /* Improve table for print */
+            .teachers-table {
+                border: 2px solid #000 !important;
+            }
+
+            .teachers-table th,
+            .teachers-table td {
+                border: 1px solid #000 !important;
+                color: var(--primary-color) !important;
+                background: var(--card-bg) !important;
+            }
+
+            .teachers-table th {
+                background: #f0f0f0 !important;
+                font-weight: bold !important;
+            }
+
+            /* Hide inputs/selects in print and show text */
+            .room-select,
+            .note-input,
+            .btn-action {
+                display: none !important;
+            }
+
+            tr[style*="background-color: #fff3cd"],
+            .reserve-row {
+                background-color: #f0f0f0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+    </style>
+    <script>Auth.checkAuth();</script>
+</head>
+
+<body>
+
+    <div id="navbar-container"></div>
+    <script src="../assets/js/react-polyfills.js"></script>
+    <script src="../assets/js/react.production.min.js"></script>
+    <script src="../assets/js/react-dom.production.min.js"></script>
+    <script src="../assets/js/navbar_manager.js"></script>
+    <script src="../assets/js/navbar_fix.js"></script>
+
+    <div class="container animate-fade-in-up">
+        <!-- Page Header -->
+        <div class="page-header no-print">
+            <div class="header-icon"><i data-lucide="clipboard-check"></i></div>
+            <div>
+                <h1>توزيع القاعات</h1>
+                <p>توزيع الأساتذة الحراس على قاعات الامتحانات الرسمية</p>
+            </div>
+        </div>
+
+        <!-- Main Card Wrapper -->
+        <div class="main-card">
+
+            <!-- Top Bar Actions -->
+            <div class="top-bar no-print">
+                <div class="top-bar-controls">
+                    <h3 style="margin:0; color:var(--text-muted); font-size:1.1rem;">إعداد القوائم</h3>
+                </div>
+                <div class="top-bar-buttons">
+                    <label style="display:inline-flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-color); font-weight:700; font-size:0.9rem; color:var(--primary-color);">
+                        <input type="checkbox" id="printSubjectColumnToggle" checked style="accent-color:#2563eb;">
+                        إظهار عمود المادة
+                    </label>
+                    <button class="btn btn-secondary" onclick="openRoomSettingsModal()"><span data-icon="settings"></span> إعدادات القاعات</button>
+                    <button class="btn btn-warning" onclick="distributeRooms()"><span data-icon="random"></span> توزيع آلي للحجرات</button>
+                    <button class="btn btn-success" onclick="exportSupervisionListToExcel()"><i class="fas fa-file-excel"></i> تصدير Excel</button>
+                    <button class="btn btn-primary" onclick="printSupervisionList()"><span data-icon="print"></span>
+                        طباعة
+                        القائمة</button>
+                    <button class="btn btn-warning" onclick="printReserveList()"><span data-icon="print"></span>
+                        طباعة قائمة الاحتياط</button>
+                    <button class="btn btn-success" onclick="printAttendanceList()"><span data-icon="print"></span>
+                        طباعة قائمة الحضور (أساتذة)</button>
+                </div>
+            </div>
+
+            <!-- Configuration Row: Exam Type / Day / Period -->
+            <div class="search-filter-row no-print" style="margin-bottom: 10px;">
+                <div class="config-group" style="flex: 0.7; min-width: 130px;">
+                    <label>الامتحان</label>
+                    <select id="trimesterSelect">
+                        <option value="custom">امتحان آخر</option>
+                        <option value="blanc">شهادة التعليم المتوسط</option>
+                        <option value="blanc_lycee">شهادة البكالوريا</option>
+                    </select>
+                </div>
+                <div class="config-group" style="flex: 1.5;">
+                    <label>اليوم</label>
+                    <select id="daySelect">
+                        <option value="">اختر اليوم...</option>
+                    </select>
+                </div>
+                <div class="config-group" style="flex: 0.7; min-width: 120px;">
+                    <label>الفترة</label>
+                    <select id="periodSelect">
+                        <option value="">اختر الفترة...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="stats-row no-print">
+                <div class="stat-card">
+                    <div class="number" id="totalTeachersCount">0</div>
+                    <div class="label">عدد الحراس</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="roomsUsedCount" style="color: #2ecc71;">0</div>
+                    <div class="label">الحجرات المستعملة</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number" id="reservesCount" style="color: #e74c3c;">0</div>
+                    <div class="label">عدد الاحتياط</div>
+                </div>
+            </div>
+
+            <!-- Print Header (Visible only in print) -->
+            <div class="print-only" style="display:none; margin-bottom: 20px;">
+                <div style="text-align:center; margin-bottom: 15px;">
+                    <h3 style="margin:0; font-size: 14pt;">الجمهورية الجزائرية الديمقراطية الشعبية</h3>
+                    <h3 style="margin:5px 0; font-size: 14pt;">وزارة التربية الوطنية</h3>
+                </div>
+                <div
+                    style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+                    <div style="text-align:right; width: 33%;">
+                        <h3 id="printDirection" style="margin:0; font-size: 12pt;">مديرية التربية لولاية ...</h3>
+                        <h3 id="printSchool" style="margin:5px 0 0 0; font-size: 12pt;">...</h3>
+                    </div>
+                    <div style="text-align:center; width: 33%;">
+                        <h2 style="margin:0; text-decoration: underline; font-weight: 900; font-size: 18pt;">قائمة
+                            الحراسة</h2>
+                        <h3 id="printHeaderSubtitle" style="margin:10px 0 0 0; font-size: 14pt;"></h3>
+                    </div>
+                    <div style="text-align:left; width: 33%;">
+                        <h3 id="printYear" style="margin:0; font-size: 12pt;">السنة الدراسية: ...</h3>
+                        <h3 id="printStats" style="margin:5px 0 0 0; font-size: 11pt; direction: rtl;"></h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teachers Table -->
+            <div class="data-table-wrapper">
+                <div id="gridjs-wrapper"></div>
+            </div>
+
+            <!-- Print Signature Area -->
+            <div class="print-only" style="display:none; margin-top: 40px; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; padding: 0 50px;">
+                    <div style="text-align: center;">
+                        <p style="margin-bottom: 60px; font-weight: bold;">الناظر</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <p style="margin-bottom: 60px; font-weight: bold;">المديــــــر</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden Summary Text for JS compatibility or specific print usage -->
+            <div id="summaryText" style="display:none;"></div>
+
+        </div>
+    </div>
+
+    <!-- Room Management Modal -->
+    <div class="modal fade" id="roomSettingsModal" tabindex="-1" aria-hidden="true" dir="rtl">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background: var(--card-bg); color: var(--primary-color); border: 1px solid var(--border-color); border-radius: 16px;">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border-color);">
+                    <h5 class="modal-title" style="font-weight: 800;"><span data-icon="settings"></span> إعدادات القاعات حسب الفترة</h5>
+                    <button type="button" class="btn-close m-0" data-bs-dismiss="modal" aria-label="Close" style="filter: var(--close-filter);"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Exam / Period Selection -->
+                    <div class="mb-4">
+                        <label class="form-label" style="font-weight: bold;">اختر الامتحان:</label>
+                        <select id="modalTrimesterSelect" class="form-select mb-3"
+                            style="background: var(--bg-color); color: var(--primary-color); border-color: var(--border-color); font-weight: bold;"
+                            onchange="renderRoomSettingsList()">
+                            <option value="custom">امتحان آخر</option>
+                            <option value="blanc">شهادة التعليم المتوسط</option>
+                            <option value="blanc_lycee">شهادة البكالوريا</option>
+                        </select>
+                        <label class="form-label" style="font-weight: bold;">اختر الفترة المراد ضبط قاعاتها:</label>
+                        <select id="modalPeriodSelect" class="form-select" style="background: var(--bg-color); color: var(--primary-color); border-color: var(--border-color); font-weight: bold;" onchange="renderRoomSettingsList()">
+                            <option value="morning">الفترة الصباحية</option>
+                            <option value="midday">فترة المنتصف</option>
+                            <option value="evening">الفترة المسائية</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <!-- Auto Generate -->
+                        <div class="col-md-7">
+                            <div class="p-3 shadow-sm" style="background: var(--bg-color); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h6 style="font-weight: bold; margin-bottom: 15px;"><i class="fas fa-magic"></i> توليد تلقائي</h6>
+                                <div class="d-flex align-items-end gap-2">
+                                    <div style="flex: 1;">
+                                        <label class="form-label" style="font-size: 0.85rem;">من الرقم</label>
+                                        <input type="number" id="genRoomFrom" class="form-control form-control-sm" value="1" min="1">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label class="form-label" style="font-size: 0.85rem;">إلى الرقم</label>
+                                        <input type="number" id="genRoomTo" class="form-control form-control-sm" value="10" min="1">
+                                    </div>
+                                    <button class="btn btn-warning btn-sm" onclick="autoGenerateRooms()" style="height: 31px;">توليد</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual Add -->
+                        <div class="col-md-5">
+                            <div class="p-3 shadow-sm" style="background: var(--bg-color); border-radius: 12px; border: 1px solid var(--border-color); height: 100%;">
+                                <h6 style="font-weight: bold; margin-bottom: 15px;"><i class="fas fa-plus"></i> إضافة يدوية</h6>
+                                <div class="d-flex align-items-end gap-2">
+                                    <div style="flex: 1;">
+                                        <label class="form-label" style="font-size: 0.85rem;">اسم القاعة</label>
+                                        <input type="text" id="manualRoomName" class="form-control form-control-sm" placeholder="مثال: المدرج">
+                                    </div>
+                                    <button class="btn btn-success btn-sm" onclick="addManualRoom()" style="height: 31px;">إضافة</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rooms List -->
+                    <div>
+                        <h6 style="font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <span><i class="fas fa-list"></i> قائمة القاعات الحالية</span>
+                            <button class="btn btn-sm btn-danger px-2 py-1" onclick="clearCurrentPeriodRooms()" style="font-size: 0.8rem;"><i class="fas fa-trash"></i> إفراغ القائمة</button>
+                        </h6>
+                        <div id="roomSettingsList" style="max-height: 250px; overflow-y: auto; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px;">
+                            <!-- Rooms injected here via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    <script src="../assets/js/gridjs.production.min.js"></script>
+    <script src="official_supervision_lists.js?v=20260530-audit"></script>
+</body>
+
+</html>
